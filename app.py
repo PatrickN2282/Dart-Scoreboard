@@ -174,9 +174,12 @@ def index():
         if pid not in players_map:
             continue  # verwaiste Scores (Spieler gelöscht) überspringen
         if pid not in cumulative:
-            cumulative[pid] = {"legs": 0, "max180": 0}
+            cumulative[pid] = {"legs": 0, "max180": 0, "last180_date": ""}
         cumulative[pid]["legs"]   += s.get("legs",   0)
         cumulative[pid]["max180"] += s.get("max180", 0)
+        # Datum des letzten Eintrags mit mindestens einer 180 merken
+        if s.get("max180", 0) > 0:
+            cumulative[pid]["last180_date"] = s.get("date", "")
 
     most_legs = []
     most_180s = []
@@ -189,9 +192,10 @@ def index():
             })
         if vals["max180"] > 0:
             most_180s.append({
-                "name":   player_name(pid),
-                "image":  player_image(pid),
-                "max180": vals["max180"],
+                "name":        player_name(pid),
+                "image":       player_image(pid),
+                "max180":      vals["max180"],
+                "last180_date": vals["last180_date"],
             })
 
     most_legs = add_podium_rank(
@@ -208,9 +212,10 @@ def index():
         val = s.get("finish", 0)
         if val > 0 and val > finish_best.get(pid, {}).get("finish", 0):
             finish_best[pid] = {
-                "name":   player_name(pid),
-                "image":  player_image(pid),
-                "finish": val,
+                "name":        player_name(pid),
+                "image":       player_image(pid),
+                "finish":      val,
+                "finish_date": s.get("date", ""),
             }
     highest_finish = add_podium_rank(
         sorted(finish_best.values(),
