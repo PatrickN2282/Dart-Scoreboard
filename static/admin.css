@@ -1,306 +1,597 @@
 /* ============================================================
-   ADMIN.CSS – Dart Highscore Admin-Ansicht (Glassmorphismus-Design & Tabs)
-   ============================================================ */
+ *  ADMIN.CSS – Dart Highscore Admin-Panel
+ *  Design-System: identisch zu main.css (Gold/Anthrazit)
+ *  ============================================================ */
 
 /* ############################################################
-   1. VARIABLEN & BASISLAYOUT
-   ############################################################ */
+ *  1. DESIGN-SYSTEM
+ *  ############################################################ */
 
-/* === 1.1 Farb- & Stilvariablen === */
 :root {
-    --primary-color: #00e0ff;           /* Neon-Blau für Buttons/Links/Akzente */
-    --delete-color: #dc3545;            /* Rot für Löschaktionen */
-    --bg-color-fallback: #1c1c1c;       /* Dunkler Hintergrund, falls kein Bild geladen wird */
-    --card-bg: rgba(0, 0, 0, 0.55);     /* Halbtransparente Karten */
-    --input-bg: rgba(255, 255, 255, 0.1); /* Durchscheinende Eingabefelder */
-    --border-color: rgba(0, 224, 255, 0.3); /* Neon-Blauer Rahmen */
-    --text-color: #fff;                 /* Standardtextfarbe */
-    --text-shadow-h1: rgba(0, 224, 255, 0.6); /* Glüheffekt für Überschriften */
+    --clr-bg:            #0d1117;
+    --clr-surface:       rgba(18, 26, 38, 0.80);
+    --clr-surface-2:     rgba(24, 34, 50, 0.90);
+    --clr-surface-nav:   rgba(10, 15, 22, 0.96);
+    --clr-border:        rgba(255, 255, 255, 0.08);
+    --clr-border-accent: rgba(240, 165, 0, 0.25);
+
+    --clr-accent:        #f0a500;
+    --clr-accent-hover:  #ffc740;
+    --clr-accent-glow:   rgba(240, 165, 0, 0.35);
+    --clr-accent-dim:    rgba(240, 165, 0, 0.10);
+
+    --clr-danger:        #e05252;
+    --clr-danger-hover:  #f07070;
+    --clr-danger-dim:    rgba(224, 82, 82, 0.12);
+    --clr-danger-border: rgba(224, 82, 82, 0.35);
+
+    --clr-text:          #f0f4f8;
+    --clr-text-muted:    rgba(240, 244, 248, 0.50);
+    --clr-text-label:    rgba(240, 244, 248, 0.75);
+
+    --shadow-panel:      0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px var(--clr-border);
+    --shadow-glow-gold:  0 0 16px var(--clr-accent-glow);
+
+    --nav-height:        56px;
+    --radius-card:       12px;
+    --radius-input:      7px;
+    --radius-pill:       8px;
 }
 
-/* === 1.2 Basis-Styling === */
+
+/* ############################################################
+ *  2. BASIS
+ *  ############################################################ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
 body {
-    font-family: Arial, sans-serif;
     margin: 0;
-    padding: 0;
-    min-height: 100vh;
-    background-color: var(--bg-color-fallback);
+    font-family: "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    color: var(--clr-text);
+    background: var(--clr-bg) no-repeat center center fixed;
     background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    color: var(--text-color);
+    min-height: 100vh;
 }
 
-.admin-container {
-    max-width: 1200px;
-    margin: 30px auto;
-    padding: 20px;
-    
-    /* Hintergrund-Design des gesamten Admin-Bereichs */
-    background: rgba(0, 0, 0, 0.6); 
-    backdrop-filter: blur(5px);
-    border-radius: 15px;
-    box-shadow: 0 0 40px rgba(0, 224, 255, 0.2);
+a {
+    color: var(--clr-accent);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+a:hover { color: var(--clr-accent-hover); }
+
+hr {
+    border: none;
+    border-top: 1px solid var(--clr-border);
+    margin: 0;
 }
 
-/* === 1.3 Typografie === */
-h1 {
-    text-align: center;
-    color: var(--primary-color);
-    text-shadow: 0 0 15px var(--text-shadow-h1);
-    margin-bottom: 20px;
+
+/* ############################################################
+ *  3. TOP-NAVIGATIONSLEISTE
+ *  ############################################################ */
+
+.admin-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: var(--nav-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    background: var(--clr-surface-nav);
+    border-bottom: 1px solid var(--clr-border);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.5);
 }
 
-h2 {
-    color: var(--primary-color);
-    border-bottom: 2px solid var(--border-color);
-    padding-bottom: 10px;
-    margin-top: 0;
-    margin-bottom: 20px;
-}
-
-h3 {
-    margin-top: 15px;
-    color: #ccc;
+.admin-topbar h1 {
+    margin: 0;
+    font-size: 1.15em;
+    font-weight: 700;
+    color: var(--clr-accent);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .back-link {
-    display: inline-block;
-    margin-bottom: 20px;
-    padding: 5px 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--clr-border-accent);
+    background: var(--clr-accent-dim);
+    color: var(--clr-accent);
+    font-size: 0.88em;
+    font-weight: 600;
+    transition: background 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
 }
 .back-link:hover {
-    background: var(--input-bg);
+    background: rgba(240,165,0,0.18);
+    box-shadow: var(--shadow-glow-gold);
+    color: var(--clr-accent-hover);
 }
 
-/* ############################################################
-   2. TAB NAVIGATION & CONTENT (NEU)
-   ############################################################ */
 
-.tab-navigation {
+/* ############################################################
+ *  4. HAUPT-LAYOUT
+ *  ############################################################ */
+
+.admin-body {
     display: flex;
-    flex-wrap: wrap; 
-    justify-content: center;
-    margin-bottom: 30px;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 10px;
-    box-shadow: 0 0 15px rgba(0, 224, 255, 0.2);
-    padding: 10px;
-    gap: 10px; 
+    min-height: calc(100vh - var(--nav-height));
+}
+
+/* ── Sidebar-Tabs (links) ── */
+.admin-sidebar {
+    width: 200px;
+    flex-shrink: 0;
+    background: var(--clr-surface-nav);
+    border-right: 1px solid var(--clr-border);
+    padding: 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: sticky;
+    top: var(--nav-height);
+    height: calc(100vh - var(--nav-height));
+    overflow-y: auto;
 }
 
 .tab-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid transparent;
     background: transparent;
-    border: none;
-    color: var(--text-color);
-    padding: 12px 25px;
+    color: var(--clr-text-muted);
+    font-size: 0.92em;
+    font-weight: 500;
+    font-family: inherit;
     cursor: pointer;
-    font-size: 1.1em;
-    transition: all 0.3s ease;
-    border-radius: 8px;
-    flex-grow: 1; 
-    max-width: 250px;
+    text-align: left;
+    transition: all 0.18s ease;
+    white-space: nowrap;
 }
-
 .tab-link:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateY(-2px);
+    background: var(--clr-accent-dim);
+    color: var(--clr-text);
+    border-color: var(--clr-border-accent);
 }
-
 .tab-link.active {
-    background: var(--primary-color);
-    color: black;
-    font-weight: bold;
-    text-shadow: none;
-    box-shadow: 0 0 15px var(--primary-color);
-    transform: none;
+    background: var(--clr-accent-dim);
+    border-color: var(--clr-border-accent);
+    color: var(--clr-accent);
+    font-weight: 700;
+    box-shadow: var(--shadow-glow-gold);
+}
+.tab-link .tab-icon { font-size: 1.1em; flex-shrink: 0; }
+
+/* ── Haupt-Content-Bereich (rechts) ── */
+.admin-content {
+    flex: 1;
+    padding: 28px 32px;
+    overflow-y: auto;
 }
 
-/* Tab Content Container ersetzt die "Card" in der Struktur */
-.tab-content {
-    display: none;
-    /* Glassmorphismus-Styling */
-    background: var(--card-bg);
-    backdrop-filter: blur(8px) brightness(1.2);
-    border-radius: 15px;
-    padding: 30px;
-    box-shadow: 0 0 25px rgba(0, 224, 255, 0.25);
-    /* Setzt das innere Layout für flexiblen Inhalt */
-    flex-direction: column;
-    gap: 20px; 
-    min-height: 400px;
-}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
 
-.tab-content.active {
-    display: flex; 
-}
-
-/* Die Linien zwischen den Sektionen */
-hr {
-    border-color: rgba(255, 255, 255, 0.1);
-    margin: 20px 0;
-}
 
 /* ############################################################
-   3. FORMULARE & EINGABEN
-   ############################################################ */
+ *  5. PANEL / SECTION
+ *  ############################################################ */
 
-.input-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+.panel {
+    background: var(--clr-surface);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-card);
+    padding: 24px 28px;
+    box-shadow: var(--shadow-panel);
+    backdrop-filter: blur(10px);
 }
+
+.panel + .panel { margin-top: 20px; }
+
+.panel-title {
+    margin: 0 0 20px;
+    font-size: 1.0em;
+    font-weight: 700;
+    color: var(--clr-text);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.panel-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--clr-border-accent), transparent);
+    margin-left: 8px;
+}
+
+.panel-danger {
+    border-color: var(--clr-danger-border);
+    background: rgba(224, 82, 82, 0.05);
+}
+.panel-danger .panel-title { color: var(--clr-danger); }
+.panel-danger .panel-title::after {
+    background: linear-gradient(90deg, var(--clr-danger-border), transparent);
+}
+
+/* Sektions-Überschrift innerhalb Panel */
+.section-label {
+    font-size: 0.78em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--clr-text-muted);
+    margin: 20px 0 12px;
+}
+.section-label:first-child { margin-top: 0; }
+
+
+/* ############################################################
+ *  6. FORMULARE & INPUTS
+ *  ############################################################ */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 20px;
+}
+.form-grid.single { grid-template-columns: 1fr; }
+.form-grid.triple { grid-template-columns: 1fr 1fr 1fr; }
+.col-span-2 { grid-column: span 2; }
 
 .input-group {
     display: flex;
     flex-direction: column;
+    gap: 5px;
 }
 
 .input-group label {
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #ddd;
+    font-size: 0.82em;
+    font-weight: 600;
+    color: var(--clr-text-label);
+    letter-spacing: 0.03em;
 }
 
 .input-group input[type="text"],
 .input-group input[type="number"],
 .input-group select {
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    background-color: var(--input-bg);
-    color: var(--text-color);
-    font-size: 1em;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    padding: 9px 12px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius-input);
+    background: rgba(255,255,255,0.05);
+    color: var(--clr-text);
+    font-size: 0.95em;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    width: 100%;
 }
-
 .input-group input:focus,
 .input-group select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 10px rgba(0, 224, 255, 0.5);
+    border-color: var(--clr-accent);
+    box-shadow: 0 0 0 3px rgba(240,165,0,0.15);
 }
 
-/* === Dropdown-Styling === */
+/* Dropdown */
 .input-group select {
-    /* Fügt den Pfeil-Hintergrund für Selects hinzu */
-    background: var(--input-bg)
-                url("data:image/svg+xml;utf8,<svg fill='white' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>")
-                no-repeat right 10px center;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='rgba(240,244,248,0.5)' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
     background-size: 16px;
-    padding-right: 35px;
+    padding-right: 34px;
     appearance: none;
     -webkit-appearance: none;
-    -moz-appearance: none;
 }
-
-/* === Dropdown-Optionen === */
 select option {
-    /* FIX: Die native Dropdown-Box ist hell. Um weiße Schrift auf weißem Grund zu vermeiden, 
-       setzen wir die Options-Schrift auf Schwarz. */
-    background-color: rgba(0, 100, 100, 0.85);
-    color: #000; /* KORRIGIERT: Textfarbe Schwarz für Lesbarkeit auf nativem Pop-up */
+    background: #1a2333;
+    color: var(--clr-text);
 }
 
-select option:hover {
-    background-color: rgba(0, 224, 255, 0.3);
-    color: #000; /* Optional: Auch Hover-Text auf Schwarz lassen */
+/* Datei-Upload */
+.file-input-wrapper {
+    position: relative;
 }
-
-/* === Dateiupload-Styling anpassen === */
-.file-upload input[type="file"] {
-    padding: 10px 0; 
-    background: transparent;
-    border: none;
-}
-.file-upload label {
-    margin-bottom: 10px;
-}
-
-/* ############################################################
-   4. BUTTONS
-   ############################################################ */
-
-.submit-button {
-    background-color: var(--primary-color);
-    color: black;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 5px;
+.file-input-wrapper input[type="file"] {
+    opacity: 0;
+    position: absolute;
+    inset: 0;
     cursor: pointer;
-    font-size: 1.1em;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    text-shadow: 0 0 5px rgba(0, 224, 255, 0.5);
+    width: 100%;
+    height: 100%;
 }
-.submit-button:hover {
-    background-color: #00b3cc;
-    transform: translateY(-2px);
-    box-shadow: 0 0 15px var(--primary-color);
-}
-
-.delete-button {
-    background-color: var(--delete-color);
-    color: white;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 4px;
+.file-input-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border: 1px dashed rgba(240,165,0,0.3);
+    border-radius: var(--radius-input);
+    background: rgba(240,165,0,0.04);
+    color: var(--clr-text-muted);
+    font-size: 0.88em;
     cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.3s ease;
+    transition: border-color 0.2s, background 0.2s;
+    user-select: none;
+    min-height: 40px;
 }
-.delete-button:hover {
-    background-color: #c82333;
+.file-input-wrapper:hover .file-input-display,
+.file-input-wrapper:focus-within .file-input-display {
+    border-color: var(--clr-accent);
+    background: var(--clr-accent-dim);
+    color: var(--clr-text);
 }
-
-/* ############################################################
-   5. TABELLEN & INFOTEXTE
-   ############################################################ */
+.file-name-display {
+    font-size: 0.82em;
+    color: var(--clr-accent);
+    margin-top: 4px;
+    min-height: 1.2em;
+}
 
 .info-text {
-    margin-top: 10px;
-    font-size: 0.9em;
+    font-size: 0.78em;
+    color: var(--clr-text-muted);
     font-style: italic;
-    color: #a0a0a0;
+    margin-top: 2px;
+    line-height: 1.4;
 }
 
-/* === Tabellenbereich === */
+/* Divider innerhalb Formular */
+.form-divider {
+    grid-column: 1 / -1;
+    border: none;
+    border-top: 1px solid var(--clr-border);
+    margin: 4px 0;
+}
+
+
+/* ############################################################
+ *  7. BUTTONS
+ *  ############################################################ */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border-radius: var(--radius-pill);
+    border: 1px solid transparent;
+    font-size: 0.9em;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+/* Primär (Gold) */
+.btn-primary {
+    background: var(--clr-accent);
+    color: #0d1117;
+    border-color: var(--clr-accent);
+}
+.btn-primary:hover {
+    background: var(--clr-accent-hover);
+    box-shadow: var(--shadow-glow-gold);
+    transform: translateY(-1px);
+}
+
+/* Gefahren (Rot) */
+.btn-danger {
+    background: var(--clr-danger-dim);
+    color: var(--clr-danger);
+    border-color: var(--clr-danger-border);
+}
+.btn-danger:hover {
+    background: rgba(224,82,82,0.22);
+    color: var(--clr-danger-hover);
+    box-shadow: 0 0 14px rgba(224,82,82,0.3);
+}
+
+/* Ghost */
+.btn-ghost {
+    background: transparent;
+    color: var(--clr-text-muted);
+    border-color: var(--clr-border);
+}
+.btn-ghost:hover {
+    background: rgba(255,255,255,0.06);
+    color: var(--clr-text);
+    border-color: rgba(255,255,255,0.18);
+}
+
+/* Icon-only Button */
+.btn-icon {
+    padding: 5px 8px;
+    font-size: 0.85em;
+    border-radius: 6px;
+}
+
+/* Formular-Submit immer rechts */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+    grid-column: 1 / -1;
+}
+
+
+/* ############################################################
+ *  8. TABELLE (Score-Übersicht)
+ *  ############################################################ */
+
 .table-scroll {
     overflow-x: auto;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--clr-border);
 }
 
-table {
+.data-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 15px;
-    color: var(--text-color);
-    font-size: 0.9em;
+    font-size: 0.88em;
+    color: var(--clr-text);
 }
 
-table th,
-table td {
-    padding: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+.data-table thead th {
+    padding: 11px 14px;
     text-align: left;
-}
-
-table th {
-    background-color: rgba(0, 224, 255, 0.2);
-    color: var(--primary-color);
+    font-size: 0.78em;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--clr-text-muted);
+    background: rgba(10,15,22,0.6);
+    border-bottom: 1px solid var(--clr-border-accent);
+    white-space: nowrap;
 }
 
-table tr:nth-child(even) {
-    background-color: rgba(255, 255, 255, 0.05);
+.data-table tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--clr-border);
+    vertical-align: middle;
 }
 
-/* Zentrierung für Zahlen in den Score-Spalten */
-table td:nth-child(4), /* Legs */
-table td:nth-child(5), /* Finish */
-table td:nth-child(6), /* 180er */
-table td:nth-child(7) { /* 301 Darts */
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+.data-table tbody tr:hover td {
+    background: rgba(240,165,0,0.04);
+}
+
+/* Zahl-Spalten zentriert */
+.data-table .td-num {
     text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--clr-text-muted);
+}
+.data-table .td-num.has-value {
+    color: var(--clr-accent);
+    font-weight: 600;
+}
+
+.td-date { color: var(--clr-text-muted); font-size: 0.85em; white-space: nowrap; }
+.td-name { font-weight: 600; }
+
+/* Leere Tabelle */
+.table-empty {
+    text-align: center;
+    padding: 40px;
+    color: var(--clr-text-muted);
+    font-style: italic;
+}
+
+
+/* ############################################################
+ *  9. SPIELER-KARTEN (Player-Tab)
+ *  ############################################################ */
+
+.player-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.player-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--clr-border);
+    border-radius: var(--radius-input);
+    transition: background 0.15s;
+}
+.player-row:hover { background: rgba(255,255,255,0.055); }
+
+.player-row img {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(240,165,0,0.3);
+    flex-shrink: 0;
+}
+
+.player-row-name {
+    flex: 1;
+    font-weight: 600;
+    font-size: 0.95em;
+}
+
+.player-row-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+
+/* ############################################################
+ *  10. STATUS-BADGE
+ *  ############################################################ */
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 0.75em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+.badge-ok {
+    background: rgba(80,200,120,0.15);
+    color: #50c878;
+    border: 1px solid rgba(80,200,120,0.3);
+}
+.badge-missing {
+    background: rgba(224,82,82,0.12);
+    color: var(--clr-danger);
+    border: 1px solid var(--clr-danger-border);
+}
+
+
+/* ############################################################
+ *  11. RESPONSIVE (schmale Bildschirme / Tablets)
+ *  ############################################################ */
+
+@media (max-width: 860px) {
+    .admin-body { flex-direction: column; }
+
+    .admin-sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        flex-direction: row;
+        flex-wrap: wrap;
+        padding: 10px;
+        border-right: none;
+        border-bottom: 1px solid var(--clr-border);
+        gap: 6px;
+    }
+    .tab-link { flex: 1 1 auto; justify-content: center; }
+
+    .admin-content { padding: 18px 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .col-span-2 { grid-column: span 1; }
+    .form-grid.triple { grid-template-columns: 1fr 1fr; }
 }

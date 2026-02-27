@@ -3,373 +3,458 @@
    ============================================================ */
 
 /*
-   WICHTIGER HINWEIS:
-   Fügen Sie hier die @import-Regeln für Google Fonts ein, 
-   falls Sie Oswald oder Roboto Condensed auf der Admin-Seite auswählen.
-   
-   Beispiel:
+   Google Fonts Import (bei Bedarf einkommentieren):
    @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap');
    @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@100..900&display=swap');
 */
 
 
 /* ############################################################
-   ABSCHNITT 1: GRUNDLAGEN & VARIABLEN
+   ABSCHNITT 1: DESIGN-SYSTEM & VARIABLEN
    ############################################################ */
 
-/* === 1.1 Globale Variablen (Farben, Schatten) === */
 :root {
-    --neon-blue: #00e0ff;
-    --neon-shadow: rgba(0, 224, 255, 0.5);
-    --card-shadow-light: rgba(0, 200, 255, 0.15);
-    --card-shadow-hover: rgba(0, 200, 255, 0.35);
-    --card-bg: rgba(0, 0, 0, 0.55);
-    --text-color: #fff;
-    --text-shadow-h2: #00e0ff80;
-    
-    /* FALLBACKS FÜR KONFIGURIERBARE WERTE (werden von index.html überschrieben) */
-    --config-font-family: "Segoe UI", Roboto, sans-serif; 
-    --config-static-h2-size: 2.5em;
-    --config-rotation-h2-size: 3.5em;
-    --config-static-td-size: 2.0em;
-    --config-rotation-td-size: 1.5em;
+    /* ── Farbpalette ───────────────────────────────────────────
+       Basis:     Tiefes Anthrazit-Blau  → professionell, dunkel
+       Akzent:    Warmes Bernstein/Gold  → thematisch (Darts/Podium), pfiffig
+       Sekundär:  Eisblau (dezent)       → für sekundäre Elemente & Uhr
+    ──────────────────────────────────────────────────────────── */
+    --clr-bg:             #0d1117;
+    --clr-surface:        rgba(18, 26, 38, 0.72);
+    --clr-surface-nav:    rgba(10, 15, 22, 0.92);
+    --clr-border:         rgba(255, 255, 255, 0.08);
+
+    --clr-accent:         #f0a500;
+    --clr-accent-glow:    rgba(240, 165, 0, 0.35);
+    --clr-accent-dim:     rgba(240, 165, 0, 0.12);
+
+    --clr-ice:            #60c8e8;
+    --clr-ice-glow:       rgba(96, 200, 232, 0.25);
+
+    --clr-text:           #f0f4f8;
+    --clr-text-muted:     rgba(240, 244, 248, 0.50);
+
+    --clr-gold:           #ffd700;
+    --clr-silver:         #c0c0c0;
+    --clr-bronze:         #cd7f32;
+
+    /* ── Schatten ───────────────────────────────────────────── */
+    --shadow-card:        0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px var(--clr-border);
+    --shadow-card-hover:  0 8px 32px rgba(0,0,0,0.65), 0 0 20px var(--clr-accent-glow);
+    --shadow-nav:         0 2px 20px rgba(0,0,0,0.6);
+    --shadow-glow-gold:   0 0 16px var(--clr-accent-glow);
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    --nav-height:         52px;
+    --radius-card:        14px;
+    --radius-pill:        8px;
+
+    /* ── Konfigurierbare Werte (werden von index.html gesetzt) ── */
+    --config-font-family:       "Segoe UI", Roboto, sans-serif;
+    --config-static-h2-size:    2.5em;
+    --config-rotation-h2-size:  3.5em;
+    --config-static-td-size:    2.0em;
+    --config-rotation-td-size:  1.5em;
 }
 
-/* === 1.2 Basis-Layout === */
+
+/* ############################################################
+   ABSCHNITT 2: BASIS
+   ############################################################ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
 body {
     margin: 0;
-    /* NEU: Wende die konfigurierte Schriftart an */
-    font-family: var(--config-font-family); 
-    color: var(--text-color);
-    background: #000 no-repeat center center fixed;
+    font-family: var(--config-font-family);
+    color: var(--clr-text);
+    background: var(--clr-bg) no-repeat center center fixed;
     background-size: cover;
     height: 100vh;
     overflow: hidden;
 }
 
 a {
-    color: var(--neon-blue);
+    color: var(--clr-accent);
     text-decoration: none;
+    transition: color 0.2s;
 }
+a:hover { color: #ffc740; }
 
 
 /* ############################################################
-   ABSCHNITT 2: STATISCHE ELEMENTE (Header & Overlay)
+   ABSCHNITT 3: NAVIGATIONSLEISTE
+   3-Spalten-Grid → Uhr ist pixel-genau mittig
    ############################################################ */
 
-/* NEU: CONTAINER für die Menüleiste (Umschaltung, IP, Uhr, Admin) */
 #top-nav-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
+    position: fixed;
+    top: 0; left: 0;
     width: 100%;
-    z-index: 10;
-    
-    display: flex;
-    /* Verteilt die vier Elemente: Toggle | IP | Uhr | Admin */
-    justify-content: space-between; 
+    height: var(--nav-height);
+    z-index: 100;
+
+    /* Schlüssel: 3 gleichbreite Spalten */
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    
-    padding: 10px 20px;
-    box-sizing: border-box;
-    
-    background: rgba(0,0,0,0.85); /* Einheitlicher dunkler Hintergrund */
-    box-shadow: 0 5px 15px rgba(0, 224, 255, 0.3); /* Neon-Schatten nach unten */
-    backdrop-filter: blur(4px); 
-    height: 40px; /* Feste Höhe, damit die Elemente sauber ausgerichtet sind */
+
+    padding: 0 16px;
+    background: var(--clr-surface-nav);
+    box-shadow: var(--shadow-nav);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--clr-border);
 }
 
+#nav-left  { display: flex; align-items: center; justify-content: flex-start; gap: 10px; }
+#nav-center { display: flex; align-items: center; justify-content: center; }
+#nav-right  { display: flex; align-items: center; justify-content: flex-end; }
 
-/* === 2.2 Umschalter & Admin-Link (Innere Elemente) === */
-/* Standardstil für alle Elemente, Positionierung wird durch #top-nav-bar übernommen */
-#mode-toggle, #admin-link, #ip-address, #clock { 
-    position: static !important; 
-    transform: none !important;
-    
-    color: white; 
-    text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
-    padding: 8px 15px; 
-    border-radius: 8px;
-    
-    font-size: 1.1em; 
-    cursor: pointer; 
+/* ── Toggle & Admin-Link ── */
+#mode-toggle,
+#admin-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(240, 165, 0, 0.4);
+    background: var(--clr-accent-dim);
+    color: var(--clr-accent);
+    font-size: 0.88em;
+    font-weight: 600;
+    font-family: var(--config-font-family);
+    letter-spacing: 0.03em;
+    cursor: pointer;
     user-select: none;
-    transition: all 0.3s ease;
-    
-    /* Verhindert, dass die zentralen Elemente zu viel Platz beanspruchen */
-    flex-shrink: 0; 
+    transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
+    white-space: nowrap;
+}
+#mode-toggle:hover,
+#admin-link:hover {
+    background: rgba(240, 165, 0, 0.22);
+    border-color: var(--clr-accent);
+    box-shadow: var(--shadow-glow-gold);
 }
 
-/* Spezieller Stil für Umschalter und Admin-Link (Buttons) */
-#mode-toggle, #admin-link {
-    background: rgba(0,0,0,0.4); 
-    border: 1px solid var(--neon-blue);
-}
-#mode-toggle:hover, #admin-link:hover { 
-    background: rgba(0,224,255,0.1); 
-    transform: scale(1.05); 
-}
-
-/* === 2.3 IP-Adresse & Uhr (Zentrale Info-Elemente) - NEU/KORRIGIERT === */
-#ip-address, #clock {
-    font-size: 1.5em; 
-    color: var(--neon-blue); 
-    font-weight: bold;
-    background: rgba(0,0,0,0.2); 
-    cursor: default;
-    
-    /* Setzt IP und Uhr in die Mitte nebeneinander */
-    /* Der 'space-between' in #top-nav-bar sorgt dafür, dass die Gruppe zentriert ist */
-    margin: 0 10px; 
-    padding: 5px 10px;
-}
-
-/* Uhr mit etwas größerer Schrift und dunklerem Hintergrund */
+/* ── Uhr ── */
 #clock {
-    font-size: 2.3em;
-    background: rgba(0,0,0,0.4);
-}
-
-/* Die alte #clock Regel ist jetzt in #ip-address und #clock integriert und somit entfernt. */
-
-
-/* === 2.5 Rotations-Bild-Container (Freistehendes Top-Bild) === */
-#player-photo-container {
-    position: absolute; left: 5%; top: 50%; transform: translateY(-50%);
-    display: none; 
-    justify-content: center; align-items: center;
-    width: 200px; height: 200px; z-index: 5;
-}
-#player-photo {
-    width: 180px; height: 180px; border-radius: 50%;
-    box-shadow: 0 0 30px rgba(0,224,255,0.6); object-fit: cover;
+    font-size: 1.65em;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.05em;
+    color: var(--clr-text);
+    text-shadow: 0 0 20px var(--clr-ice-glow);
+    user-select: none;
+    white-space: nowrap;
 }
 
 
 /* ############################################################
-   ABSCHNITT 3: STATISCHER ANZEIGEMODUS (Standard-Layout)
+   ABSCHNITT 4: HAUPT-CONTAINER & GRID
    ############################################################ */
 
-/* === 3.1 Container-Struktur === */
 .container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* Reduziere den Margin, da die Uhr jetzt oben in der Nav-Bar ist (40px + 10px Padding oben/unten) */
-    justify-content: space-evenly; 
-    height: 90vh; /* Genug Platz für die beiden Reihen */
-    margin-top: 10vh; /* Platz für die Menüleiste */
+    justify-content: space-evenly;
+    height: calc(100vh - var(--nav-height));
+    margin-top: var(--nav-height);
     width: 100%;
-    box-sizing: border-box;
+    padding: 8px 0;
 }
 
 .top, .bottom {
-    flex: 1; 
-    width: 95%; 
-    min-width: 1000px;
+    flex: 1;
+    width: 96%;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    gap: 3%; 
-    align-items: stretch; 
-    box-sizing: border-box; 
-    margin-top: 0.5vh; 
-    margin-bottom: 0.5vh; 
+    gap: 1.5%;
+    align-items: stretch;
+    max-height: 47%;
 }
 
-
-/* Sektionen (Die Boxen, die die Cards enthalten) */
 .section-block {
-    flex: 1 1 48.5%; 
+    flex: 1 1 48.5%;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.5s ease; 
+    align-items: stretch;
+    transition: opacity 0.5s ease;
 }
 
-/* === 3.2 Karten (Card) === */
+
+/* ############################################################
+   ABSCHNITT 5: KARTEN
+   ############################################################ */
+
 .card {
-    background: var(--card-bg);
-    backdrop-filter: blur(8px) brightness(1.2);
-    border-radius: 15px;
-    flex: 1; 
-    box-shadow: 0 0 25px var(--card-shadow-light);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    min-width: unset; 
-    min-height: unset; 
-    width: 100%; 
-    height: 100%; 
+    background: var(--clr-surface);
+    backdrop-filter: blur(14px) brightness(1.15);
+    border-radius: var(--radius-card);
+    border: 1px solid var(--clr-border);
+    flex: 1;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 25px 30px; 
+    padding: 18px 24px 16px;
+    overflow: hidden;
     box-sizing: border-box;
-    max-height: unset; 
 }
 .card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 0 30px var(--card-shadow-hover);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-card-hover);
 }
 
-/* Fix für statische Ansicht: Verhindert Scrollbalken und unnötigen Platz. */
-.card[data-view="static"] {
-    overflow: hidden !important;
+/* Goldener Akzent-Balken oben */
+.card::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--clr-accent), transparent);
+    border-radius: 2px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
 }
 
-/* === 3.3 Spieler-Content innerhalb der Card (Statische Ansicht) === */
+/* ── Spielerfoto + Tabelle ── */
 .card-content {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
-    justify-content: space-between;
     width: 100%;
-    margin-top: 10px; 
+    gap: 14px;
+    margin-top: 4px;
 }
-.card-left { flex: 0 0 110px; display: flex; justify-content: center; align-items: flex-start; } 
-.card-right { flex: 1; display: flex; justify-content: center; }
+.card-left  { flex: 0 0 96px; display: flex; justify-content: center; align-items: flex-start; }
+.card-right { flex: 1; display: flex; justify-content: center; min-width: 0; }
+
 .player-img {
-    width: 110px; height: 110px; border-radius: 50%;
-    box-shadow: 0 0 20px var(--neon-shadow); flex-shrink: 0;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(240, 165, 0, 0.5);
+    box-shadow: 0 0 16px var(--clr-accent-glow);
+    flex-shrink: 0;
 }
-body.rotating .static-only { display: none !important; }
+
+/* ── Rotationsmodus: großes Foto, vertikal zentriert ── */
+body.rotating .card-content {
+    align-items: center;
+    flex: 1;
+}
+body.rotating .card-left {
+    flex: 0 0 295px;
+    align-items: center;
+}
+body.rotating .player-img {
+    width: 295px;
+    height: 295px;
+    box-shadow: 0 0 28px var(--clr-accent-glow);
+}
+
+/* Rotation zeigt dasselbe Layout wie statisch → static-only wieder einblenden */
+body.rotating .static-only { display: flex !important; }
 
 
 /* ############################################################
-   ABSCHNITT 4: ALLGEMEINE TYPOGRAFIE & TABELLEN
+   ABSCHNITT 6: TYPOGRAFIE & TABELLEN
    ############################################################ */
 
-/* === 4.1 Überschriften (Standard/Statisch) === */
 h2 {
-    margin: 10px 0 5px;
-    /* NEU: Schriftgröße aus Variable */
-    font-size: var(--config-static-h2-size); 
+    margin: 0 0 2px;
+    font-size: var(--config-static-h2-size);
+    font-weight: 700;
     text-align: center;
-    text-shadow: 0 0 10px #000, 0 0 15px var(--text-shadow-h2);
+    color: var(--clr-text);
+    letter-spacing: 0.01em;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.5), 0 0 24px rgba(240,165,0,0.18);
+    flex-shrink: 0;
 }
 
-/* === 4.2 Tabellen (Standard) === */
-table { 
-    width: 100%;             
+table {
+    width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;          
-    text-align: center;        
+    margin-top: 6px;
+    text-align: center;
 }
-th, td { 
-    padding: 10px; 
-    border-bottom: 1px solid rgba(255,255,255,0.1); 
-    text-align: center; 
+
+th, td {
+    padding: 7px 10px;
+    text-align: center;
 }
+
 th {
     text-transform: uppercase;
-    font-size: 1.5em;  
-    color: var(--neon-blue);  
-    letter-spacing: 1px;       
+    font-size: 0.88em;
+    font-weight: 700;
+    color: var(--clr-text-muted);
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid rgba(240, 165, 0, 0.2);
+    padding-bottom: 9px;
 }
 
 td {
-    /* NEU: Schriftgröße aus Variable */
-    font-size: var(--config-static-td-size);        
+    font-size: var(--config-static-td-size);
+    border-bottom: 1px solid var(--clr-border);
 }
 
-tr:nth-child(even) { 
-    background: rgba(255,255,255,0.03); 
-}
+tr:last-child td { border-bottom: none; }
+tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+/* ── Podium-Zeilen ── */
+tr.gold   { background: rgba(255,215,  0, 0.07) !important; box-shadow: inset 3px 0 0 var(--clr-gold); }
+tr.silver { background: rgba(192,192,192, 0.07) !important; box-shadow: inset 3px 0 0 var(--clr-silver); }
+tr.bronze { background: rgba(205,127, 50, 0.07) !important; box-shadow: inset 3px 0 0 var(--clr-bronze); }
+
+tr.gold   td { color: var(--clr-gold);   text-shadow: 0 0 10px rgba(255,215,0,0.35); }
+tr.silver td { color: var(--clr-silver); text-shadow: 0 0 8px  rgba(192,192,192,0.25); }
+tr.bronze td { color: var(--clr-bronze); text-shadow: 0 0 8px  rgba(205,127,50,0.25); }
+
 
 /* ############################################################
-   ABSCHNITT 5: ROTATIONSMODUS-ANPASSUNGEN (body.rotating)
+   ABSCHNITT 7: QR-CODE PANEL
+   Verschoben in die rechte untere Ecke – stört nicht mehr
    ############################################################ */
 
-/* === 5.1 Layout-Anpassung im Rotationsmodus === */
+#qr-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    z-index: 200;
+    background: var(--clr-surface-nav);
+    border: 1px solid rgba(240, 165, 0, 0.2);
+    border-radius: var(--radius-card);
+    padding: 10px 12px 7px;
+    backdrop-filter: blur(12px);
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.45);
+}
+#qr-panel img {
+    width: 100px;
+    height: 100px;
+    display: block;
+    border-radius: 5px;
+    padding: 2px;
+    background: rgba(255,255,255,0.05);
+}
+#qr-panel span {
+    font-size: 0.65em;
+    color: var(--clr-text-muted);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+body.rotating #qr-panel { opacity: 0; }
+
+
+/* ############################################################
+   ABSCHNITT 8: ROTATIONSMODUS
+   ############################################################ */
+
+#player-photo-container {
+    position: fixed;
+    left: 5%;
+    top: 50%;
+    transform: translateY(-50%);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    width: 220px;
+    height: 220px;
+    z-index: 5;
+}
+#player-photo {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(240, 165, 0, 0.6);
+    box-shadow: 0 0 40px var(--clr-accent-glow), 0 0 80px rgba(240,165,0,0.12);
+}
+
 body.rotating .container {
     justify-content: center;
     align-items: center;
-    min-width: unset;
     margin-top: 0;
     height: 100vh;
+    padding: 0;
 }
 body.rotating .top,
 body.rotating .bottom {
-    flex: 0 0 auto !important; 
-    width: 100%; 
+    flex: 0 0 auto !important;
+    width: 100%;
     min-width: unset;
-    justify-content: center !important; 
+    max-height: none;
+    justify-content: center !important;
     align-items: center !important;
-    margin-top: 0; 
-    margin-bottom: 0;
-    gap: 0; 
+    margin: 0; gap: 0;
 }
-
-/* Sektion nimmt vollen Platz ein */
 body.rotating .section-block {
-    display: none; 
-    opacity: 0; 
-    flex: 0 0 auto; 
-    width: 70%;
-    max-width: 1000px;
-    min-height: 600px; 
-    margin: auto; 
+    display: none;
+    opacity: 0;
+    width: min(68vw, 900px);
+    max-height: calc(100vh - var(--nav-height) - 40px);
+    margin: auto;
+    align-items: stretch;
 }
 body.rotating .section-block .card {
-    flex: 1; 
-    min-width: unset;
-    min-height: unset;
     width: 100%;
-    /* Im Rotationsmodus erlauben wir optional Scrollbalken, falls 10+ Zeilen nicht passen */
-    max-height: 90vh; 
-    overflow-y: auto; 
+    height: auto;
+    max-height: calc(100vh - var(--nav-height) - 40px);
+    overflow-y: auto;
 }
 
+/* Rotation: Typografie identisch zu statisch, nur h2 größer */
+body.rotating h2  { font-size: var(--config-rotation-h2-size); margin-bottom: 16px; }
+body.rotating th  { font-size: 0.88em; }
+body.rotating td  { font-size: var(--config-static-td-size); padding: 8px 10px; }
 
-/* === 5.2 TYPOGRAFIE-ANPASSUNGEN IM ROTATIONSMODUS === */
-
-/* Überschrift */
-body.rotating h2 {
-    /* NEU: Schriftgröße aus Variable */
-    font-size: var(--config-rotation-h2-size); 
-    margin-bottom: 30px;
+/* ── Top-3 Schriftgröße: STATISCH
+   calc() auf Basis der td-Variable → immer relativ zum konfigurierten Wert
+   nth-child(2) = Platz 1 (nach Header-Zeile), nth-child(3) = Platz 2 usw.
+── */
+.card[data-view="static"] table tr:nth-child(2) td,
+body.rotating             table tr:nth-child(2) td {
+    font-size: calc(var(--config-static-td-size) * 1.22) !important;
+    font-weight: 700;
+}
+.card[data-view="static"] table tr:nth-child(3) td,
+body.rotating             table tr:nth-child(3) td {
+    font-size: calc(var(--config-static-td-size) * 1.12) !important;
+    font-weight: 600;
+}
+.card[data-view="static"] table tr:nth-child(4) td,
+body.rotating             table tr:nth-child(4) td {
+    font-size: calc(var(--config-static-td-size) * 1.05) !important;
+    font-weight: 500;
 }
 
-/* Tabellen-Zellen */
-body.rotating td {
-    /* NEU: Schriftgröße aus Variable */
-    font-size: var(--config-rotation-td-size);
+/* ── Datums-Zelle: relativ zur td-Basisgröße, aber nie kleiner als 0.6rem ── */
+td.td-date-small {
+    font-size: max(calc(var(--config-static-td-size) * 0.42), 0.6rem) !important;
+    color: var(--clr-text-muted) !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    padding-top: 1px !important;
+    padding-bottom: 1px !important;
+    text-shadow: none !important;
 }
 
-/* Tabellenschrift (Basis) im Rotationsmodus anpassen */
-body.rotating table {
-    font-size: 1.4em; 
-    margin-top: 20px;
-}
-
-
-/* Top 3 Hervorhebung (ACHTUNG: nth-child beginnt bei 1!) */
-body.rotating table tr:nth-child(2) { /* 1. Platz */
-    font-size: 1.8em; 
-    color: gold; 
-    text-shadow: 0 0 8px gold;
-}
-body.rotating table tr:nth-child(3) { /* 2. Platz */
-    font-size: 1.6em; 
-    color: silver;
-    text-shadow: 0 0 5px silver;
-}
-body.rotating table tr:nth-child(4) { /* 3. Platz */
-    font-size: 1.4em; 
-    color: #cd7f32; 
-    text-shadow: 0 0 4px #cd7f32;
-}
-
-
-/* === 5.3 Profilbild-Anpassung im Rotationsmodus === */
-body.rotating #player-photo-container {
-    width: 300px; 
-    height: 300px; 
-    left: 8%; 
-}
-body.rotating #player-photo {
-    width: 280px; 
-    height: 280px; 
-    box-shadow: 0 0 40px rgba(0,224,255,0.8), 0 0 15px rgba(255, 255, 255, 0.4); 
-}
+/* Spielerfoto-Container (schwebend links) im Rotationsmodus nicht mehr nötig,
+   da das Foto jetzt innerhalb der Karte angezeigt wird wie im statischen Modus */
+body.rotating #player-photo-container { display: none !important; }
