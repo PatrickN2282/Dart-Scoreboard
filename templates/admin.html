@@ -2,268 +2,473 @@
 <html lang="de">
 <head>
     <meta charset="utf-8">
-    <title>Dart Highscore Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dart Highscore · Admin</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
 </head>
 <body style="{% if bg_image %}background-image: url('{{ url_for('static', filename=bg_image) }}');{% endif %}">
-    <div class="admin-container">
-        <h1>Dart Highscore Verwaltung</h1>
-        
-        <a href="/" class="back-link">← Zurück zum Scoreboard</a>
 
-        <div class="tab-navigation">
-            <button class="tab-link active" data-tab="tab-score">🎯 Score eintragen</button>
-            <button class="tab-link" data-tab="tab-overview">📊 Score Übersicht</button>
-            <button class="tab-link" data-tab="tab-player">👤 Spieler verwalten</button>
-            <button class="tab-link" data-tab="tab-config">⚙️ Design & Media</button>
-        </div>
+    <!-- ── Top-Leiste ── -->
+    <header class="admin-topbar">
+        <h1>🎯 Dart Highscore · Admin</h1>
+        <a href="/" class="back-link">← Scoreboard</a>
+    </header>
 
-        <div id="tab-score" class="tab-content active">
-            
-            <section class="admin-section">
-                <h2>Neuen Score/Spieler eintragen</h2>
-                <form method="POST" action="{{ url_for('admin') }}" class="input-form">
-                    <input type="hidden" name="action" value="add_score">
-                    
-                    <div class="input-group">
-                        <label for="player_id">Bestehender Spieler:</label>
-                        <select name="player_id" id="player_id">
-                            <option value="">-- Wähle einen Spieler --</option>
-                            {% for player in players %}
-                            <option value="{{ player.id }}">{{ player.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+    <!-- ── Haupt-Layout ── -->
+    <div class="admin-body">
 
-                    <div class="input-group">
-                        <label for="new_player_name">Oder neuen Spieler anlegen:</label>
-                        <input type="text" name="new_player_name" id="new_player_name" placeholder="Name des neuen Spielers">
-                    </div>
-                    
-                    <hr>
+        <!-- ── Sidebar-Navigation ── -->
+        <nav class="admin-sidebar">
+            <button class="tab-link active" data-tab="tab-score">
+                <span class="tab-icon">🎯</span> Score eintragen
+            </button>
+            <button class="tab-link" data-tab="tab-overview">
+                <span class="tab-icon">📊</span> Übersicht
+            </button>
+            <button class="tab-link" data-tab="tab-player">
+                <span class="tab-icon">👤</span> Spieler
+            </button>
+            <button class="tab-link" data-tab="tab-config">
+                <span class="tab-icon">⚙️</span> Design & Limits
+            </button>
+        </nav>
 
-                    <div class="input-group">
-                        <label for="legs">Gewonnene Legs:</label>
-                        <input type="number" name="legs" id="legs" min="0" value="0">
-                    </div>
+        <!-- ── Inhalt ── -->
+        <main class="admin-content">
 
-                    <div class="input-group">
-                        <label for="finish">Höchstes Finish:</label>
-                        <input type="number" name="finish" id="finish" min="0" max="170" value="0">
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="max180">Anzahl 180er:</label>
-                        <input type="number" name="max180" id="max180" min="0" value="0">
-                    </div>
+            <!-- ═══════════════════════════════════════
+                 TAB 1: SCORE EINTRAGEN
+            ═══════════════════════════════════════ -->
+            <div id="tab-score" class="tab-content active">
 
-                    <div class="input-group">
-                        <label for="darts301">301 in X Darts (wenigster):</label>
-                        <input type="number" name="darts301" id="darts301" min="3" value="0">
-                    </div>
+                <div class="panel">
+                    <h2 class="panel-title">🎯 Score eintragen</h2>
 
-                    <button type="submit" class="submit-button">Score speichern</button>
-                </form>
-            </section>
-        </div>
+                    <form method="POST" action="{{ url_for('admin') }}">
+                        <input type="hidden" name="action" value="add_score">
 
-        <div id="tab-overview" class="tab-content">
-            <section class="admin-section">
-                <h2>Score-Übersicht & Einzeleintrag löschen</h2>
-                <div class="table-scroll">
-                    <table>
-                        <tr>
-                            <th>Löschen</th><th>Datum</th><th>Name</th><th>Legs</th><th>Finish</th><th>180er</th><th>301 Darts</th>
-                        </tr>
-                        {% for score in scores %}
-                        <tr>
-                            <td>
-                                <form method="POST" action="{{ url_for('admin') }}" style="margin: 0;">
-                                    <input type="hidden" name="action" value="delete_score">
-                                    <input type="hidden" name="score_index_to_delete" value="{{ score.index }}">
-                                    <button type="submit" class="delete-button" style="padding: 4px 8px;" onclick="return confirm('Score von {{ score.name }} am {{ score.date }} wirklich löschen?');">🗑️</button>
-                                </form>
-                            </td>
-                            <td>{{ score.date }}</td>
-                            <td>{{ score.name }}</td>
-                            <td>{{ score.legs }}</td>
-                            <td>{{ score.finish }}</td>
-                            <td>{{ score.max180 }}</td>
-                            <td>{{ score.darts301 }}</td> </tr>
-                        {% endfor %}
-                    </table>
+                        <!-- Spieler-Auswahl -->
+                        <p class="section-label">Spieler</p>
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="player_id">Bestehender Spieler</label>
+                                <select name="player_id" id="player_id">
+                                    <option value="">– Spieler wählen –</option>
+                                    {% for player in players %}
+                                    <option value="{{ player.id }}">{{ player.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="new_player_name">Oder neuen Spieler anlegen</label>
+                                <input type="text" name="new_player_name" id="new_player_name"
+                                       placeholder="Name des neuen Spielers">
+                            </div>
+                        </div>
+
+                        <hr class="form-divider" style="margin: 18px 0;">
+
+                        <!-- Score-Felder: 2×2 Grid -->
+                        <p class="section-label">Statistik-Werte</p>
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="legs">🏆 Gewonnene Legs</label>
+                                <input type="number" name="legs" id="legs" min="0" value="0">
+                            </div>
+                            <div class="input-group">
+                                <label for="finish">🎯 Höchstes Finish</label>
+                                <input type="number" name="finish" id="finish" min="0" max="170" value="0">
+                                <span class="info-text">Maximalwert: 170</span>
+                            </div>
+                            <div class="input-group">
+                                <label for="max180">💥 Anzahl 180er</label>
+                                <input type="number" name="max180" id="max180" min="0" value="0">
+                            </div>
+                            <div class="input-group">
+                                <label for="darts301">💨 301 in X Darts</label>
+                                <input type="number" name="darts301" id="darts301" min="6" value="0">
+                                <span class="info-text">0 = kein Eintrag. Min. 6 Darts.</span>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">💾 Score speichern</button>
+                        </div>
+                    </form>
                 </div>
-            </section>
-        </div>
 
-        <div id="tab-player" class="tab-content">
-            <section class="admin-section">
-                <h2>Spielerbild hochladen</h2>
-                <form method="POST" action="{{ url_for('admin') }}" enctype="multipart/form-data" class="input-form">
-                    <input type="hidden" name="action" value="upload_image">
-                    <div class="input-group">
-                        <label for="player_image_id">Spieler:</label>
-                        <select name="player_id" id="player_image_id" required>
-                            <option value="">-- Wähle einen Spieler --</option>
-                            {% for player in players %}
-                            <option value="{{ player.id }}">{{ player.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="input-group file-upload">
-                        <label for="player_image">Bild (JPG/PNG):</label>
-                        <input type="file" name="player_image" id="player_image" accept="image/png, image/jpeg" required>
-                    </div>
-                    <button type="submit" class="submit-button">Bild hochladen</button>
-                </form>
-            </section>
+                <!-- Letzten Eintrag rückgängig -->
+                <div class="panel panel-danger">
+                    <h2 class="panel-title">↩️ Letzten Eintrag rückgängig</h2>
+                    <p style="font-size:0.88em; color: var(--clr-text-muted); margin: 0 0 16px;">
+                        Entfernt den zuletzt gespeicherten Score-Eintrag unwiderruflich.
+                    </p>
+                    <form method="POST" action="{{ url_for('admin') }}">
+                        <input type="hidden" name="action" value="undo_last_score">
+                        <div class="form-actions" style="margin-top: 0;">
+                            <button type="submit" class="btn btn-danger"
+                                    onclick="return confirm('Letzten Score-Eintrag wirklich löschen?')">
+                                ↩️ Rückgängig machen
+                            </button>
+                        </div>
+                    </form>
+                </div>
 
-            <hr>
+            </div><!-- /tab-score -->
 
-            <section class="admin-section">
-                <h2>Spieler dauerhaft löschen</h2>
-                <form method="POST" action="{{ url_for('admin') }}" class="input-form">
-                    <input type="hidden" name="action" value="delete_player">
-                    <div class="input-group">
-                        <label for="player_id_to_delete">Spieler:</label>
-                        <select name="player_id_to_delete" id="player_id_to_delete" required>
-                            <option value="">-- Wähle einen Spieler --</option>
-                            {% for player in players %}
-                            <option value="{{ player.id }}">{{ player.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <button type="submit" class="delete-button" onclick="return confirm('ACHTUNG: Dies löscht den Spieler und ALLE seine Scores endgültig! Wirklich löschen?');">Spieler löschen</button>
-                </form>
-            </section>
-        </div>
 
-        <div id="tab-config" class="tab-content">
-            
-            <section class="admin-section">
-                <h2>Hintergrundbild festlegen</h2>
-                <form method="POST" action="{{ url_for('admin') }}" enctype="multipart/form-data" class="input-form">
-                    <input type="hidden" name="action" value="upload_background">
-                    <div class="input-group file-upload">
-                        <label for="background_image">Hintergrund (JPG/PNG):</label>
-                        <input type="file" name="background_image" id="background_image" accept="image/png, image/jpeg" required>
+            <!-- ═══════════════════════════════════════
+                 TAB 2: SCORE-ÜBERSICHT
+            ═══════════════════════════════════════ -->
+            <div id="tab-overview" class="tab-content">
+
+                <div class="panel">
+                    <h2 class="panel-title">📊 Alle Score-Einträge</h2>
+
+                    <div class="table-scroll">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Datum</th>
+                                    <th>Spieler</th>
+                                    <th style="text-align:center">🏆 Legs</th>
+                                    <th style="text-align:center">🎯 Finish</th>
+                                    <th style="text-align:center">💥 180er</th>
+                                    <th style="text-align:center">💨 301 Darts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for score in scores %}
+                                <tr>
+                                    <td style="width:40px;">
+                                        <form method="POST" action="{{ url_for('admin') }}" style="margin:0;">
+                                            <input type="hidden" name="action" value="delete_score">
+                                            <input type="hidden" name="score_index_to_delete" value="{{ score.index }}">
+                                            <button type="submit" class="btn btn-danger btn-icon"
+                                                onclick="return confirm('Score von {{ score.name }} ({{ score.date }}) löschen?')">
+                                                🗑️
+                                            </button>
+                                        </form>
+                                    </td>
+                                    <td class="td-date">{{ score.date }}</td>
+                                    <td class="td-name">{{ score.name }}</td>
+                                    <td class="td-num {% if score.legs > 0 %}has-value{% endif %}">
+                                        {{ score.legs if score.legs > 0 else '–' }}
+                                    </td>
+                                    <td class="td-num {% if score.finish > 0 %}has-value{% endif %}">
+                                        {{ score.finish if score.finish > 0 else '–' }}
+                                    </td>
+                                    <td class="td-num {% if score.max180 > 0 %}has-value{% endif %}">
+                                        {{ score.max180 if score.max180 > 0 else '–' }}
+                                    </td>
+                                    <td class="td-num {% if score.darts301 > 0 %}has-value{% endif %}">
+                                        {{ score.darts301 if score.darts301 > 0 else '–' }}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="table-empty">Noch keine Score-Einträge vorhanden.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                    <button type="submit" class="submit-button">Hintergrund hochladen</button>
-                    {% if background_exists %}
-                        <p class="info-text">Aktueller Hintergrund ist geladen.</p>
+                </div>
+
+            </div><!-- /tab-overview -->
+
+
+            <!-- ═══════════════════════════════════════
+                 TAB 3: SPIELER VERWALTEN
+            ═══════════════════════════════════════ -->
+            <div id="tab-player" class="tab-content">
+
+                <!-- Spielerliste mit Aktionen -->
+                <div class="panel">
+                    <h2 class="panel-title">👤 Spieler-Übersicht</h2>
+
+                    {% if players %}
+                    <div class="player-list">
+                        {% for player in players %}
+                        <div class="player-row">
+                            <img src="{{ url_for('static', filename='uploads/' ~ player.image) }}"
+                                 alt="{{ player.name }}"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                            <span class="player-row-name">{{ player.name }}</span>
+                            <div class="player-row-actions">
+                                <!-- Umbenennen (Inline-Toggle) -->
+                                <button class="btn btn-ghost btn-icon"
+                                        onclick="toggleRename({{ player.id }})"
+                                        title="Umbenennen">✏️</button>
+                                <!-- Löschen -->
+                                <form method="POST" action="{{ url_for('admin') }}" style="margin:0;">
+                                    <input type="hidden" name="action" value="delete_player">
+                                    <input type="hidden" name="player_id_to_delete" value="{{ player.id }}">
+                                    <button type="submit" class="btn btn-danger btn-icon"
+                                            title="Spieler löschen"
+                                            onclick="return confirm('ACHTUNG: {{ player.name }} und ALLE seine Scores dauerhaft löschen?')">
+                                        🗑️
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <!-- Umbenennen-Formular (versteckt, per JS einblendbar) -->
+                        <div id="rename-{{ player.id }}" style="display:none; padding: 0 0 4px 50px;">
+                            <form method="POST" action="{{ url_for('admin') }}"
+                                  style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <input type="hidden" name="action" value="rename_player">
+                                <input type="hidden" name="rename_player_id" value="{{ player.id }}">
+                                <div class="input-group" style="flex:1; min-width:160px;">
+                                    <input type="text" name="rename_player_name"
+                                           placeholder="Neuer Name für {{ player.name }}"
+                                           required style="margin:0;">
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="height:38px;">
+                                    ✔ Speichern
+                                </button>
+                                <button type="button" class="btn btn-ghost" style="height:38px;"
+                                        onclick="toggleRename({{ player.id }})">
+                                    Abbrechen
+                                </button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
                     {% else %}
-                        <p class="info-text">Kein Hintergrundbild geladen.</p>
+                    <p style="color: var(--clr-text-muted); font-style:italic;">
+                        Noch keine Spieler angelegt. Beim ersten Score-Eintrag wird automatisch ein Spieler erstellt.
+                    </p>
                     {% endif %}
-                </form>
-            </section>
+                </div>
 
-            <hr>
+                <!-- Spielerbild hochladen -->
+                <div class="panel">
+                    <h2 class="panel-title">🖼️ Spielerbild hochladen</h2>
+                    <form method="POST" action="{{ url_for('admin') }}" enctype="multipart/form-data">
+                        <input type="hidden" name="action" value="upload_image">
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="player_image_id">Spieler</label>
+                                <select name="player_id" id="player_image_id" required>
+                                    <option value="">– Spieler wählen –</option>
+                                    {% for player in players %}
+                                    <option value="{{ player.id }}">{{ player.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Bild (JPG / PNG)</label>
+                                <div class="file-input-wrapper">
+                                    <input type="file" name="player_image" id="player_image"
+                                           accept="image/png,image/jpeg" required
+                                           onchange="showFileName(this,'player-file-name')">
+                                    <div class="file-input-display">
+                                        📁 Datei auswählen …
+                                    </div>
+                                </div>
+                                <div class="file-name-display" id="player-file-name"></div>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">⬆️ Bild hochladen</button>
+                        </div>
+                    </form>
+                </div>
 
-            <section class="admin-section">
-                <h2>Design- und Limit-Einstellungen</h2>
-                <form method="POST" action="{{ url_for('admin') }}" class="input-form">
-                    <input type="hidden" name="action" value="save_config">
-                    
-                    <h3>Schriftart</h3>
-					<div class="input-group">
-						<label for="font_family">Schriftart für Scoreboard:</label>
-						<select name="font_family" id="font_family" required>
-							<option value="'Segoe UI', Roboto, sans-serif" {% if config.font_family == "'Segoe UI', Roboto, sans-serif" %}selected{% endif %}>Segoe UI (Modern)</option>
-							<option value="Arial, sans-serif" {% if config.font_family == "Arial, sans-serif" %}selected{% endif %}>Arial (Standard)</option>
-							<option value="Verdana, sans-serif" {% if config.font_family == "Verdana, sans-serif" %}selected{% endif %}>Verdana (Lesbar)</option>
-							<option value="'Courier New', monospace" {% if config.font_family == "'Courier New', monospace" %}selected{% endif %}>Courier New (Monospace)</option>
-                    
-							<option value="Impact, fantasy" {% if config.font_family == "Impact, fantasy" %}selected{% endif %}>Impact (Fett/Markant)</option>
-							<option value="'Comic Sans MS', cursive" {% if config.font_family == "'Comic Sans MS', cursive" %}selected{% endif %}>Comic Sans MS (Locker)</option>
-                    
-							<option value="'Oswald', sans-serif" {% if config.font_family == "'Oswald', sans-serif" %}selected{% endif %}>Oswald (Kompakt/Google Font - Import nötig)</option>
-							<option value="'Roboto Condensed', sans-serif" {% if config.font_family == "'Roboto Condensed', sans-serif" %}selected{% endif %}>Roboto Condensed (Google Font - Import nötig)</option>
-						</select>
-						<span class="info-text">Hinweis: Für Google Fonts (Oswald, Roboto Condensed) muss die Schriftart in der 'main.css' importiert werden.</span>
-					</div>
-
-                    <h3>Einträge pro Tabelle (Limits)</h3>
-                    <div class="input-group">
-                        <label for="static_limit">Statische Ansicht (2x2):</label>
-                        <input type="number" name="static_limit" id="static_limit" value="{{ config.static_limit }}" min="1" max="50" required>
-                        <span class="info-text">Anzahl Zeilen, die SICHTBAR sind (Rest wird via CSS ausgeblendet).</span>
-                    </div>
-                    <div class="input-group">
-                        <label for="rotation_limit">Rotationsansicht (Einzel):</label>
-                        <input type="number" name="rotation_limit" id="rotation_limit" value="{{ config.rotation_limit }}" min="1" max="50" required>
-                        <span class="info-text">Max. Anzahl Zeilen, die ins Template geladen werden.</span>
-                    </div>
-
-                    <h3>Schriftgröße Überschrift (h2)</h3>
-                    <div class="input-group">
-                        <label for="static_h2_size">Statisch (Bsp. 2.5em):</label>
-                        <input type="text" name="static_h2_size" id="static_h2_size" value="{{ config.static_h2_size }}" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="rotation_h2_size">Rotation (Bsp. 3.5em):</label>
-                        <input type="text" name="rotation_h2_size" id="rotation_h2_size" value="{{ config.rotation_h2_size }}" required>
-                    </div>
-
-                    <h3>Schriftgröße Tabellenzeilen (td)</h3>
-                    <div class="input-group">
-                        <label for="static_td_size">Statisch (Bsp. 2.0em):</label>
-                        <input type="text" name="static_td_size" id="static_td_size" value="{{ config.static_td_size }}" required>
-                    </div>
-                    <div class="input-group">
-                        <label for="rotation_td_size">Rotation (Bsp. 1.5em):</label>
-                        <input type="text" name="rotation_td_size" id="rotation_td_size" value="{{ config.rotation_td_size }}" required>
-                    </div>
-
-                    <button type="submit" class="submit-button">Einstellungen speichern</button>
-                </form>
-            </section>
-        </div>
+            </div><!-- /tab-player -->
 
 
-    </div>
-    
+            <!-- ═══════════════════════════════════════
+                 TAB 4: DESIGN & LIMITS
+            ═══════════════════════════════════════ -->
+            <div id="tab-config" class="tab-content">
+
+                <!-- Hintergrundbild -->
+                <div class="panel">
+                    <h2 class="panel-title">🖼️ Hintergrundbild</h2>
+                    <form method="POST" action="{{ url_for('admin') }}" enctype="multipart/form-data">
+                        <input type="hidden" name="action" value="upload_background">
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label>Status</label>
+                                <div style="padding: 6px 0;">
+                                    {% if background_exists %}
+                                    <span class="badge badge-ok">✔ Hintergrund geladen</span>
+                                    {% else %}
+                                    <span class="badge badge-missing">✗ Kein Hintergrund</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label>Neues Bild hochladen (JPG / PNG)</label>
+                                <div class="file-input-wrapper">
+                                    <input type="file" name="background_image" id="background_image"
+                                           accept="image/png,image/jpeg" required
+                                           onchange="showFileName(this,'bg-file-name')">
+                                    <div class="file-input-display">📁 Datei auswählen …</div>
+                                </div>
+                                <div class="file-name-display" id="bg-file-name"></div>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">⬆️ Hintergrund hochladen</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Design-Einstellungen -->
+                <div class="panel">
+                    <h2 class="panel-title">⚙️ Darstellung & Limits</h2>
+                    <form method="POST" action="{{ url_for('admin') }}">
+                        <input type="hidden" name="action" value="save_config">
+
+                        <!-- Schriftart -->
+                        <p class="section-label">Schriftart</p>
+                        <div class="form-grid single">
+                            <div class="input-group">
+                                <label for="font_family">Schriftart für das Scoreboard</label>
+                                <select name="font_family" id="font_family" required>
+                                    <option value="'Segoe UI', Roboto, sans-serif"
+                                        {% if config.font_family == "'Segoe UI', Roboto, sans-serif" %}selected{% endif %}>
+                                        Segoe UI – Modern (Standard)
+                                    </option>
+                                    <option value="Arial, sans-serif"
+                                        {% if config.font_family == "Arial, sans-serif" %}selected{% endif %}>
+                                        Arial – Klassisch
+                                    </option>
+                                    <option value="Verdana, sans-serif"
+                                        {% if config.font_family == "Verdana, sans-serif" %}selected{% endif %}>
+                                        Verdana – Gut lesbar
+                                    </option>
+                                    <option value="Impact, fantasy"
+                                        {% if config.font_family == "Impact, fantasy" %}selected{% endif %}>
+                                        Impact – Markant/Fett
+                                    </option>
+                                    <option value="'Courier New', monospace"
+                                        {% if config.font_family == "'Courier New', monospace" %}selected{% endif %}>
+                                        Courier New – Monospace
+                                    </option>
+                                    <option value="'Comic Sans MS', cursive"
+                                        {% if config.font_family == "'Comic Sans MS', cursive" %}selected{% endif %}>
+                                        Comic Sans MS – Locker
+                                    </option>
+                                    <option value="'Oswald', sans-serif"
+                                        {% if config.font_family == "'Oswald', sans-serif" %}selected{% endif %}>
+                                        Oswald – Kompakt (Google Font*)
+                                    </option>
+                                    <option value="'Roboto Condensed', sans-serif"
+                                        {% if config.font_family == "'Roboto Condensed', sans-serif" %}selected{% endif %}>
+                                        Roboto Condensed – Schlank (Google Font*)
+                                    </option>
+                                </select>
+                                <span class="info-text">*Google Fonts müssen zuerst in der main.css per @import eingebunden werden.</span>
+                            </div>
+                        </div>
+
+                        <!-- Eintrags-Limits -->
+                        <p class="section-label" style="margin-top:22px;">Einträge pro Tabelle</p>
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="static_limit">Statische Ansicht (2×2 Grid)</label>
+                                <input type="number" name="static_limit" id="static_limit"
+                                       value="{{ config.static_limit }}" min="1" max="50" required>
+                                <span class="info-text">Sichtbare Zeilen im 4-Karten-Layout.</span>
+                            </div>
+                            <div class="input-group">
+                                <label for="rotation_limit">Rotationsansicht (Vollbild)</label>
+                                <input type="number" name="rotation_limit" id="rotation_limit"
+                                       value="{{ config.rotation_limit }}" min="1" max="50" required>
+                                <span class="info-text">Max. geladene Zeilen im Rotationsmodus.</span>
+                            </div>
+                        </div>
+
+                        <!-- Schriftgrößen -->
+                        <p class="section-label" style="margin-top:22px;">Schriftgröße – Überschriften (h2)</p>
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="static_h2_size">Statisch</label>
+                                <input type="text" name="static_h2_size" id="static_h2_size"
+                                       value="{{ config.static_h2_size }}" placeholder="2.5em" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="rotation_h2_size">Rotation</label>
+                                <input type="text" name="rotation_h2_size" id="rotation_h2_size"
+                                       value="{{ config.rotation_h2_size }}" placeholder="3.5em" required>
+                            </div>
+                        </div>
+
+                        <p class="section-label" style="margin-top:22px;">Schriftgröße – Tabellenzeilen (td)</p>
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="static_td_size">Statisch</label>
+                                <input type="text" name="static_td_size" id="static_td_size"
+                                       value="{{ config.static_td_size }}" placeholder="2.0em" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="rotation_td_size">Rotation</label>
+                                <input type="text" name="rotation_td_size" id="rotation_td_size"
+                                       value="{{ config.rotation_td_size }}" placeholder="1.5em" required>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">💾 Einstellungen speichern</button>
+                        </div>
+                    </form>
+                </div>
+
+            </div><!-- /tab-config -->
+
+        </main>
+    </div><!-- /admin-body -->
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const tabLinks = document.querySelectorAll('.tab-link');
+        // ── Tab-Navigation ──────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabLinks    = document.querySelectorAll('.tab-link');
             const tabContents = document.querySelectorAll('.tab-content');
 
-            // Funktion zum Aktivieren des ausgewählten Tabs
             function activateTab(tabId) {
-                // Alle Links und Inhalte deaktivieren
-                tabLinks.forEach(link => link.classList.remove('active'));
-                tabContents.forEach(content => content.classList.remove('active'));
+                tabLinks.forEach(l => l.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
 
-                // Link aktivieren
-                const activeLink = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
-                if (activeLink) {
-                    activeLink.classList.add('active');
-                }
+                const link    = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
+                const content = document.getElementById(tabId);
+                if (link)    link.classList.add('active');
+                if (content) { content.classList.add('active'); content.scrollTop = 0; }
 
-                // Inhalt aktivieren
-                const activeContent = document.getElementById(tabId);
-                if (activeContent) {
-                    activeContent.classList.add('active');
-                    activeContent.scrollTop = 0; // Optional: Scrollt bei Wechsel nach oben
-                }
-
-                // Speichert den aktiven Tab in localStorage, damit er beim Neuladen der Seite erhalten bleibt
                 localStorage.setItem('activeAdminTab', tabId);
             }
 
-            // Klick-Listener für Tabs
-            tabLinks.forEach(link => {
-                link.addEventListener('click', function() {
-                    const tabId = this.getAttribute('data-tab');
-                    activateTab(tabId);
-                });
-            });
+            tabLinks.forEach(link =>
+                link.addEventListener('click', () => activateTab(link.dataset.tab))
+            );
 
-            // Beim Laden der Seite den zuletzt verwendeten Tab aktivieren (oder den ersten als Standard)
-            const storedTab = localStorage.getItem('activeAdminTab');
-            const defaultTab = tabLinks[0].getAttribute('data-tab');
-            
-            activateTab(storedTab || defaultTab);
+            const stored = localStorage.getItem('activeAdminTab');
+            activateTab(stored && document.getElementById(stored) ? stored : tabLinks[0].dataset.tab);
         });
+
+        // ── Umbenennen-Toggle ───────────────────────────────────────
+        function toggleRename(playerId) {
+            const el = document.getElementById('rename-' + playerId);
+            if (!el) return;
+            const isHidden = el.style.display === 'none';
+            el.style.display = isHidden ? 'block' : 'none';
+            if (isHidden) {
+                const input = el.querySelector('input[type="text"]');
+                if (input) input.focus();
+            }
+        }
+
+        // ── Dateiname anzeigen ──────────────────────────────────────
+        function showFileName(input, targetId) {
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            target.textContent = input.files.length > 0
+                ? '📎 ' + input.files[0].name
+                : '';
+        }
     </script>
 </body>
 </html>
