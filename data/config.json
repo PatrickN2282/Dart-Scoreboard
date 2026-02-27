@@ -1,6 +1,6 @@
 {
     "background_url": null,
-    "static_limit": 3,
+    "static_limit": 5,
     "rotation_limit": 10,
     "static_h2_size": "2.5em",
     "rotation_h2_size": "3.5em",
