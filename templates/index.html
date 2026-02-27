@@ -299,6 +299,14 @@
                 el.style.display = "flex";
                 el.style.opacity = "0";
                 setTimeout(() => el.style.opacity = "1", 200);
+
+                // Einlauf-Animation neu triggern: Animation kurz entfernen und neu setzen
+                el.querySelectorAll('table tr:not(:first-child)').forEach(row => {
+                    row.style.animation = 'none';
+                    // reflow erzwingen damit der Browser die Änderung registriert
+                    void row.offsetHeight;
+                    row.style.animation = '';
+                });
             }
 
             // Spielerfoto des Führenden anzeigen
@@ -310,6 +318,33 @@
                 : fallback;
             playerPhotoContainer.style.display = "flex";
         }
+
+        // ── Auto-Refresh ──────────────────────────────────────────
+        // Lädt die Seite alle 60 Sekunden neu um neue Scores zu zeigen.
+        // Timer wird bei Benutzerinteraktion zurückgesetzt.
+        // Im Rotationsmodus wird erst nach der aktuellen Runde refresht.
+        const REFRESH_INTERVAL = 60000; // 60 Sekunden
+        let refreshTimer = null;
+
+        function scheduleRefresh() {
+            clearTimeout(refreshTimer);
+            refreshTimer = setTimeout(() => {
+                // Im Rotationsmodus kurz warten bis Sektion fertig ist
+                if (rotating) {
+                    // Nach aktuellem 15s-Slot neu laden
+                    setTimeout(() => location.reload(), 15000);
+                } else {
+                    location.reload();
+                }
+            }, REFRESH_INTERVAL);
+        }
+
+        // Bei jeder Interaktion Timer neu starten
+        ['click', 'keydown', 'touchstart'].forEach(evt =>
+            document.addEventListener(evt, scheduleRefresh, { passive: true })
+        );
+
+        scheduleRefresh(); // Initial starten
 
         // ── Init ─────────────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
