@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>Dart Highscore Board</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+
+    <style>
+        :root {
+            --config-font-family:       {{ config.font_family | safe }};
+            --config-static-h2-size:    {{ config.static_h2_size }};
+            --config-rotation-h2-size:  {{ config.rotation_h2_size }};
+            --config-static-td-size:    {{ config.static_td_size }};
+            --config-rotation-td-size:  {{ config.rotation_td_size }};
+        }
+
+        /* Einträge jenseits des statischen Limits ausblenden */
+        .card[data-view="static"] table tr:nth-child(n + {{ config.static_limit + 2 }}) {
+            display: none !important;
+        }
+        .card[data-view="static"] {
+            overflow: hidden !important;
+        }
+
+        /* ── Podium-Zeilenfarben ── */
+        tr.gold   {
+            background: rgba(255, 215,   0, 0.18) !important;
+            box-shadow: inset 4px 0 0 gold;
+        }
+        tr.silver {
+            background: rgba(192, 192, 192, 0.18) !important;
+            box-shadow: inset 4px 0 0 silver;
+        }
+        tr.bronze {
+            background: rgba(205, 127,  50, 0.18) !important;
+            box-shadow: inset 4px 0 0 #cd7f32;
+        }
+
+        /* ── QR-Code: fest zentriert auf dem Bildschirm ── */
+        #qr-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.52);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 14px;
+            padding: 14px 16px 10px;
+            backdrop-filter: blur(8px);
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        #qr-panel img {
+            width: 140px;
+            height: 140px;
+            display: block;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.08);
+            padding: 4px;
+        }
+        #qr-panel span {
+            font-size: 0.72em;
+            color: rgba(255,255,255,0.65);
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+        }
+        /* QR ausblenden wenn Rotationsmodus aktiv */
+        body.rotating #qr-panel {
+            opacity: 0;
+        }
+    </style>
+</head>
+
+<body id="scoreboard"
+      style="{% if bg_image %}background-image: url('{{ url_for('static', filename=bg_image) }}');{% endif %}">
+
+    <!-- ── Top-Navigationsleiste ── -->
+    <div id="top-nav-bar">
+        <div id="mode-toggle">Anzeige: 📊 Statisch</div>
+        <div id="clock"></div>
+        <a href="/admin" id="admin-link">⚙️ Admin</a>
+    </div>
+
+    <!-- ── QR-Code: bildschirmzentriert, über allem ── -->
+    <div id="qr-panel">
+        <img src="{{ qr_code }}" alt="QR-Code zum Aufrufen der Seite">
+        <span>{{ qr_url }}</span>
+    </div>
+
+    <!-- ── Großes Spielerfoto (nur Rotationsmodus) ── -->
+    <div id="player-photo-container">
+        <img id="player-photo"
+             src="{{ url_for('static', filename='uploads/dummy.png') }}"
+             alt="Top Spieler">
+    </div>
+
+    <!-- ── Haupt-Grid ── -->
+    <div class="container">
+
+        <div class="top">
+
+            <!-- Meiste Legs -->
+            <section class="section-block" data-section="legs">
+                <div class="card" data-view="static">
+                    <h2>🏆 Meiste Legs gewonnen</h2>
+                    {% if most_legs %}
+                    <div class="card-content">
+                        <div class="card-left static-only">
+                            <img src="{{ url_for('static', filename='uploads/' ~ (most_legs[0].image or 'dummy.png')) }}"
+                                 alt="Top Spieler" class="player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                        </div>
+                        <div class="card-right">
+                            <table>
+                                <tr><th>Platz</th><th>Name</th><th>Legs</th></tr>
+                                {% for s in most_legs[:config.rotation_limit] %}
+                                <tr class="{{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                    <td>
+                                        {% if s.rank == 1 %}🥇
+                                        {% elif s.rank == 2 %}🥈
+                                        {% elif s.rank == 3 %}🥉
+                                        {% else %}{{ s.rank }}{% endif %}
+                                    </td>
+                                    <td>{{ s.name }}</td>
+                                    <td>{{ s.legs }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                    {% else %}
+                        <p>Keine Einträge vorhanden.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Meiste 180er -->
+            <section class="section-block" data-section="max180">
+                <div class="card" data-view="static">
+                    <h2>💥 Meiste 180er</h2>
+                    {% if most_180s %}
+                    <div class="card-content">
+                        <div class="card-left static-only">
+                            <img src="{{ url_for('static', filename='uploads/' ~ (most_180s[0].image or 'dummy.png')) }}"
+                                 alt="Top Spieler" class="player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                        </div>
+                        <div class="card-right">
+                            <table>
+                                <tr><th>Platz</th><th>Name</th><th>180er</th></tr>
+                                {% for s in most_180s[:config.rotation_limit] %}
+                                <tr class="{{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                    <td>
+                                        {% if s.rank == 1 %}🥇
+                                        {% elif s.rank == 2 %}🥈
+                                        {% elif s.rank == 3 %}🥉
+                                        {% else %}{{ s.rank }}{% endif %}
+                                    </td>
+                                    <td>{{ s.name }}</td>
+                                    <td>{{ s.max180 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                    {% else %}
+                        <p>Keine Einträge vorhanden.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+        </div><!-- /.top -->
+
+        <div class="bottom">
+
+            <!-- Höchstes Finish -->
+            <section class="section-block" data-section="finish">
+                <div class="card" data-view="static">
+                    <h2>🎯 Höchstes Finish</h2>
+                    {% if highest_finish %}
+                    <div class="card-content">
+                        <div class="card-left static-only">
+                            <img src="{{ url_for('static', filename='uploads/' ~ (highest_finish[0].image or 'dummy.png')) }}"
+                                 alt="Top Spieler" class="player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                        </div>
+                        <div class="card-right">
+                            <table>
+                                <tr><th>Platz</th><th>Name</th><th>Finish</th></tr>
+                                {% for s in highest_finish[:config.rotation_limit] %}
+                                <tr class="{{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                    <td>
+                                        {% if s.rank == 1 %}🥇
+                                        {% elif s.rank == 2 %}🥈
+                                        {% elif s.rank == 3 %}🥉
+                                        {% else %}{{ s.rank }}{% endif %}
+                                    </td>
+                                    <td>{{ s.name }}</td>
+                                    <td>{{ s.finish }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                    {% else %}
+                        <p>Keine Einträge vorhanden.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Wenigste Würfe 301 -->
+            <section class="section-block" data-section="darts301">
+                <div class="card" data-view="static">
+                    <h2>💨 Wenigste Würfe – 301</h2>
+                    {% if lowest_darts301 %}
+                    <div class="card-content">
+                        <div class="card-left static-only">
+                            <img src="{{ url_for('static', filename='uploads/' ~ (lowest_darts301[0].image or 'dummy.png')) }}"
+                                 alt="Top Spieler" class="player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                        </div>
+                        <div class="card-right">
+                            <table>
+                                <tr><th>Platz</th><th>Name</th><th>Darts</th></tr>
+                                {% for s in lowest_darts301[:config.rotation_limit] %}
+                                <tr class="{{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                    <td>
+                                        {% if s.rank == 1 %}🥇
+                                        {% elif s.rank == 2 %}🥈
+                                        {% elif s.rank == 3 %}🥉
+                                        {% else %}{{ s.rank }}{% endif %}
+                                    </td>
+                                    <td>{{ s.name }}</td>
+                                    <td>{{ s.darts301 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                    {% else %}
+                        <p>Keine Einträge vorhanden.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+        </div><!-- /.bottom -->
+    </div><!-- /.container -->
+
+    <script>
+        // ── Uhrzeit ──────────────────────────────────────────────────
+        function updateClock() {
+            document.getElementById('clock').textContent =
+                new Date().toLocaleTimeString('de-DE', {
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ── Modus-Steuerung ──────────────────────────────────────────
+        let rotating          = false;
+        let rotationInterval  = null;
+        let modeSwitchInterval = null;
+
+        const toggle               = document.getElementById('mode-toggle');
+        const sections             = document.querySelectorAll('.section-block');
+        const body                 = document.getElementById('scoreboard');
+        const playerPhotoContainer = document.getElementById('player-photo-container');
+        const playerPhoto          = document.getElementById('player-photo');
+
+        function setCardView(view) {
+            sections.forEach(section => {
+                const card = section.querySelector('.card');
+                if (card) card.setAttribute('data-view', view);
+            });
+        }
+
+        function toggleMode() {
+            rotating = !rotating;
+            toggle.textContent = rotating ? "Anzeige: 🌀 Rotation" : "Anzeige: 📊 Statisch";
+            body.classList.toggle('rotating', rotating);
+            setCardView(rotating ? 'rotation' : 'static');
+            rotating ? startRotation() : stopRotation();
+        }
+
+        toggle.addEventListener('click', toggleMode);
+
+        function startModeSwitchTimer() {
+            clearInterval(modeSwitchInterval);
+            modeSwitchInterval = setInterval(toggleMode, 600000); // 10 Minuten
+        }
+
+        // Datenmapping für Spielerfotos (aus Jinja gerendert)
+        const dataMap = {
+            legs:    {{ most_legs        | tojson | safe }},
+            finish:  {{ highest_finish   | tojson | safe }},
+            max180:  {{ most_180s        | tojson | safe }},
+            darts301: {{ lowest_darts301 | tojson | safe }}
+        };
+        const rotationOrder = ["legs", "finish", "max180", "darts301"];
+
+        function startRotation() {
+            let index = 0;
+            document.querySelectorAll('.static-only').forEach(el => el.style.display = 'none');
+            showSection(rotationOrder[index]);
+
+            rotationInterval = setInterval(() => {
+                index = (index + 1) % rotationOrder.length;
+                showSection(rotationOrder[index]);
+            }, 15000);
+        }
+
+        function stopRotation() {
+            clearInterval(rotationInterval);
+            sections.forEach(s => {
+                s.style.display  = "";
+                s.style.opacity  = "1";
+            });
+            playerPhotoContainer.style.display = "none";
+            document.querySelectorAll('.static-only').forEach(el => el.style.display = '');
+        }
+
+        function showSection(id) {
+            sections.forEach(s => s.style.display = "none");
+            const el = document.querySelector(`[data-section="${id}"]`);
+            if (el) {
+                el.style.display = "flex";
+                el.style.opacity = "0";
+                setTimeout(() => el.style.opacity = "1", 200);
+            }
+
+            // Spielerfoto des Führenden anzeigen
+            const baseUrl = "{{ url_for('static', filename='uploads/') }}";
+            const fallback = "{{ url_for('static', filename='uploads/dummy.png') }}";
+            const entries  = dataMap[id];
+            playerPhoto.src = (entries && entries.length > 0)
+                ? baseUrl + (entries[0].image || "dummy.png")
+                : fallback;
+            playerPhotoContainer.style.display = "flex";
+        }
+
+        // ── Init ─────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            setCardView('static');
+            startModeSwitchTimer();
+        });
+    </script>
+</body>
+</html>

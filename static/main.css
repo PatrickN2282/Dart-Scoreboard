@@ -1,0 +1,375 @@
+/* ============================================================
+   MAIN.CSS – Dart Highscore Scoreboard (Öffentliche Ansicht)
+   ============================================================ */
+
+/*
+   WICHTIGER HINWEIS:
+   Fügen Sie hier die @import-Regeln für Google Fonts ein, 
+   falls Sie Oswald oder Roboto Condensed auf der Admin-Seite auswählen.
+   
+   Beispiel:
+   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap');
+   @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@100..900&display=swap');
+*/
+
+
+/* ############################################################
+   ABSCHNITT 1: GRUNDLAGEN & VARIABLEN
+   ############################################################ */
+
+/* === 1.1 Globale Variablen (Farben, Schatten) === */
+:root {
+    --neon-blue: #00e0ff;
+    --neon-shadow: rgba(0, 224, 255, 0.5);
+    --card-shadow-light: rgba(0, 200, 255, 0.15);
+    --card-shadow-hover: rgba(0, 200, 255, 0.35);
+    --card-bg: rgba(0, 0, 0, 0.55);
+    --text-color: #fff;
+    --text-shadow-h2: #00e0ff80;
+    
+    /* FALLBACKS FÜR KONFIGURIERBARE WERTE (werden von index.html überschrieben) */
+    --config-font-family: "Segoe UI", Roboto, sans-serif; 
+    --config-static-h2-size: 2.5em;
+    --config-rotation-h2-size: 3.5em;
+    --config-static-td-size: 2.0em;
+    --config-rotation-td-size: 1.5em;
+}
+
+/* === 1.2 Basis-Layout === */
+body {
+    margin: 0;
+    /* NEU: Wende die konfigurierte Schriftart an */
+    font-family: var(--config-font-family); 
+    color: var(--text-color);
+    background: #000 no-repeat center center fixed;
+    background-size: cover;
+    height: 100vh;
+    overflow: hidden;
+}
+
+a {
+    color: var(--neon-blue);
+    text-decoration: none;
+}
+
+
+/* ############################################################
+   ABSCHNITT 2: STATISCHE ELEMENTE (Header & Overlay)
+   ############################################################ */
+
+/* NEU: CONTAINER für die Menüleiste (Umschaltung, IP, Uhr, Admin) */
+#top-nav-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10;
+    
+    display: flex;
+    /* Verteilt die vier Elemente: Toggle | IP | Uhr | Admin */
+    justify-content: space-between; 
+    align-items: center;
+    
+    padding: 10px 20px;
+    box-sizing: border-box;
+    
+    background: rgba(0,0,0,0.85); /* Einheitlicher dunkler Hintergrund */
+    box-shadow: 0 5px 15px rgba(0, 224, 255, 0.3); /* Neon-Schatten nach unten */
+    backdrop-filter: blur(4px); 
+    height: 40px; /* Feste Höhe, damit die Elemente sauber ausgerichtet sind */
+}
+
+
+/* === 2.2 Umschalter & Admin-Link (Innere Elemente) === */
+/* Standardstil für alle Elemente, Positionierung wird durch #top-nav-bar übernommen */
+#mode-toggle, #admin-link, #ip-address, #clock { 
+    position: static !important; 
+    transform: none !important;
+    
+    color: white; 
+    text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+    padding: 8px 15px; 
+    border-radius: 8px;
+    
+    font-size: 1.1em; 
+    cursor: pointer; 
+    user-select: none;
+    transition: all 0.3s ease;
+    
+    /* Verhindert, dass die zentralen Elemente zu viel Platz beanspruchen */
+    flex-shrink: 0; 
+}
+
+/* Spezieller Stil für Umschalter und Admin-Link (Buttons) */
+#mode-toggle, #admin-link {
+    background: rgba(0,0,0,0.4); 
+    border: 1px solid var(--neon-blue);
+}
+#mode-toggle:hover, #admin-link:hover { 
+    background: rgba(0,224,255,0.1); 
+    transform: scale(1.05); 
+}
+
+/* === 2.3 IP-Adresse & Uhr (Zentrale Info-Elemente) - NEU/KORRIGIERT === */
+#ip-address, #clock {
+    font-size: 1.5em; 
+    color: var(--neon-blue); 
+    font-weight: bold;
+    background: rgba(0,0,0,0.2); 
+    cursor: default;
+    
+    /* Setzt IP und Uhr in die Mitte nebeneinander */
+    /* Der 'space-between' in #top-nav-bar sorgt dafür, dass die Gruppe zentriert ist */
+    margin: 0 10px; 
+    padding: 5px 10px;
+}
+
+/* Uhr mit etwas größerer Schrift und dunklerem Hintergrund */
+#clock {
+    font-size: 2.3em;
+    background: rgba(0,0,0,0.4);
+}
+
+/* Die alte #clock Regel ist jetzt in #ip-address und #clock integriert und somit entfernt. */
+
+
+/* === 2.5 Rotations-Bild-Container (Freistehendes Top-Bild) === */
+#player-photo-container {
+    position: absolute; left: 5%; top: 50%; transform: translateY(-50%);
+    display: none; 
+    justify-content: center; align-items: center;
+    width: 200px; height: 200px; z-index: 5;
+}
+#player-photo {
+    width: 180px; height: 180px; border-radius: 50%;
+    box-shadow: 0 0 30px rgba(0,224,255,0.6); object-fit: cover;
+}
+
+
+/* ############################################################
+   ABSCHNITT 3: STATISCHER ANZEIGEMODUS (Standard-Layout)
+   ############################################################ */
+
+/* === 3.1 Container-Struktur === */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Reduziere den Margin, da die Uhr jetzt oben in der Nav-Bar ist (40px + 10px Padding oben/unten) */
+    justify-content: space-evenly; 
+    height: 90vh; /* Genug Platz für die beiden Reihen */
+    margin-top: 10vh; /* Platz für die Menüleiste */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.top, .bottom {
+    flex: 1; 
+    width: 95%; 
+    min-width: 1000px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 3%; 
+    align-items: stretch; 
+    box-sizing: border-box; 
+    margin-top: 0.5vh; 
+    margin-bottom: 0.5vh; 
+}
+
+
+/* Sektionen (Die Boxen, die die Cards enthalten) */
+.section-block {
+    flex: 1 1 48.5%; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease; 
+}
+
+/* === 3.2 Karten (Card) === */
+.card {
+    background: var(--card-bg);
+    backdrop-filter: blur(8px) brightness(1.2);
+    border-radius: 15px;
+    flex: 1; 
+    box-shadow: 0 0 25px var(--card-shadow-light);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    min-width: unset; 
+    min-height: unset; 
+    width: 100%; 
+    height: 100%; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 25px 30px; 
+    box-sizing: border-box;
+    max-height: unset; 
+}
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 30px var(--card-shadow-hover);
+}
+
+/* Fix für statische Ansicht: Verhindert Scrollbalken und unnötigen Platz. */
+.card[data-view="static"] {
+    overflow: hidden !important;
+}
+
+/* === 3.3 Spieler-Content innerhalb der Card (Statische Ansicht) === */
+.card-content {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 10px; 
+}
+.card-left { flex: 0 0 110px; display: flex; justify-content: center; align-items: flex-start; } 
+.card-right { flex: 1; display: flex; justify-content: center; }
+.player-img {
+    width: 110px; height: 110px; border-radius: 50%;
+    box-shadow: 0 0 20px var(--neon-shadow); flex-shrink: 0;
+}
+body.rotating .static-only { display: none !important; }
+
+
+/* ############################################################
+   ABSCHNITT 4: ALLGEMEINE TYPOGRAFIE & TABELLEN
+   ############################################################ */
+
+/* === 4.1 Überschriften (Standard/Statisch) === */
+h2 {
+    margin: 10px 0 5px;
+    /* NEU: Schriftgröße aus Variable */
+    font-size: var(--config-static-h2-size); 
+    text-align: center;
+    text-shadow: 0 0 10px #000, 0 0 15px var(--text-shadow-h2);
+}
+
+/* === 4.2 Tabellen (Standard) === */
+table { 
+    width: 100%;             
+    border-collapse: collapse;
+    margin-top: 10px;          
+    text-align: center;        
+}
+th, td { 
+    padding: 10px; 
+    border-bottom: 1px solid rgba(255,255,255,0.1); 
+    text-align: center; 
+}
+th {
+    text-transform: uppercase;
+    font-size: 1.5em;  
+    color: var(--neon-blue);  
+    letter-spacing: 1px;       
+}
+
+td {
+    /* NEU: Schriftgröße aus Variable */
+    font-size: var(--config-static-td-size);        
+}
+
+tr:nth-child(even) { 
+    background: rgba(255,255,255,0.03); 
+}
+
+/* ############################################################
+   ABSCHNITT 5: ROTATIONSMODUS-ANPASSUNGEN (body.rotating)
+   ############################################################ */
+
+/* === 5.1 Layout-Anpassung im Rotationsmodus === */
+body.rotating .container {
+    justify-content: center;
+    align-items: center;
+    min-width: unset;
+    margin-top: 0;
+    height: 100vh;
+}
+body.rotating .top,
+body.rotating .bottom {
+    flex: 0 0 auto !important; 
+    width: 100%; 
+    min-width: unset;
+    justify-content: center !important; 
+    align-items: center !important;
+    margin-top: 0; 
+    margin-bottom: 0;
+    gap: 0; 
+}
+
+/* Sektion nimmt vollen Platz ein */
+body.rotating .section-block {
+    display: none; 
+    opacity: 0; 
+    flex: 0 0 auto; 
+    width: 70%;
+    max-width: 1000px;
+    min-height: 600px; 
+    margin: auto; 
+}
+body.rotating .section-block .card {
+    flex: 1; 
+    min-width: unset;
+    min-height: unset;
+    width: 100%;
+    /* Im Rotationsmodus erlauben wir optional Scrollbalken, falls 10+ Zeilen nicht passen */
+    max-height: 90vh; 
+    overflow-y: auto; 
+}
+
+
+/* === 5.2 TYPOGRAFIE-ANPASSUNGEN IM ROTATIONSMODUS === */
+
+/* Überschrift */
+body.rotating h2 {
+    /* NEU: Schriftgröße aus Variable */
+    font-size: var(--config-rotation-h2-size); 
+    margin-bottom: 30px;
+}
+
+/* Tabellen-Zellen */
+body.rotating td {
+    /* NEU: Schriftgröße aus Variable */
+    font-size: var(--config-rotation-td-size);
+}
+
+/* Tabellenschrift (Basis) im Rotationsmodus anpassen */
+body.rotating table {
+    font-size: 1.4em; 
+    margin-top: 20px;
+}
+
+
+/* Top 3 Hervorhebung (ACHTUNG: nth-child beginnt bei 1!) */
+body.rotating table tr:nth-child(2) { /* 1. Platz */
+    font-size: 1.8em; 
+    color: gold; 
+    text-shadow: 0 0 8px gold;
+}
+body.rotating table tr:nth-child(3) { /* 2. Platz */
+    font-size: 1.6em; 
+    color: silver;
+    text-shadow: 0 0 5px silver;
+}
+body.rotating table tr:nth-child(4) { /* 3. Platz */
+    font-size: 1.4em; 
+    color: #cd7f32; 
+    text-shadow: 0 0 4px #cd7f32;
+}
+
+
+/* === 5.3 Profilbild-Anpassung im Rotationsmodus === */
+body.rotating #player-photo-container {
+    width: 300px; 
+    height: 300px; 
+    left: 8%; 
+}
+body.rotating #player-photo {
+    width: 280px; 
+    height: 280px; 
+    box-shadow: 0 0 40px rgba(0,224,255,0.8), 0 0 15px rgba(255, 255, 255, 0.4); 
+}

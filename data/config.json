@@ -1,0 +1,10 @@
+{
+    "background_url": null,
+    "static_limit": 3,
+    "rotation_limit": 10,
+    "static_h2_size": "2.5em",
+    "rotation_h2_size": "3.5em",
+    "static_td_size": "2.0em",
+    "rotation_td_size": "1.0em",
+    "font_family": "'Segoe UI', Roboto, sans-serif"
+}
