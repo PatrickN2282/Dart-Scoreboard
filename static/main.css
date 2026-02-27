@@ -458,3 +458,105 @@ td.td-date-small {
 /* Spielerfoto-Container (schwebend links) im Rotationsmodus nicht mehr nötig,
    da das Foto jetzt innerhalb der Karte angezeigt wird wie im statischen Modus */
 body.rotating #player-photo-container { display: none !important; }
+
+
+/* ############################################################
+   ABSCHNITT 9: ANIMATIONEN & EFFEKTE
+   ############################################################ */
+
+/* ── 1. PULSIERENDER GLOW – Profilbild im Rotationsmodus ────────
+   Sanftes Auf- und Abschwellen des Goldglow, 3s-Zyklus
+──────────────────────────────────────────────────────────────── */
+@keyframes pulse-glow {
+    0%   { box-shadow: 0 0 18px rgba(240,165,0,0.45),
+                       0 0 40px rgba(240,165,0,0.15); }
+    50%  { box-shadow: 0 0 36px rgba(240,165,0,0.85),
+                       0 0 80px rgba(240,165,0,0.35),
+                       0 0 120px rgba(240,165,0,0.12); }
+    100% { box-shadow: 0 0 18px rgba(240,165,0,0.45),
+                       0 0 40px rgba(240,165,0,0.15); }
+}
+
+body.rotating .player-img {
+    animation: pulse-glow 3s ease-in-out infinite;
+}
+
+
+/* ── 2. GOLD SHINE – Glanzstreifen über Platz-1-Zeile ───────────
+   Ein heller, diagonaler Streifen läuft alle 4s über die Zeile.
+   Overflow: hidden auf tr.gold damit der Streifen nicht herausragt.
+──────────────────────────────────────────────────────────────── */
+@keyframes gold-shine {
+    0%   { left: -80%; opacity: 0; }
+    10%  { opacity: 1; }
+    50%  { left: 130%; opacity: 0.6; }
+    51%  { opacity: 0; }
+    100% { left: 130%; opacity: 0; }
+}
+
+tr.gold {
+    position: relative;
+    overflow: hidden;          /* Streifen bleibt in der Zeile */
+}
+
+tr.gold::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -80%;
+    width: 55%;
+    height: 100%;
+    background: linear-gradient(
+        105deg,
+        transparent        20%,
+        rgba(255,255,255,0.18) 45%,
+        rgba(255,255,255,0.32) 50%,
+        rgba(255,255,255,0.18) 55%,
+        transparent        80%
+    );
+    pointer-events: none;
+    /* Basis-Animation – wird pro Karte überschrieben */
+    animation: gold-shine 4.8s ease-in-out infinite;
+    animation-delay: 0.8s;
+}
+
+/* Jede Karte bekommt eigenes Timing → wirkt unabhängig, nie synchron */
+[data-section="legs"]    tr.gold::after { animation-duration: 4.2s; animation-delay: 0.6s;  }
+[data-section="max180"]  tr.gold::after { animation-duration: 5.7s; animation-delay: 2.1s;  }
+[data-section="finish"]  tr.gold::after { animation-duration: 3.9s; animation-delay: 1.4s;  }
+[data-section="darts301"]tr.gold::after { animation-duration: 6.3s; animation-delay: 3.5s;  }
+
+
+/* ── 3. EINLAUF-ANIMATION – Tabellenzeilen gleiten gestaffelt ein
+   Jede Datenzeile (nicht der Header) fliegt von leicht links mit
+   Fade-in rein. nth-child-Delays sorgen für den Staffeleffekt.
+──────────────────────────────────────────────────────────────── */
+@keyframes row-enter {
+    from {
+        opacity: 0;
+        transform: translateX(-18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Alle Daten-Zeilen (tr:not(:first-child) = alles außer Header) */
+table tbody tr,
+table tr:not(:first-child) {
+    animation: row-enter 0.42s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* Staffel-Delays: Platz 1 kommt zuerst, dann 2, 3 usw. */
+table tr:nth-child(2)  { animation-delay: 0.05s; }
+table tr:nth-child(3)  { animation-delay: 0.12s; }
+table tr:nth-child(4)  { animation-delay: 0.19s; }
+table tr:nth-child(5)  { animation-delay: 0.26s; }
+table tr:nth-child(6)  { animation-delay: 0.33s; }
+table tr:nth-child(7)  { animation-delay: 0.40s; }
+table tr:nth-child(8)  { animation-delay: 0.47s; }
+table tr:nth-child(9)  { animation-delay: 0.54s; }
+table tr:nth-child(10) { animation-delay: 0.61s; }
+table tr:nth-child(11) { animation-delay: 0.68s; }
+
