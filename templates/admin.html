@@ -69,30 +69,31 @@
                         <hr class="form-divider" style="margin: 18px 0;">
 
                         <!-- Score-Felder: 2×2 Grid -->
-                        <p class="section-label">Statistik-Werte</p>
+                        <p class="section-label">Statistik-Werte <span style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--clr-text-muted);">– mind. 1 Feld ausfüllen</span></p>
                         <div class="form-grid">
                             <div class="input-group">
                                 <label for="legs">🏆 Gewonnene Legs</label>
-                                <input type="number" name="legs" id="legs" min="0" value="0">
+                                <input type="number" name="legs" id="legs" min="0" placeholder="–">
                             </div>
                             <div class="input-group">
                                 <label for="finish">🎯 Höchstes Finish</label>
-                                <input type="number" name="finish" id="finish" min="0" max="170" value="0">
+                                <input type="number" name="finish" id="finish" min="0" max="170" placeholder="–">
                                 <span class="info-text">Maximalwert: 170</span>
                             </div>
                             <div class="input-group">
                                 <label for="max180">💥 Anzahl 180er</label>
-                                <input type="number" name="max180" id="max180" min="0" value="0">
+                                <input type="number" name="max180" id="max180" min="0" placeholder="–">
                             </div>
                             <div class="input-group">
                                 <label for="darts301">💨 301 in X Darts</label>
-                                <input type="number" name="darts301" id="darts301" min="6" value="0">
-                                <span class="info-text">0 = kein Eintrag. Min. 6 Darts.</span>
+                                <input type="number" name="darts301" id="darts301" min="6" placeholder="–">
+                                <span class="info-text">Leer lassen = kein Eintrag. Min. 6 Darts.</span>
                             </div>
                         </div>
 
                         <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">💾 Score speichern</button>
+                            <button type="submit" class="btn btn-primary"
+                                    onclick="return validateScoreForm()">💾 Score speichern</button>
                         </div>
                     </form>
                 </div>
@@ -468,6 +469,47 @@
             target.textContent = input.files.length > 0
                 ? '📎 ' + input.files[0].name
                 : '';
+        }
+
+        // ── Score-Formular Validierung ──────────────────────────────
+        // Verhindert Speichern wenn kein Feld ausgefüllt ist,
+        // und wenn weder Spieler gewählt noch neuer Name eingegeben wurde.
+        function validateScoreForm() {
+            const legs    = document.getElementById('legs').value.trim();
+            const finish  = document.getElementById('finish').value.trim();
+            const max180  = document.getElementById('max180').value.trim();
+            const d301    = document.getElementById('darts301').value.trim();
+            const pid     = document.getElementById('player_id').value;
+            const newName = document.getElementById('new_player_name').value.trim();
+
+            if (!pid && !newName) {
+                showFormError('Bitte einen Spieler wählen oder einen neuen Namen eingeben.');
+                return false;
+            }
+            const hasValue = [legs, finish, max180, d301]
+                .some(v => v !== '' && v !== '0' && Number(v) > 0);
+            if (!hasValue) {
+                showFormError('Bitte mindestens einen Wert eintragen.');
+                return false;
+            }
+            hideFormError();
+            return true;
+        }
+
+        function showFormError(msg) {
+            let el = document.getElementById('score-form-error');
+            if (!el) {
+                el = document.createElement('p');
+                el.id = 'score-form-error';
+                el.style.cssText = 'color:#e05252;font-size:0.85em;margin:8px 0 0;font-weight:600;';
+                document.querySelector('#tab-score .form-actions').prepend(el);
+            }
+            el.textContent = '⚠ ' + msg;
+        }
+
+        function hideFormError() {
+            const el = document.getElementById('score-form-error');
+            if (el) el.remove();
         }
     </script>
 </body>
