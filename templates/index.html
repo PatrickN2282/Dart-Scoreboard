@@ -21,12 +21,37 @@
         .card[data-view="static"] {
             overflow: hidden !important;
         }
+
+        /* ── QR-Code: rechte untere Ecke (Stil in main.css) ── */
+
+        /* ── Fortschrittsbalken ── */
+        #progress-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            width: 0%;
+            background: linear-gradient(90deg,
+                rgba(240, 165, 0, 0.5),
+                rgba(240, 165, 0, 1) 60%,
+                rgba(255, 220, 100, 1)
+            );
+            box-shadow: 0 0 8px rgba(240, 165, 0, 0.6);
+            z-index: 999;
+            /* Animation wird per JS gesetzt */
+            transition: none;
+        }
+        @keyframes progress-fill {
+            from { width: 0%; }
+            to   { width: 100%; }
+        }
     </style>
 </head>
 
 <body id="scoreboard"
       style="{% if bg_image %}background-image: url('{{ url_for('static', filename=bg_image) }}');{% endif %}">
 
+    <!-- ── Top-Navigationsleiste ── -->
     <div id="top-nav-bar">
         <div id="nav-left">
             <div id="mode-toggle">📊 Statisch</div>
@@ -39,19 +64,28 @@
         </div>
     </div>
 
+    <!-- ── Fortschrittsbalken (füllt sich bis zum nächsten Slot) ── -->
+    <div id="progress-bar"></div>
+
+    <!-- ── QR-Code: bildschirmzentriert, über allem ── -->
     <div id="qr-panel">
         <img src="{{ qr_code }}" alt="QR-Code zum Aufrufen der Seite">
         <span>{{ qr_url }}</span>
     </div>
 
+    <!-- ── Großes Spielerfoto (nur Rotationsmodus) ── -->
     <div id="player-photo-container">
         <img id="player-photo"
              src="{{ url_for('static', filename='uploads/dummy.png') }}"
              alt="Top Spieler">
     </div>
 
+    <!-- ── Haupt-Grid ── -->
     <div class="container">
+
         <div class="top">
+
+            <!-- Meiste Legs -->
             <section class="section-block" data-section="legs">
                 <div class="card" data-view="static">
                     <h2>🏆 Meiste Legs gewonnen</h2>
@@ -86,6 +120,7 @@
                 </div>
             </section>
 
+            <!-- Meiste 180er -->
             <section class="section-block" data-section="max180">
                 <div class="card" data-view="static">
                     <h2>💥 Meiste 180er</h2>
@@ -120,9 +155,12 @@
                     {% endif %}
                 </div>
             </section>
-        </div>
+
+        </div><!-- /.top -->
 
         <div class="bottom">
+
+            <!-- Höchstes Finish -->
             <section class="section-block" data-section="finish">
                 <div class="card" data-view="static">
                     <h2>🎯 Höchstes Finish</h2>
@@ -158,6 +196,7 @@
                 </div>
             </section>
 
+            <!-- Wenigste Würfe 301 -->
             <section class="section-block" data-section="darts301">
                 <div class="card" data-view="static">
                     <h2>💨 Wenigste Würfe – 301</h2>
@@ -191,8 +230,9 @@
                     {% endif %}
                 </div>
             </section>
-        </div>
-    </div>
+
+        </div><!-- /.bottom -->
+    </div><!-- /.container -->
 
     <script>
         // ── Uhrzeit ──────────────────────────────────────────────────
@@ -205,128 +245,165 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // ── Modus-Steuerung ──────────────────────────────────────────
-        // Status aus localStorage laden, damit Refresh den Modus nicht resettet
-        let rotating = localStorage.getItem('isRotating') === 'true';
-        let rotationInterval = null;
-        let modeSwitchInterval = null;
+        // ╔══════════════════════════════════════════════════════════════╗
+        // ║                 TIMING-KONFIGURATION                        ║
+        // ╠══════════════════════════════════════════════════════════════╣
+        // ║  Zeiten in Millisekunden  (1000 ms = 1 Sekunde)             ║
+        // ╚══════════════════════════════════════════════════════════════╝
+        const CFG = {
+            GRID_DURATION : 5 * 60 * 1000,  // 2×2-Übersicht:    5 Minuten
+            CARD_DURATION : 90 * 1000,       // Einzelkarte:     90 Sekunden
+            REFRESH_MS    : 10 * 60 * 1000,  // Auto-Reload:     10 Minuten
+            FADE_MS       : 300,             // Einblend-Dauer: 300 ms
+        };
 
-        const toggle = document.getElementById('mode-toggle');
-        const sections = document.querySelectorAll('.section-block');
-        const body = document.getElementById('scoreboard');
+        // ── DOM-Referenzen ──────────────────────────────────────────
+        const toggle               = document.getElementById('mode-toggle');
+        const sections             = document.querySelectorAll('.section-block');
+        const scoreboard           = document.getElementById('scoreboard');
         const playerPhotoContainer = document.getElementById('player-photo-container');
-        const playerPhoto = document.getElementById('player-photo');
+        const playerPhoto          = document.getElementById('player-photo');
 
-        function setCardView(view) {
-            sections.forEach(section => {
-                const card = section.querySelector('.card');
-                if (card) card.setAttribute('data-view', view);
-            });
-        }
-
-        function updateUI() {
-            toggle.textContent = rotating ? "🌀 Rotation" : "📊 Statisch";
-            body.classList.toggle('rotating', rotating);
-            setCardView(rotating ? 'rotation' : 'static');
-            rotating ? startRotation() : stopRotation();
-        }
-
-        function toggleMode() {
-            rotating = !rotating;
-            localStorage.setItem('isRotating', rotating); // Status speichern
-            updateUI();
-            startModeSwitchTimer();
-        }
-
-        toggle.addEventListener('click', toggleMode);
-
-        function startModeSwitchTimer() {
-            clearInterval(modeSwitchInterval);
-            // Wechsel alle 5 Minuten (300.000 ms)
-            modeSwitchInterval = setInterval(toggleMode, 300000);
-        }
-
-        // Datenmapping für Spielerfotos
+        // ── Daten ───────────────────────────────────────────────────
         const dataMap = {
-            legs:     {{ most_legs     | tojson | safe }},
+            legs:     {{ most_legs        | tojson | safe }},
             finish:   {{ highest_finish   | tojson | safe }},
             max180:   {{ most_180s        | tojson | safe }},
-            darts301: {{ lowest_darts301 | tojson | safe }}
+            darts301: {{ lowest_darts301  | tojson | safe }}
         };
-        const rotationOrder = ["legs", "finish", "max180", "darts301"];
-        let rotationIndex = 0;
 
-        function startRotation() {
-            clearInterval(rotationInterval);
-            rotationIndex = 0;
-            document.querySelectorAll('.static-only').forEach(el => el.style.display = 'none');
-            showSection(rotationOrder[rotationIndex]);
+        // ── Slot-Sequenz ────────────────────────────────────────────
+        // Jeder Slot beschreibt genau was angezeigt wird und wie lange.
+        // 'grid' = 2×2-Übersicht, alles andere = Einzelkarten-ID.
+        const SLOTS = [
+            { type: 'grid',     duration: CFG.GRID_DURATION },
+            { type: 'legs',     duration: CFG.CARD_DURATION },
+            { type: 'finish',   duration: CFG.CARD_DURATION },
+            { type: 'max180',   duration: CFG.CARD_DURATION },
+            { type: 'darts301', duration: CFG.CARD_DURATION },
+        ];
 
-            rotationInterval = setInterval(() => {
-                rotationIndex = (rotationIndex + 1) % rotationOrder.length;
-                showSection(rotationOrder[rotationIndex]);
-            }, 15000);
-        }
-
-        function stopRotation() {
-            clearInterval(rotationInterval);
-            sections.forEach(s => {
-                s.style.display = "";
-                s.style.opacity = "1";
-            });
-            playerPhotoContainer.style.display = "none";
-            document.querySelectorAll('.static-only').forEach(el => el.style.display = '');
-        }
-
-        function showSection(id) {
-            sections.forEach(s => s.style.display = "none");
-            const el = document.querySelector(`[data-section="${id}"]`);
-            if (el) {
-                el.style.display = "flex";
-                el.style.opacity = "0";
-                setTimeout(() => el.style.opacity = "1", 200);
-
-                el.querySelectorAll('table tr:not(:first-child)').forEach(row => {
-                    row.style.animation = 'none';
-                    void row.offsetHeight;
-                    row.style.animation = '';
-                });
-            }
-
-            const baseUrl = "{{ url_for('static', filename='uploads/') }}";
-            const fallback = "{{ url_for('static', filename='uploads/dummy.png') }}";
-            const entries = dataMap[id];
-            playerPhoto.src = (entries && entries.length > 0)
-                ? baseUrl + (entries[0].image || "dummy.png")
-                : fallback;
-            playerPhotoContainer.style.display = "flex";
-        }
-
-        // ── Auto-Refresh ──────────────────────────────────────────
-        const REFRESH_INTERVAL = 60000; 
+        let slotIndex  = 0;       // aktueller Slot in SLOTS
+        let loopTimer  = null;    // der eine laufende Timer
         let refreshTimer = null;
 
-        function scheduleRefresh() {
-            clearTimeout(refreshTimer);
-            refreshTimer = setTimeout(() => {
-                if (rotating) {
-                    setTimeout(() => location.reload(), 15000);
-                } else {
-                    location.reload();
-                }
-            }, REFRESH_INTERVAL);
+        // ── Einlauf-Animation triggern ──────────────────────────────
+        function triggerRowAnimation(container) {
+            container.querySelectorAll('table tr:not(:first-child)').forEach(row => {
+                row.style.animation = 'none';
+                void row.offsetHeight;   // reflow
+                row.style.animation = '';
+            });
         }
 
-        ['click', 'keydown', 'touchstart'].forEach(evt =>
+        // ── 2×2 Grid anzeigen ───────────────────────────────────────
+        function showGrid() {
+            toggle.textContent = "📊 Übersicht";
+            scoreboard.classList.remove('rotating');
+
+            sections.forEach(s => {
+                const card = s.querySelector('.card');
+                if (card) card.setAttribute('data-view', 'static');
+                s.style.opacity    = '0';
+                s.style.display    = '';
+                s.style.transition = `opacity ${CFG.FADE_MS}ms ease`;
+            });
+            playerPhotoContainer.style.display = 'none';
+
+            // Doppeltes rAF stellt sicher dass display:'' bereits gerendert ist
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                sections.forEach(s => {
+                    s.style.opacity = '1';
+                    triggerRowAnimation(s);
+                });
+            }));
+        }
+
+        // ── Einzelkarte anzeigen ────────────────────────────────────
+        function showCard(id) {
+            toggle.textContent = "🌀 Rotation";
+            scoreboard.classList.add('rotating');
+
+            // Alle Sektionen verstecken
+            sections.forEach(s => {
+                s.style.transition = '';
+                s.style.opacity    = '0';
+                s.style.display    = 'none';
+                const card = s.querySelector('.card');
+                if (card) card.setAttribute('data-view', 'rotation');
+            });
+            playerPhotoContainer.style.display = 'none';
+
+            const el = document.querySelector(`[data-section="${id}"]`);
+            if (!el) return;
+
+            el.style.opacity    = '0';
+            el.style.display    = 'flex';
+            el.style.transition = `opacity ${CFG.FADE_MS}ms ease`;
+
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                el.style.opacity = '1';
+                triggerRowAnimation(el);
+            }));
+
+            // Profilbild des Führenden
+            const entries = dataMap[id];
+            const base    = "{{ url_for('static', filename='uploads/') }}";
+            const dummy   = "{{ url_for('static', filename='uploads/dummy.png') }}";
+            playerPhoto.src = (entries && entries.length > 0)
+                ? base + (entries[0].image || 'dummy.png')
+                : dummy;
+            playerPhotoContainer.style.display = 'flex';
+        }
+
+        // ── Einen Slot anzeigen ─────────────────────────────────────
+        function showSlot(index) {
+            const slot = SLOTS[index];
+            if (slot.type === 'grid') {
+                showGrid();
+            } else {
+                showCard(slot.type);
+            }
+        }
+
+        // ── Loop-Schritt: aktuellen Slot zeigen, nächsten einplanen ─
+        function step(index) {
+            clearTimeout(loopTimer);
+            slotIndex = index % SLOTS.length;
+            showSlot(slotIndex);
+
+            // Fortschrittsbalken neu starten mit exakter Slot-Dauer
+            const bar = document.getElementById('progress-bar');
+            bar.style.animation = 'none';
+            void bar.offsetHeight; // reflow
+            bar.style.animation = `progress-fill ${SLOTS[slotIndex].duration}ms linear forwards`;
+
+            loopTimer = setTimeout(() => step(slotIndex + 1), SLOTS[slotIndex].duration);
+        }
+
+        // ── Manueller Toggle ────────────────────────────────────────
+        // Im Grid → sofort zu Karte 1 (Slot-Index 1)
+        // In Rotation → sofort zurück zu Grid (Slot-Index 0)
+        toggle.addEventListener('click', () => {
+            const isGrid = SLOTS[slotIndex].type === 'grid';
+            step(isGrid ? 1 : 0);
+        });
+
+        // ── Auto-Refresh ────────────────────────────────────────────
+        function scheduleRefresh() {
+            clearTimeout(refreshTimer);
+            refreshTimer = setTimeout(() => location.reload(), CFG.REFRESH_MS);
+        }
+        // Nur Tastendruck/Touch setzt den Refresh zurück, kein normaler Click
+        // (sonst würde jeder Toggle-Klick den Refresh-Timer zurücksetzen)
+        ['keydown', 'touchstart'].forEach(evt =>
             document.addEventListener(evt, scheduleRefresh, { passive: true })
         );
 
-        scheduleRefresh();
-
-        // ── Init ─────────────────────────────────────────────────────
+        // ── Init ────────────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
-            updateUI(); // Stellt gespeicherten Modus wieder her
-            startModeSwitchTimer(); // Startet den 5-Minuten-Wechsler
+            step(0);           // Start: Grid anzeigen, Timer läuft
+            scheduleRefresh(); // Auto-Reload einplanen
         });
     </script>
 </body>
