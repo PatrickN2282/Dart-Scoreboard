@@ -21,15 +21,12 @@
         .card[data-view="static"] {
             overflow: hidden !important;
         }
-
-        /* ── QR-Code: rechte untere Ecke (Stil in main.css) ── */
     </style>
 </head>
 
 <body id="scoreboard"
       style="{% if bg_image %}background-image: url('{{ url_for('static', filename=bg_image) }}');{% endif %}">
 
-    <!-- ── Top-Navigationsleiste ── -->
     <div id="top-nav-bar">
         <div id="nav-left">
             <div id="mode-toggle">📊 Statisch</div>
@@ -42,25 +39,19 @@
         </div>
     </div>
 
-    <!-- ── QR-Code: bildschirmzentriert, über allem ── -->
     <div id="qr-panel">
         <img src="{{ qr_code }}" alt="QR-Code zum Aufrufen der Seite">
         <span>{{ qr_url }}</span>
     </div>
 
-    <!-- ── Großes Spielerfoto (nur Rotationsmodus) ── -->
     <div id="player-photo-container">
         <img id="player-photo"
              src="{{ url_for('static', filename='uploads/dummy.png') }}"
              alt="Top Spieler">
     </div>
 
-    <!-- ── Haupt-Grid ── -->
     <div class="container">
-
         <div class="top">
-
-            <!-- Meiste Legs -->
             <section class="section-block" data-section="legs">
                 <div class="card" data-view="static">
                     <h2>🏆 Meiste Legs gewonnen</h2>
@@ -95,7 +86,6 @@
                 </div>
             </section>
 
-            <!-- Meiste 180er -->
             <section class="section-block" data-section="max180">
                 <div class="card" data-view="static">
                     <h2>💥 Meiste 180er</h2>
@@ -130,12 +120,9 @@
                     {% endif %}
                 </div>
             </section>
-
-        </div><!-- /.top -->
+        </div>
 
         <div class="bottom">
-
-            <!-- Höchstes Finish -->
             <section class="section-block" data-section="finish">
                 <div class="card" data-view="static">
                     <h2>🎯 Höchstes Finish</h2>
@@ -171,7 +158,6 @@
                 </div>
             </section>
 
-            <!-- Wenigste Würfe 301 -->
             <section class="section-block" data-section="darts301">
                 <div class="card" data-view="static">
                     <h2>💨 Wenigste Würfe – 301</h2>
@@ -205,9 +191,8 @@
                     {% endif %}
                 </div>
             </section>
-
-        </div><!-- /.bottom -->
-    </div><!-- /.container -->
+        </div>
+    </div>
 
     <script>
         // ── Uhrzeit ──────────────────────────────────────────────────
@@ -221,15 +206,16 @@
         updateClock();
 
         // ── Modus-Steuerung ──────────────────────────────────────────
-        let rotating          = false;
-        let rotationInterval  = null;
+        // Status aus localStorage laden, damit Refresh den Modus nicht resettet
+        let rotating = localStorage.getItem('isRotating') === 'true';
+        let rotationInterval = null;
         let modeSwitchInterval = null;
 
-        const toggle               = document.getElementById('mode-toggle');
-        const sections             = document.querySelectorAll('.section-block');
-        const body                 = document.getElementById('scoreboard');
+        const toggle = document.getElementById('mode-toggle');
+        const sections = document.querySelectorAll('.section-block');
+        const body = document.getElementById('scoreboard');
         const playerPhotoContainer = document.getElementById('player-photo-container');
-        const playerPhoto          = document.getElementById('player-photo');
+        const playerPhoto = document.getElementById('player-photo');
 
         function setCardView(view) {
             sections.forEach(section => {
@@ -238,14 +224,17 @@
             });
         }
 
-        function toggleMode() {
-            rotating = !rotating;
+        function updateUI() {
             toggle.textContent = rotating ? "🌀 Rotation" : "📊 Statisch";
             body.classList.toggle('rotating', rotating);
             setCardView(rotating ? 'rotation' : 'static');
             rotating ? startRotation() : stopRotation();
-            // Timer nach JEDEM Umschalten (manuell oder automatisch) neu starten,
-            // damit der nächste Wechsel immer genau 10 Min. später erfolgt.
+        }
+
+        function toggleMode() {
+            rotating = !rotating;
+            localStorage.setItem('isRotating', rotating); // Status speichern
+            updateUI();
             startModeSwitchTimer();
         }
 
@@ -253,26 +242,23 @@
 
         function startModeSwitchTimer() {
             clearInterval(modeSwitchInterval);
-            modeSwitchInterval = setInterval(toggleMode, 600000); // 10 Minuten
+            // Wechsel alle 5 Minuten (300.000 ms)
+            modeSwitchInterval = setInterval(toggleMode, 300000);
         }
 
-        // Datenmapping für Spielerfotos (aus Jinja gerendert)
+        // Datenmapping für Spielerfotos
         const dataMap = {
-            legs:    {{ most_legs        | tojson | safe }},
-            finish:  {{ highest_finish   | tojson | safe }},
-            max180:  {{ most_180s        | tojson | safe }},
+            legs:     {{ most_legs     | tojson | safe }},
+            finish:   {{ highest_finish   | tojson | safe }},
+            max180:   {{ most_180s        | tojson | safe }},
             darts301: {{ lowest_darts301 | tojson | safe }}
         };
         const rotationOrder = ["legs", "finish", "max180", "darts301"];
-
-        // Rotations-Index: außerhalb von startRotation, damit er beim Neustart zurückgesetzt wird
         let rotationIndex = 0;
 
         function startRotation() {
-            // Vorherigen Interval sicher stoppen (verhindert Doppel-Timer)
             clearInterval(rotationInterval);
             rotationIndex = 0;
-
             document.querySelectorAll('.static-only').forEach(el => el.style.display = 'none');
             showSection(rotationOrder[rotationIndex]);
 
@@ -285,8 +271,8 @@
         function stopRotation() {
             clearInterval(rotationInterval);
             sections.forEach(s => {
-                s.style.display  = "";
-                s.style.opacity  = "1";
+                s.style.display = "";
+                s.style.opacity = "1";
             });
             playerPhotoContainer.style.display = "none";
             document.querySelectorAll('.static-only').forEach(el => el.style.display = '');
@@ -300,19 +286,16 @@
                 el.style.opacity = "0";
                 setTimeout(() => el.style.opacity = "1", 200);
 
-                // Einlauf-Animation neu triggern: Animation kurz entfernen und neu setzen
                 el.querySelectorAll('table tr:not(:first-child)').forEach(row => {
                     row.style.animation = 'none';
-                    // reflow erzwingen damit der Browser die Änderung registriert
                     void row.offsetHeight;
                     row.style.animation = '';
                 });
             }
 
-            // Spielerfoto des Führenden anzeigen
             const baseUrl = "{{ url_for('static', filename='uploads/') }}";
             const fallback = "{{ url_for('static', filename='uploads/dummy.png') }}";
-            const entries  = dataMap[id];
+            const entries = dataMap[id];
             playerPhoto.src = (entries && entries.length > 0)
                 ? baseUrl + (entries[0].image || "dummy.png")
                 : fallback;
@@ -320,18 +303,13 @@
         }
 
         // ── Auto-Refresh ──────────────────────────────────────────
-        // Lädt die Seite alle 60 Sekunden neu um neue Scores zu zeigen.
-        // Timer wird bei Benutzerinteraktion zurückgesetzt.
-        // Im Rotationsmodus wird erst nach der aktuellen Runde refresht.
-        const REFRESH_INTERVAL = 60000; // 60 Sekunden
+        const REFRESH_INTERVAL = 60000; 
         let refreshTimer = null;
 
         function scheduleRefresh() {
             clearTimeout(refreshTimer);
             refreshTimer = setTimeout(() => {
-                // Im Rotationsmodus kurz warten bis Sektion fertig ist
                 if (rotating) {
-                    // Nach aktuellem 15s-Slot neu laden
                     setTimeout(() => location.reload(), 15000);
                 } else {
                     location.reload();
@@ -339,17 +317,16 @@
             }, REFRESH_INTERVAL);
         }
 
-        // Bei jeder Interaktion Timer neu starten
         ['click', 'keydown', 'touchstart'].forEach(evt =>
             document.addEventListener(evt, scheduleRefresh, { passive: true })
         );
 
-        scheduleRefresh(); // Initial starten
+        scheduleRefresh();
 
         // ── Init ─────────────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
-            setCardView('static');
-            startModeSwitchTimer();
+            updateUI(); // Stellt gespeicherten Modus wieder her
+            startModeSwitchTimer(); // Startet den 5-Minuten-Wechsler
         });
     </script>
 </body>
