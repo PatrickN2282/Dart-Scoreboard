@@ -22,9 +22,17 @@
             overflow: hidden !important;
         }
 
-        /* ── QR-Code: rechte untere Ecke (Stil in main.css) ── */
+        /* Bucket-Stage und WinRate-Stage: fixed overlay */
+        #bucket-stage, #winrate-stage {
+            display: none;
+            position: fixed;
+            inset: var(--nav-height, 50px) 0 0 0;
+            z-index: 1;
+            align-items: center;
+            justify-content: center;
+        }
 
-        /* ── Fortschrittsbalken ── */
+        /* Fortschrittsbalken */
         #progress-bar {
             position: fixed;
             bottom: 0;
@@ -38,12 +46,37 @@
             );
             box-shadow: 0 0 8px rgba(240, 165, 0, 0.6);
             z-index: 999;
-            /* Animation wird per JS gesetzt */
             transition: none;
         }
         @keyframes progress-fill {
             from { width: 0%; }
             to   { width: 100%; }
+        }
+
+        /* Win Rate spezifische Styles */
+        .win-rate-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .win-rate-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .win-rate-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.85em;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
     </style>
 </head>
@@ -64,16 +97,16 @@
         </div>
     </div>
 
-    <!-- ── Fortschrittsbalken (füllt sich bis zum nächsten Slot) ── -->
+    <!-- ── Fortschrittsbalken ── -->
     <div id="progress-bar"></div>
 
-    <!-- ── QR-Code: bildschirmzentriert, über allem ── -->
+    <!-- ── QR-Code ── -->
     <div id="qr-panel">
         <img src="{{ qr_code }}" alt="QR-Code zum Aufrufen der Seite">
         <span>{{ qr_url }}</span>
     </div>
 
-    <!-- ── Großes Spielerfoto (nur Rotationsmodus) ── -->
+    <!-- ── Großes Spielerfoto ── -->
     <div id="player-photo-container">
         <img id="player-photo"
              src="{{ url_for('static', filename='uploads/dummy.png') }}"
@@ -234,6 +267,175 @@
         </div><!-- /.bottom -->
     </div><!-- /.container -->
 
+    <!-- ══════════════════════════════════════════════════════════════
+         Bucket-Karten (60+, 100+, 140+, 170+)
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="bucket-stage">
+
+        <!-- 60+ Aufnahmen -->
+        <section class="section-block" data-section="s60">
+            <div class="card" data-view="static">
+                <h2>🟡 Meiste 60+ Aufnahmen</h2>
+                {% if most_s60 %}
+                <div class="card-content">
+                    <div class="card-left">
+                        <img src="{{ url_for('static', filename='uploads/' ~ (most_s60[0].image or 'dummy.png')) }}"
+                             alt="Top Spieler" class="player-img"
+                             onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                    </div>
+                    <div class="card-right">
+                        <table>
+                            <tr><th>Platz</th><th>Name</th><th>60+</th></tr>
+                            {% for s in most_s60[:config.rotation_limit] %}
+                            <tr class="{{ s.podium_class }}">
+                                <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
+                                <td>{{ s.name }}</td><td>{{ s.s60 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+                {% else %}<p>Keine Einträge vorhanden.</p>{% endif %}
+            </div>
+        </section>
+
+        <!-- 100+ Aufnahmen -->
+        <section class="section-block" data-section="s100">
+            <div class="card" data-view="static">
+                <h2>🟠 Meiste 100+ Aufnahmen</h2>
+                {% if most_s100 %}
+                <div class="card-content">
+                    <div class="card-left">
+                        <img src="{{ url_for('static', filename='uploads/' ~ (most_s100[0].image or 'dummy.png')) }}"
+                             alt="Top Spieler" class="player-img"
+                             onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                    </div>
+                    <div class="card-right">
+                        <table>
+                            <tr><th>Platz</th><th>Name</th><th>100+</th></tr>
+                            {% for s in most_s100[:config.rotation_limit] %}
+                            <tr class="{{ s.podium_class }}">
+                                <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
+                                <td>{{ s.name }}</td><td>{{ s.s100 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+                {% else %}<p>Keine Einträge vorhanden.</p>{% endif %}
+            </div>
+        </section>
+
+        <!-- 140+ Aufnahmen -->
+        <section class="section-block" data-section="s140">
+            <div class="card" data-view="static">
+                <h2>🔴 Meiste 140+ Aufnahmen</h2>
+                {% if most_s140 %}
+                <div class="card-content">
+                    <div class="card-left">
+                        <img src="{{ url_for('static', filename='uploads/' ~ (most_s140[0].image or 'dummy.png')) }}"
+                             alt="Top Spieler" class="player-img"
+                             onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                    </div>
+                    <div class="card-right">
+                        <table>
+                            <tr><th>Platz</th><th>Name</th><th>140+</th></tr>
+                            {% for s in most_s140[:config.rotation_limit] %}
+                            <tr class="{{ s.podium_class }}">
+                                <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
+                                <td>{{ s.name }}</td><td>{{ s.s140 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+                {% else %}<p>Keine Einträge vorhanden.</p>{% endif %}
+            </div>
+        </section>
+
+        <!-- 170+ Aufnahmen -->
+        <section class="section-block" data-section="s170">
+            <div class="card" data-view="static">
+                <h2>💜 Meiste 170+ Aufnahmen</h2>
+                {% if most_s170 %}
+                <div class="card-content">
+                    <div class="card-left">
+                        <img src="{{ url_for('static', filename='uploads/' ~ (most_s170[0].image or 'dummy.png')) }}"
+                             alt="Top Spieler" class="player-img"
+                             onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                    </div>
+                    <div class="card-right">
+                        <table>
+                            <tr><th>Platz</th><th>Name</th><th>170+</th></tr>
+                            {% for s in most_s170[:config.rotation_limit] %}
+                            <tr class="{{ s.podium_class }}">
+                                <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
+                                <td>{{ s.name }}</td><td>{{ s.s170 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+                {% else %}<p>Keine Einträge vorhanden.</p>{% endif %}
+            </div>
+        </section>
+
+    </div><!-- /#bucket-stage -->
+
+    <!-- ══════════════════════════════════════════════════════════════
+         Win Rate Stage (Gewonnen/Gespielt Statistik)
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="winrate-stage">
+
+        <section class="section-block" data-section="winrate">
+            <div class="card" data-view="static">
+                <h2>📈 Beste Gewinnrate</h2>
+                {% if win_rate_stats %}
+                <div class="card-content">
+                    <div class="card-left">
+                        <img src="{{ url_for('static', filename='uploads/' ~ (win_rate_stats[0].image or 'dummy.png')) }}"
+                             alt="Top Spieler" class="player-img"
+                             onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                    </div>
+                    <div class="card-right">
+                        <table>
+                            <tr>
+                                <th>Platz</th>
+                                <th>Name</th>
+                                <th>Gewonnen</th>
+                                <th>Gespielt</th>
+                                <th>Rate</th>
+                            </tr>
+                            {% for s in win_rate_stats[:config.rotation_limit] %}
+                            <tr class="{{ s.podium_class }}">
+                                <td>
+                                    {% if s.rank == 1 %}🥇
+                                    {% elif s.rank == 2 %}🥈
+                                    {% elif s.rank == 3 %}🥉
+                                    {% else %}{{ s.rank }}{% endif %}
+                                </td>
+                                <td>{{ s.name }}</td>
+                                <td>{{ s.wins }}</td>
+                                <td>{{ s.total_games }}</td>
+                                <td>
+                                    <div class="win-rate-bar">
+                                        <div class="win-rate-fill" style="width: {{ s.win_rate }}%;"></div>
+                                        <span class="win-rate-text">{{ s.win_rate }}%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+                {% else %}
+                <p>Keine ausreichenden Daten vorhanden (mindestens 1 Spiel erforderlich).</p>
+                {% endif %}
+            </div>
+        </section>
+
+    </div><!-- /#winrate-stage -->
+
     <script>
         // ── Uhrzeit ──────────────────────────────────────────────────
         function updateClock() {
@@ -247,53 +449,70 @@
 
         // ╔══════════════════════════════════════════════════════════════╗
         // ║                 TIMING-KONFIGURATION                        ║
-        // ╠══════════════════════════════════════════════════════════════╣
-        // ║  Zeiten in Millisekunden  (1000 ms = 1 Sekunde)             ║
         // ╚══════════════════════════════════════════════════════════════╝
         const CFG = {
-            GRID_DURATION : 5 * 60 * 1000,  // 2×2-Übersicht:    5 Minuten
-            CARD_DURATION : 90 * 1000,       // Einzelkarte:     90 Sekunden
-            REFRESH_MS    : 10 * 60 * 1000,  // Auto-Reload:     10 Minuten
-            FADE_MS       : 300,             // Einblend-Dauer: 300 ms
+            GRID_DURATION : 5 * 1 * 1000,  // 5 Minuten
+            CARD_DURATION : 5 * 1000,      // 90 Sekunden
+            REFRESH_MS    : 10 * 60 * 1000, // 10 Minuten
+            FADE_MS       : 300,
         };
 
         // ── DOM-Referenzen ──────────────────────────────────────────
         const toggle               = document.getElementById('mode-toggle');
-        const sections             = document.querySelectorAll('.section-block');
+        const gridSections         = document.querySelectorAll('.container .section-block');
+        const bucketStage          = document.getElementById('bucket-stage');
+        const bucketSections       = document.querySelectorAll('#bucket-stage .section-block');
+        const winrateStage         = document.getElementById('winrate-stage');
         const scoreboard           = document.getElementById('scoreboard');
         const playerPhotoContainer = document.getElementById('player-photo-container');
         const playerPhoto          = document.getElementById('player-photo');
+        const progressBar          = document.getElementById('progress-bar');
 
         // ── Daten ───────────────────────────────────────────────────
         const dataMap = {
             legs:     {{ most_legs        | tojson | safe }},
             finish:   {{ highest_finish   | tojson | safe }},
             max180:   {{ most_180s        | tojson | safe }},
-            darts301: {{ lowest_darts301  | tojson | safe }}
+            darts301: {{ lowest_darts301  | tojson | safe }},
+            s60:      {{ most_s60         | tojson | safe }},
+            s100:     {{ most_s100        | tojson | safe }},
+            s140:     {{ most_s140        | tojson | safe }},
+            s170:     {{ most_s170        | tojson | safe }},
+            winrate:  {{ win_rate_stats   | tojson | safe }},
         };
 
         // ── Slot-Sequenz ────────────────────────────────────────────
-        // Jeder Slot beschreibt genau was angezeigt wird und wie lange.
-        // 'grid' = 2×2-Übersicht, alles andere = Einzelkarten-ID.
         const SLOTS = [
             { type: 'grid',     duration: CFG.GRID_DURATION },
             { type: 'legs',     duration: CFG.CARD_DURATION },
             { type: 'finish',   duration: CFG.CARD_DURATION },
             { type: 'max180',   duration: CFG.CARD_DURATION },
             { type: 'darts301', duration: CFG.CARD_DURATION },
+            { type: 's60',      duration: CFG.CARD_DURATION },
+            { type: 's100',     duration: CFG.CARD_DURATION },
+            { type: 's140',     duration: CFG.CARD_DURATION },
+            { type: 's170',     duration: CFG.CARD_DURATION },
+            { type: 'winrate',  duration: CFG.CARD_DURATION },
         ];
 
-        let slotIndex  = 0;       // aktueller Slot in SLOTS
-        let loopTimer  = null;    // der eine laufende Timer
+        let slotIndex  = 0;
+        let loopTimer  = null;
         let refreshTimer = null;
 
-        // ── Einlauf-Animation triggern ──────────────────────────────
+        // ── Einlauf-Animation ──────────────────────────────────────
         function triggerRowAnimation(container) {
             container.querySelectorAll('table tr:not(:first-child)').forEach(row => {
                 row.style.animation = 'none';
-                void row.offsetHeight;   // reflow
+                void row.offsetHeight;
                 row.style.animation = '';
             });
+        }
+
+        // ── Fortschrittsbalken starten ─────────────────────────────
+        function startProgressBar(duration) {
+            progressBar.style.animation = 'none';
+            void progressBar.offsetHeight; // Reflow
+            progressBar.style.animation = `progress-fill ${duration}ms linear forwards`;
         }
 
         // ── 2×2 Grid anzeigen ───────────────────────────────────────
@@ -301,18 +520,35 @@
             toggle.textContent = "📊 Übersicht";
             scoreboard.classList.remove('rotating');
 
-            sections.forEach(s => {
+            // Alle Stages ausblenden
+            bucketStage.style.display = 'none';
+            winrateStage.style.display = 'none';
+            
+            bucketSections.forEach(s => { 
+                s.style.display = 'none'; 
+                s.style.opacity = '0'; 
+            });
+
+            // Win Rate ausblenden
+            const winrateSection = document.querySelector('#winrate-stage .section-block');
+            if (winrateSection) {
+                winrateSection.style.display = 'none';
+                winrateSection.style.opacity = '0';
+            }
+
+            // Grid einblenden
+            gridSections.forEach(s => {
                 const card = s.querySelector('.card');
                 if (card) card.setAttribute('data-view', 'static');
                 s.style.opacity    = '0';
                 s.style.display    = '';
                 s.style.transition = `opacity ${CFG.FADE_MS}ms ease`;
             });
+            
             playerPhotoContainer.style.display = 'none';
 
-            // Doppeltes rAF stellt sicher dass display:'' bereits gerendert ist
             requestAnimationFrame(() => requestAnimationFrame(() => {
-                sections.forEach(s => {
+                gridSections.forEach(s => {
                     s.style.opacity = '1';
                     triggerRowAnimation(s);
                 });
@@ -324,19 +560,51 @@
             toggle.textContent = "🌀 Rotation";
             scoreboard.classList.add('rotating');
 
-            // Alle Sektionen verstecken
-            sections.forEach(s => {
+            // Grid ausblenden
+            gridSections.forEach(s => {
                 s.style.transition = '';
                 s.style.opacity    = '0';
                 s.style.display    = 'none';
                 const card = s.querySelector('.card');
                 if (card) card.setAttribute('data-view', 'rotation');
             });
+
+            // Bucket ausblenden
+            bucketSections.forEach(s => {
+                s.style.display = 'none';
+                s.style.opacity = '0';
+                const card = s.querySelector('.card');
+                if (card) card.setAttribute('data-view', 'rotation');
+            });
+            bucketStage.style.display = 'none';
+
+            // Win Rate ausblenden
+            const winrateSection = document.querySelector('#winrate-stage .section-block');
+            if (winrateSection) {
+                winrateSection.style.display = 'none';
+                winrateSection.style.opacity = '0';
+                const card = winrateSection.querySelector('.card');
+                if (card) card.setAttribute('data-view', 'rotation');
+            }
+            winrateStage.style.display = 'none';
+            
             playerPhotoContainer.style.display = 'none';
 
+            // Ziel-Sektion suchen
             const el = document.querySelector(`[data-section="${id}"]`);
-            if (!el) return;
+            if (!el) {
+                console.warn(`Sektion "${id}" nicht gefunden!`);
+                return;
+            }
 
+            // Richtigen Container anzeigen
+            if (id === 'winrate') {
+                winrateStage.style.display = 'flex';
+            } else if (['s60', 's100', 's140', 's170'].includes(id)) {
+                bucketStage.style.display = 'flex';
+            }
+
+            // Karte einblenden
             el.style.opacity    = '0';
             el.style.display    = 'flex';
             el.style.transition = `opacity ${CFG.FADE_MS}ms ease`;
@@ -346,13 +614,25 @@
                 triggerRowAnimation(el);
             }));
 
-            // Profilbild des Führenden
+            // Profilbild aktualisieren
+            updatePlayerPhoto(id);
+        }
+
+        // ── Profilbild aktualisieren ───────────────────────────────
+        function updatePlayerPhoto(id) {
             const entries = dataMap[id];
             const base    = "{{ url_for('static', filename='uploads/') }}";
             const dummy   = "{{ url_for('static', filename='uploads/dummy.png') }}";
-            playerPhoto.src = (entries && entries.length > 0)
-                ? base + (entries[0].image || 'dummy.png')
-                : dummy;
+            
+            if (entries && entries.length > 0 && entries[0].image) {
+                playerPhoto.src = base + entries[0].image;
+                playerPhoto.onerror = function() {
+                    this.src = dummy;
+                };
+            } else {
+                playerPhoto.src = dummy;
+            }
+            
             playerPhotoContainer.style.display = 'flex';
         }
 
@@ -366,24 +646,18 @@
             }
         }
 
-        // ── Loop-Schritt: aktuellen Slot zeigen, nächsten einplanen ─
+        // ── Loop-Schritt ────────────────────────────────────────────
         function step(index) {
             clearTimeout(loopTimer);
             slotIndex = index % SLOTS.length;
+            
             showSlot(slotIndex);
-
-            // Fortschrittsbalken neu starten mit exakter Slot-Dauer
-            const bar = document.getElementById('progress-bar');
-            bar.style.animation = 'none';
-            void bar.offsetHeight; // reflow
-            bar.style.animation = `progress-fill ${SLOTS[slotIndex].duration}ms linear forwards`;
+            startProgressBar(SLOTS[slotIndex].duration);
 
             loopTimer = setTimeout(() => step(slotIndex + 1), SLOTS[slotIndex].duration);
         }
 
         // ── Manueller Toggle ────────────────────────────────────────
-        // Im Grid → sofort zu Karte 1 (Slot-Index 1)
-        // In Rotation → sofort zurück zu Grid (Slot-Index 0)
         toggle.addEventListener('click', () => {
             const isGrid = SLOTS[slotIndex].type === 'grid';
             step(isGrid ? 1 : 0);
@@ -394,16 +668,15 @@
             clearTimeout(refreshTimer);
             refreshTimer = setTimeout(() => location.reload(), CFG.REFRESH_MS);
         }
-        // Nur Tastendruck/Touch setzt den Refresh zurück, kein normaler Click
-        // (sonst würde jeder Toggle-Klick den Refresh-Timer zurücksetzen)
+        
         ['keydown', 'touchstart'].forEach(evt =>
             document.addEventListener(evt, scheduleRefresh, { passive: true })
         );
 
         // ── Init ────────────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
-            step(0);           // Start: Grid anzeigen, Timer läuft
-            scheduleRefresh(); // Auto-Reload einplanen
+            step(0);
+            scheduleRefresh();
         });
     </script>
 </body>

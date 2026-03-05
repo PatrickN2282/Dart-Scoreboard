@@ -31,6 +31,9 @@
             <button class="tab-link" data-tab="tab-config">
                 <span class="tab-icon">⚙️</span> Design & Limits
             </button>
+            <button class="tab-link" data-tab="tab-import">
+                <span class="tab-icon">📥</span> Import
+            </button>
         </nav>
 
         <!-- ── Inhalt ── -->
@@ -81,13 +84,50 @@
                                 <span class="info-text">Maximalwert: 170</span>
                             </div>
                             <div class="input-group">
-                                <label for="max180">💥 Anzahl 180er</label>
+                                <label for="max180">💥 Anzahl 180er (manuell)</label>
                                 <input type="number" name="max180" id="max180" min="0" placeholder="–">
                             </div>
                             <div class="input-group">
                                 <label for="darts301">💨 301 in X Darts</label>
                                 <input type="number" name="darts301" id="darts301" min="6" placeholder="–">
                                 <span class="info-text">Leer lassen = kein Eintrag. Min. 6 Darts.</span>
+                            </div>
+                        </div>
+
+                        <hr class="form-divider" style="margin: 18px 0;">
+                        <p class="section-label">Score-Buckets <span style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--clr-text-muted);">– Aufnahmen nach Punktwert</span></p>
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="s60">🟡 60+ Aufnahmen</label>
+                                <input type="number" name="s60" id="s60" min="0" placeholder="–">
+                            </div>
+                            <div class="input-group">
+                                <label for="s100">🟠 100+ Aufnahmen</label>
+                                <input type="number" name="s100" id="s100" min="0" placeholder="–">
+                            </div>
+                            <div class="input-group">
+                                <label for="s140">🔴 140+ Aufnahmen</label>
+                                <input type="number" name="s140" id="s140" min="0" placeholder="–">
+                            </div>
+                            <div class="input-group">
+                                <label for="s170">💜 170+ Aufnahmen</label>
+                                <input type="number" name="s170" id="s170" min="0" placeholder="–">
+                            </div>
+                            <div class="input-group">
+                                <label for="s180">⚡ 180er (aus Buckets)</label>
+                                <input type="number" name="s180" id="s180" min="0" placeholder="–">
+                                <span class="info-text">Aus Import – wird mit manuellen 180ern addiert.</span>
+                            </div>
+                        </div>
+
+                        <!-- NEU: Gespielte Spiele (für manuelle Einträge) -->
+                        <hr class="form-divider" style="margin: 18px 0;">
+                        <p class="section-label">Spiel-Statistik <span style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--clr-text-muted);">– Für Win-Rate-Berechnung</span></p>
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="games_played">🎮 Gespielte Spiele (Import)</label>
+                                <input type="number" name="games_played" id="games_played" min="0" placeholder="–">
+                                <span class="info-text">Nur bei Import nötig. Wird automatisch berechnet.</span>
                             </div>
                         </div>
 
@@ -136,7 +176,13 @@
                                     <th style="text-align:center">🏆 Legs</th>
                                     <th style="text-align:center">🎯 Finish</th>
                                     <th style="text-align:center">💥 180er</th>
-                                    <th style="text-align:center">💨 301 Darts</th>
+                                    <th style="text-align:center">💨 301</th>
+                                    <th style="text-align:center">60+</th>
+                                    <th style="text-align:center">100+</th>
+                                    <th style="text-align:center">140+</th>
+                                    <th style="text-align:center">170+</th>
+                                    <th style="text-align:center">180</th>
+                                    <th style="text-align:center">🎮 Spiele</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -154,22 +200,20 @@
                                     </td>
                                     <td class="td-date">{{ score.date }}</td>
                                     <td class="td-name">{{ score.name }}</td>
-                                    <td class="td-num {% if score.legs > 0 %}has-value{% endif %}">
-                                        {{ score.legs if score.legs > 0 else '–' }}
-                                    </td>
-                                    <td class="td-num {% if score.finish > 0 %}has-value{% endif %}">
-                                        {{ score.finish if score.finish > 0 else '–' }}
-                                    </td>
-                                    <td class="td-num {% if score.max180 > 0 %}has-value{% endif %}">
-                                        {{ score.max180 if score.max180 > 0 else '–' }}
-                                    </td>
-                                    <td class="td-num {% if score.darts301 > 0 %}has-value{% endif %}">
-                                        {{ score.darts301 if score.darts301 > 0 else '–' }}
-                                    </td>
+                                    <td class="td-num {% if score.legs > 0 %}has-value{% endif %}">{{ score.legs if score.legs > 0 else '–' }}</td>
+                                    <td class="td-num {% if score.finish > 0 %}has-value{% endif %}">{{ score.finish if score.finish > 0 else '–' }}</td>
+                                    <td class="td-num {% if score.max180 > 0 %}has-value{% endif %}">{{ score.max180 if score.max180 > 0 else '–' }}</td>
+                                    <td class="td-num {% if score.darts301 > 0 %}has-value{% endif %}">{{ score.darts301 if score.darts301 > 0 else '–' }}</td>
+                                    <td class="td-num {% if score.s60 > 0 %}has-value{% endif %}">{{ score.s60 if score.s60 > 0 else '–' }}</td>
+                                    <td class="td-num {% if score.s100 > 0 %}has-value{% endif %}">{{ score.s100 if score.s100 > 0 else '–' }}</td>
+                                    <td class="td-num {% if score.s140 > 0 %}has-value{% endif %}">{{ score.s140 if score.s140 > 0 else '–' }}</td>
+                                    <td class="td-num {% if score.s170 > 0 %}has-value{% endif %}">{{ score.s170 if score.s170 > 0 else '–' }}</td>
+                                    <td class="td-num {% if score.s180 > 0 %}has-value{% endif %}">{{ score.s180 if score.s180 > 0 else '–' }}</td>
+                                    <td class="td-num {% if score.games_played > 0 %}has-value{% endif %}">{{ score.games_played if score.games_played > 0 else '–' }}</td>
                                 </tr>
                                 {% else %}
                                 <tr>
-                                    <td colspan="7" class="table-empty">Noch keine Score-Einträge vorhanden.</td>
+                                    <td colspan="13" class="table-empty">Noch keine Score-Einträge vorhanden.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -225,12 +269,26 @@
                                            placeholder="Neuer Name für {{ player.name }}"
                                            required style="margin:0;">
                                 </div>
-                                <button type="submit" class="btn btn-primary" style="height:38px;">
-                                    ✔ Speichern
-                                </button>
+                                <button type="submit" class="btn btn-primary" style="height:38px;">✔ Speichern</button>
                                 <button type="button" class="btn btn-ghost" style="height:38px;"
-                                        onclick="toggleRename({{ player.id }})">
-                                    Abbrechen
+                                        onclick="toggleRename({{ player.id }})">Abbrechen</button>
+                            </form>
+                        </div>
+                        <!-- Autodarts-Name -->
+                        <div style="padding: 0 0 10px 50px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <form method="POST" action="{{ url_for('admin') }}"
+                                  style="display:flex; gap:8px; align-items:center; flex:1; min-width:260px;">
+                                <input type="hidden" name="action" value="save_autodarts_name">
+                                <input type="hidden" name="autodarts_player_id" value="{{ player.id }}">
+                                <span style="font-size:0.78em; color:var(--clr-text-muted); white-space:nowrap;">🔗 Autodarts:</span>
+                                <input type="text" name="autodarts_name"
+                                       value="{{ player.autodarts_name or '' }}"
+                                       placeholder="Spielername auf Autodarts"
+                                       style="flex:1; font-size:0.82em; padding:5px 8px;
+                                              background:var(--clr-bg); border:1px solid var(--clr-border);
+                                              border-radius:5px; color:var(--clr-text);">
+                                <button type="submit" class="btn btn-ghost" style="height:30px; font-size:0.78em; padding:0 10px;">
+                                    💾
                                 </button>
                             </form>
                         </div>
@@ -421,11 +479,102 @@
 
             </div><!-- /tab-config -->
 
+
+            <!-- ═══════════════════════════════════════
+                 TAB 5: STATISTIK-IMPORT (VOLLSTÄNDIGE VERSION)
+            ═══════════════════════════════════════ -->
+            <div id="tab-import" class="tab-content">
+
+                <div class="panel">
+                    <h2 class="panel-title">📥 Statistik importieren (v3)</h2>
+                    <p style="font-size:0.88em; color:var(--clr-text-muted); margin: 0 0 16px; line-height:1.6;">
+                        Kopiere die Statistik-Tabelle aus der Autodarts-App. 
+                        <strong>NEU:</strong> 60+ Werte werden jetzt auch importiert. 
+                        Gespielte Spiele werden automatisch aus der Summe aller Legs berechnet.
+                    </p>
+
+                    <!-- Eingabe -->
+                    <div class="input-group" style="margin-bottom:14px;">
+                        <label for="import-raw">Statistik-Text</label>
+                        <textarea id="import-raw" rows="8"
+                            style="width:100%; font-size:0.78em; font-family:monospace;
+                                   background:var(--clr-bg); border:1px solid var(--clr-border);
+                                   border-radius:6px; padding:10px 12px; color:var(--clr-text);
+                                   resize:vertical; outline:none;"
+                            placeholder="Stats&#10;YKN_90&#10;PS23&#10;Legs won 2 1&#10;Best Checkout points 120 85&#10;60+ 15 8&#10;100+ 5 3&#10;140+ 2 1&#10;170+ 0 0&#10;180 1 0"></textarea>
+                    </div>
+
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;">
+                        <button class="btn btn-primary" onclick="importParse()">▶ Parsen</button>
+                        <button class="btn btn-ghost" onclick="importPasteClipboard()">📋 Aus Zwischenablage</button>
+                        <button class="btn btn-ghost" onclick="importClear()">✕ Leeren</button>
+                    </div>
+                    <div id="import-status" style="font-size:0.8em; min-height:18px; margin-bottom:8px;"></div>
+                </div>
+
+                <!-- Vorschau + Mapping -->
+                <div class="panel" id="import-preview-panel" style="display:none;">
+                    <h2 class="panel-title">🔍 Vorschau & Spieler-Mapping</h2>
+                    <p style="font-size:0.82em; color:var(--clr-text-muted); margin:0 0 14px; line-height:1.5;">
+                        Die Spieler wurden automatisch erkannt. Gespielte Spiele: <strong id="total-games-display">0</strong> 
+                        (Summe aller Legs). Ordne die Spieler zu oder erstelle neue Einträge.
+                    </p>
+
+                    <div class="table-scroll">
+                        <table class="data-table" id="import-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:32px;">✔</th>
+                                    <th>Autodarts-Name</th>
+                                    <th>→ Scoreboard-Spieler</th>
+                                    <th style="text-align:center">🏆 Legs</th>
+                                    <th style="text-align:center">🎯 Best CO</th>
+                                    <th style="text-align:center">60+</th>
+                                    <th style="text-align:center">100+</th>
+                                    <th style="text-align:center">140+</th>
+                                    <th style="text-align:center">170+</th>
+                                    <th style="text-align:center">180</th>
+                                </tr>
+                            </thead>
+                            <tbody id="import-tbody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="form-actions" style="margin-top:20px; gap:12px;">
+                        <button class="btn btn-primary" id="import-transfer-btn"
+                                onclick="importTransfer()">
+                            ⬆ In Scoreboard übertragen
+                        </button>
+                        <span id="import-result"
+                              style="font-size:0.82em; color:var(--clr-text-muted);"></span>
+                    </div>
+                </div>
+
+            </div><!-- /tab-import -->
+
         </main>
     </div><!-- /admin-body -->
 
     <script>
-        // ── Tab-Navigation ──────────────────────────────────────────
+        // ════════════════════════════════════════════════════════
+        //  KONFIGURATION & GLOBALE VARIABLEN
+        // ════════════════════════════════════════════════════════
+        
+        const SCOREBOARD_PLAYERS = [
+            {% for player in players %}
+            { id: {{ player.id }}, name: {{ player.name | tojson }}, autodarts: {{ (player.autodarts_name or '') | tojson }} },
+            {% endfor %}
+        ];
+
+        const CLIPBOARD_NAME_MAP = {};
+
+        let importedPlayers = [];
+        let totalGamesInImport = 0;  // NEU: Gesamtspiele für diesen Import
+
+        // ════════════════════════════════════════════════════════
+        //  TAB-NAVIGATION & UI-HILFSFUNKTIONEN
+        // ════════════════════════════════════════════════════════
+
         document.addEventListener('DOMContentLoaded', function () {
             const tabLinks    = document.querySelectorAll('.tab-link');
             const tabContents = document.querySelectorAll('.tab-content');
@@ -450,7 +599,6 @@
             activateTab(stored && document.getElementById(stored) ? stored : tabLinks[0].dataset.tab);
         });
 
-        // ── Umbenennen-Toggle ───────────────────────────────────────
         function toggleRename(playerId) {
             const el = document.getElementById('rename-' + playerId);
             if (!el) return;
@@ -462,7 +610,6 @@
             }
         }
 
-        // ── Dateiname anzeigen ──────────────────────────────────────
         function showFileName(input, targetId) {
             const target = document.getElementById(targetId);
             if (!target) return;
@@ -471,9 +618,6 @@
                 : '';
         }
 
-        // ── Score-Formular Validierung ──────────────────────────────
-        // Verhindert Speichern wenn kein Feld ausgefüllt ist,
-        // und wenn weder Spieler gewählt noch neuer Name eingegeben wurde.
         function validateScoreForm() {
             const legs    = document.getElementById('legs').value.trim();
             const finish  = document.getElementById('finish').value.trim();
@@ -510,6 +654,292 @@
         function hideFormError() {
             const el = document.getElementById('score-form-error');
             if (el) el.remove();
+        }
+
+        // ════════════════════════════════════════════════════════
+        //  STATISTIK-IMPORT (VOLLSTÄNDIG MIT S60)
+        // ════════════════════════════════════════════════════════
+
+        function importSetStatus(msg, color) {
+            const el = document.getElementById('import-status');
+            el.textContent = msg;
+            el.style.color = color || 'var(--clr-text-muted)';
+        }
+
+        async function importPasteClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('import-raw').value = text;
+                importSetStatus('✓ Aus Zwischenablage eingefügt', 'var(--clr-accent)');
+            } catch(e) {
+                importSetStatus('Zwischenablage nicht verfügbar – bitte manuell einfügen.', '#e05252');
+            }
+        }
+
+        function importClear() {
+            document.getElementById('import-raw').value = '';
+            document.getElementById('import-preview-panel').style.display = 'none';
+            document.getElementById('import-result').textContent = '';
+            importSetStatus('');
+            importedPlayers = [];
+            totalGamesInImport = 0;
+        }
+
+        // NEU: Vollständiger Parser mit s60 Unterstützung
+        function parseStatsClipboard(text) {
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            
+            // 1️⃣ Spieleranzahl über "Legs won" bestimmen
+            const legsLine = lines.find(l => l.startsWith("Legs won"));
+            if (!legsLine) {
+                throw new Error('"Legs won" nicht gefunden – bitte gültigen Statistik-Text einfügen');
+            }
+
+            const legsParts = legsLine.split(/\s+/);
+            const legsValues = legsParts.slice(2);
+            const playerCount = legsValues.length;
+
+            if (playerCount === 0) {
+                throw new Error('Keine Spieler in "Legs won" gefunden');
+            }
+
+            // 2️⃣ Stat-Zeilen holen (JETZT MIT 60+!)
+            const getLine = (label) => lines.find(l => l.startsWith(label)) || "";
+            
+            const finishLine = getLine("Best Checkout points");
+            const s60Line = getLine("60+");    // NEU!
+            const s100Line = getLine("100+");
+            const s140Line = getLine("140+");
+            const s170Line = getLine("170+");
+            const s180Line = getLine("180");
+
+            const finishValues = finishLine ? finishLine.split(/\s+/).slice(3) : [];
+            const s60Values = s60Line ? s60Line.split(/\s+/).slice(1) : [];    // NEU!
+            const s100Values = s100Line ? s100Line.split(/\s+/).slice(1) : [];
+            const s140Values = s140Line ? s140Line.split(/\s+/).slice(1) : [];
+            const s170Values = s170Line ? s170Line.split(/\s+/).slice(1) : [];
+            const s180Values = s180Line ? s180Line.split(/\s+/).slice(1) : [];
+
+            // 3️⃣ Autodarts-Spielernamen erkennen
+            const namePattern = /^[A-Z0-9_]{3,20}$/;
+            
+            const candidates = [];
+            for (const line of lines) {
+                if (
+                    namePattern.test(line) &&
+                    line !== "STATS" &&
+                    !line.endsWith("+")
+                ) {
+                    candidates.push(line);
+                }
+            }
+
+            const playerNames = candidates.slice(-playerCount);
+
+            // NEU: Berechne Gesamtspiele (Summe aller Legs)
+            const totalLegs = legsValues.reduce((sum, val) => sum + (parseInt(val) || 0), 0);
+
+            const results = [];
+
+            for (let i = 0; i < playerCount; i++) {
+                const rawName = playerNames[i] || `Player_${i}`;
+                const mappedName = CLIPBOARD_NAME_MAP[rawName] || rawName;
+
+                const legs = (i < legsValues.length) ? parseInt(legsValues[i]) || 0 : 0;
+
+                let finish = 0;
+                if (i < finishValues.length) {
+                    const val = finishValues[i];
+                    if (/^\d+$/.test(val)) {
+                        finish = parseInt(val);
+                    }
+                }
+
+                // JETZT MIT S60!
+                const s60 = (i < s60Values.length) ? parseInt(s60Values[i]) || 0 : 0;
+                const s100 = (i < s100Values.length) ? parseInt(s100Values[i]) || 0 : 0;
+                const s140 = (i < s140Values.length) ? parseInt(s140Values[i]) || 0 : 0;
+                const s170 = (i < s170Values.length) ? parseInt(s170Values[i]) || 0 : 0;
+                const s180 = (i < s180Values.length) ? parseInt(s180Values[i]) || 0 : 0;
+
+                results.push({
+                    name: mappedName,
+                    legs: legs,
+                    finish: finish,
+                    s60: s60,      // NEU!
+                    s100: s100,
+                    s140: s140,
+                    s170: s170,
+                    s180: s180
+                });
+            }
+
+            return {
+                players: results,
+                totalGames: totalLegs  // NEU!
+            };
+        }
+
+        function importParse() {
+            const raw = document.getElementById('import-raw').value.trim();
+            if (!raw) { 
+                importSetStatus('Kein Text vorhanden.', '#e05252'); 
+                return; 
+            }
+            
+            try {
+                const result = parseStatsClipboard(raw);
+                importedPlayers = result.players;
+                totalGamesInImport = result.totalGames;  // NEU!
+                
+                if (importedPlayers.length === 0) {
+                    importSetStatus('Keine Spieler erkannt – Format prüfen.', '#e05252');
+                    return;
+                }
+                
+                // NEU: Zeige Gesamtspiele an
+                document.getElementById('total-games-display').textContent = totalGamesInImport;
+                
+                renderImportTable(importedPlayers);
+                document.getElementById('import-preview-panel').style.display = 'block';
+                document.getElementById('import-result').textContent = '';
+                importSetStatus(`✓ ${importedPlayers.length} Spieler erkannt (${totalGamesInImport} gespielte Spiele)`, 'var(--clr-accent)');
+                
+            } catch(e) {
+                importSetStatus('Fehler: ' + e.message, '#e05252');
+            }
+        }
+
+        function renderImportTable(players) {
+            const tbody = document.getElementById('import-tbody');
+            
+            const options = SCOREBOARD_PLAYERS.map(sp =>
+                `<option value="${sp.id}">${sp.name}${sp.autodarts ? ' ('+sp.autodarts+')' : ''}</option>`
+            ).join('');
+
+            tbody.innerHTML = players.map((p, idx) => {
+                const match = SCOREBOARD_PLAYERS.find(sp => 
+                    sp.autodarts && sp.autodarts.toLowerCase() === p.name.toLowerCase()
+                );
+
+                const matchBadge = match
+                    ? `<span style="font-size:0.7em;color:#3ecf8e;margin-left:4px;">✓ auto</span>`
+                    : `<span style="font-size:0.7em;color:#f0a500;margin-left:4px;">→ wählen</span>`;
+
+                const selectHtml = `
+                    <select class="import-player-select" data-idx="${idx}"
+                            style="width:100%; font-size:0.82em; background:var(--clr-bg);
+                                   border:1px solid var(--clr-border); border-radius:5px;
+                                   padding:4px 6px; color:var(--clr-text);">
+                        <option value="">➕ Neu: "${p.name}"</option>
+                        ${options}
+                    </select>`;
+
+                const num = (v) => v > 0
+                    ? `<td class="td-num has-value" style="text-align:center">${v}</td>`
+                    : `<td class="td-num" style="text-align:center;color:var(--clr-text-muted)">–</td>`;
+
+                return `<tr data-idx="${idx}">
+                    <td style="text-align:center;">
+                        <input type="checkbox" class="import-check" data-idx="${idx}" checked
+                               style="width:16px;height:16px;cursor:pointer;">
+                    </td>
+                    <td style="font-family:monospace;font-size:0.9em;color:var(--clr-accent);font-weight:600;">
+                        ${p.name}${matchBadge}
+                    </td>
+                    <td>${selectHtml}</td>
+                    ${num(p.legs)}
+                    ${num(p.finish)}
+                    ${num(p.s60)}
+                    ${num(p.s100)}
+                    ${num(p.s140)}
+                    ${num(p.s170)}
+                    ${num(p.s180)}
+                </tr>`;
+            }).join('');
+
+            // Vorauswahl setzen
+            players.forEach((p, idx) => {
+                const match = SCOREBOARD_PLAYERS.find(sp => 
+                    sp.autodarts && sp.autodarts.toLowerCase() === p.name.toLowerCase()
+                );
+                if (match) {
+                    const sel = tbody.querySelector(`select[data-idx="${idx}"]`);
+                    if (sel) sel.value = match.id;
+                }
+            });
+        }
+
+        async function importTransfer() {
+            const btn    = document.getElementById('import-transfer-btn');
+            const result = document.getElementById('import-result');
+
+            const payload = [];
+            document.querySelectorAll('.import-check').forEach(cb => {
+                if (!cb.checked) return;
+                
+                const idx = parseInt(cb.dataset.idx);
+                const p   = importedPlayers[idx];
+                const sel = document.querySelector(`select.import-player-select[data-idx="${idx}"]`);
+                const pid = sel && sel.value ? parseInt(sel.value) : null;
+
+                payload.push({
+                    player_id:      pid,
+                    autodarts_name: p.name,
+                    player_name:    pid ? null : p.name,
+                    legs:           p.legs,
+                    finish:         p.finish,
+                    max180:         0,
+                    darts301:       0,
+                    s60:            p.s60,      // JETZT MIT S60!
+                    s100:           p.s100,
+                    s140:           p.s140,
+                    s170:           p.s170,
+                    s180:           p.s180
+                });
+            });
+
+            if (payload.length === 0) {
+                result.textContent = '⚠ Keine Zeilen ausgewählt.';
+                result.style.color = '#e05252';
+                return;
+            }
+
+            // NEU: Füge totalGames zu jedem Eintrag hinzu (für Backend-Berechnung)
+            payload.forEach(entry => {
+                entry.total_games_in_import = totalGamesInImport;
+            });
+
+            btn.disabled    = true;
+            btn.textContent = '⏳ Wird übertragen …';
+
+            try {
+                const res  = await fetch('/admin/import', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify(payload),
+                });
+                
+                const data = await res.json();
+                
+                if (data.ok) {
+                    result.textContent = `✓ ${data.imported} Einträge gespeichert.`;
+                    result.style.color = 'var(--clr-accent)';
+                    btn.textContent    = '✓ Übertragen';
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    result.textContent = '✗ Fehler: ' + (data.error || 'Unbekannter Fehler');
+                    result.style.color = '#e05252';
+                    btn.disabled = false;
+                    btn.textContent = '⬆ In Scoreboard übertragen';
+                }
+                
+            } catch(e) {
+                result.textContent = '✗ Netzwerkfehler: ' + e.message;
+                result.style.color = '#e05252';
+                btn.disabled = false;
+                btn.textContent = '⬆ In Scoreboard übertragen';
+            }
         }
     </script>
 </body>
