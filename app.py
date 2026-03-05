@@ -103,7 +103,7 @@ def get_player_id(player_name, players):
 
     # Sichere ID-Vergabe: Immer größte vorhandene ID + 1
     new_id = max((p["id"] for p in players), default=0) + 1
-    new_player = {"id": new_id, "name": normalized_name, "image": "dummy.png"}
+    new_player = {"id": new_id, "name": normalized_name, "image": "dummy.png", "autodarts_name": ""}
     players.append(new_player)
     save_json(PLAYERS_FILE, players)
     return new_id
@@ -128,7 +128,6 @@ def add_podium_rank(entries: list, sort_key: str) -> list:
     Fügt jedem Eintrag in einer sortierten Liste ein 'rank'-Feld (1-basiert)
     und ein 'podium_class'-Feld ('gold', 'silver', 'bronze', '') hinzu.
     Gleiche Werte beim sort_key (Tie) erhalten denselben Rang.
-    sort_key wird explizit übergeben – kein Raten anhand vorhandener Felder.
     """
     PODIUM = {1: "gold", 2: "silver", 3: "bronze"}
     for i, entry in enumerate(entries):
@@ -138,13 +137,26 @@ def add_podium_rank(entries: list, sort_key: str) -> list:
             prev_val = entries[i - 1].get(sort_key)
             curr_val = entry.get(sort_key)
             if curr_val == prev_val:
-                # Gleichstand: gleichen Rang wie Vorgänger übernehmen
                 entry["rank"] = entries[i - 1]["rank"]
             else:
-                # Kein Gleichstand: tatsächliche Position (1-basiert)
                 entry["rank"] = i + 1
         entry["podium_class"] = PODIUM.get(entry["rank"], "")
     return entries
+
+
+def calculate_win_rate_score(wins: int, total: int) -> float:
+    """
+    Berechnet einen gewichteten Win-Rate-Score.
+    Formel: (Gewonnene Spiele / Gesamtspiele) * min(Gesamtspiele / 10, 1.0)
+    Dies bevorzugt Spieler mit mehr Spielen und guter Win-Rate.
+    Bei weniger als 10 Spielen wird die Rate abgewertet.
+    """
+    if total == 0:
+        return 0.0
+    win_rate = wins / total
+    # Gewichtung: Mindestens 10 Spiele für volle Wertung
+    weight = min(total / 10.0, 1.0)
+    return win_rate * weight
 
 
 # --- Routen ---
@@ -157,7 +169,7 @@ def index():
     qr_url   = f"http://{local_ip}:5000"
     qr_code  = generate_qr_code(qr_url)
 
-    # Spieler einmalig als Dict laden – kein wiederholtes Disk-Lesen
+    # Spieler einmalig als Dict laden
     players_list = load_json(PLAYERS_FILE)
     players_map  = {p["id"]: p for p in players_list}
 
@@ -167,41 +179,92 @@ def index():
     def player_image(pid):
         return players_map.get(pid, {}).get("image", "dummy.png")
 
-    # ── Legs & 180er: kumuliert pro Spieler ──────────────────────────
+    # ── Kumulierte Statistiken pro Spieler ───────────────────────────
     cumulative = {}
     for s in scores:
         pid = s.get("player_id")
         if pid not in players_map:
-            continue  # verwaiste Scores (Spieler gelöscht) überspringen
+            continue
         if pid not in cumulative:
-            cumulative[pid] = {"legs": 0, "max180": 0, "last180_date": ""}
+            cumulative[pid] = {
+                "legs": 0, "max180": 0, "last180_date": "",
+                "s60": 0, "s100": 0, "s140": 0, "s170": 0, "s180": 0,
+                "games_played": 0,  # NEU: Gespielte Spiele (Import-Summe)
+            }
         cumulative[pid]["legs"]   += s.get("legs",   0)
         cumulative[pid]["max180"] += s.get("max180", 0)
-        # Datum des letzten Eintrags mit mindestens einer 180 merken
-        if s.get("max180", 0) > 0:
+        cumulative[pid]["s60"]    += s.get("s60",    0)
+        cumulative[pid]["s100"]   += s.get("s100",   0)
+        cumulative[pid]["s140"]   += s.get("s140",   0)
+        cumulative[pid]["s170"]   += s.get("s170",   0)
+        cumulative[pid]["s180"]   += s.get("s180",   0)
+        # NEU: Gespielte Spiele kumulieren
+        cumulative[pid]["games_played"] += s.get("games_played", 0)
+        if s.get("max180", 0) > 0 or s.get("s180", 0) > 0:
             cumulative[pid]["last180_date"] = s.get("date", "")
 
     most_legs = []
     most_180s = []
+    most_s60  = []
+    most_s100 = []
+    most_s140 = []
+    most_s170 = []
+    # NEU: Win Rate Statistik
+    win_rate_stats = []
+    
     for pid, vals in cumulative.items():
-        if vals["legs"] > 0:
-            most_legs.append({
-                "name":  player_name(pid),
-                "image": player_image(pid),
-                "legs":  vals["legs"],
-            })
-        if vals["max180"] > 0:
-            most_180s.append({
-                "name":        player_name(pid),
-                "image":       player_image(pid),
-                "max180":      vals["max180"],
-                "last180_date": vals["last180_date"],
+        base = {"name": player_name(pid), "image": player_image(pid)}
+        
+        if vals["legs"]  > 0:
+            most_legs.append({**base, "legs": vals["legs"]})
+        
+        # 180er: max180 (manuell) + s180 (Import) zusammenführen
+        total_180 = vals["max180"] + vals["s180"]
+        if total_180 > 0:
+            most_180s.append({**base, "max180": total_180, "last180_date": vals["last180_date"]})
+        
+        if vals["s60"]  > 0:
+            most_s60.append( {**base, "s60":  vals["s60"]})
+        if vals["s100"] > 0:
+            most_s100.append({**base, "s100": vals["s100"]})
+        if vals["s140"] > 0:
+            most_s140.append({**base, "s140": vals["s140"]})
+        if vals["s170"] > 0:
+            most_s170.append({**base, "s170": vals["s170"]})
+        
+        # NEU: Win Rate berechnen (nur wenn Spiele gespielt wurden)
+        if vals["games_played"] > 0:
+            wins = vals["legs"]  # Gewonnene Legs = gewonnene Spiele
+            total = vals["games_played"]
+            win_rate = (wins / total) * 100 if total > 0 else 0
+            weighted_score = calculate_win_rate_score(wins, total)
+            
+            win_rate_stats.append({
+                **base,
+                "wins": wins,
+                "total_games": total,
+                "win_rate": round(win_rate, 1),
+                "weighted_score": weighted_score
             })
 
     most_legs = add_podium_rank(
         sorted(most_legs, key=lambda x: x["legs"],   reverse=True), "legs")
     most_180s = add_podium_rank(
         sorted(most_180s, key=lambda x: x["max180"], reverse=True), "max180")
+    most_s60  = add_podium_rank(
+        sorted(most_s60,  key=lambda x: x["s60"],    reverse=True), "s60")
+    most_s100 = add_podium_rank(
+        sorted(most_s100, key=lambda x: x["s100"],   reverse=True), "s100")
+    most_s140 = add_podium_rank(
+        sorted(most_s140, key=lambda x: x["s140"],   reverse=True), "s140")
+    most_s170 = add_podium_rank(
+        sorted(most_s170, key=lambda x: x["s170"],   reverse=True), "s170")
+    
+    # NEU: Win Rate sortieren nach gewichtetem Score
+    win_rate_stats = add_podium_rank(
+        sorted(win_rate_stats, key=lambda x: x["weighted_score"], reverse=True), 
+        "weighted_score"
+    )
 
     # ── Höchstes Finish: pro Spieler nur der beste Einzelwert ────────
     finish_best: dict = {}
@@ -250,6 +313,11 @@ def index():
         highest_finish=highest_finish,
         most_180s=most_180s,
         lowest_darts301=lowest_darts301,
+        most_s60=most_s60,
+        most_s100=most_s100,
+        most_s140=most_s140,
+        most_s170=most_s170,
+        win_rate_stats=win_rate_stats,  # NEU
         bg_image=bg_image,
         config=config,
         local_ip=local_ip,
@@ -282,20 +350,40 @@ def admin():
 
             if player_id:
                 try:
-                    legs_add    = int(request.form.get("legs")    or 0)
-                    finish      = int(request.form.get("finish")   or 0)
-                    max180_add  = int(request.form.get("max180")   or 0)
+                    legs_add     = int(request.form.get("legs")    or 0)
+                    finish       = int(request.form.get("finish")   or 0)
+                    max180_add   = int(request.form.get("max180")   or 0)
                     darts301_add = int(request.form.get("darts301") or 0)
+                    s60_add      = int(request.form.get("s60")      or 0)
+                    s100_add     = int(request.form.get("s100")     or 0)
+                    s140_add     = int(request.form.get("s140")     or 0)
+                    s170_add     = int(request.form.get("s170")     or 0)
+                    s180_add     = int(request.form.get("s180")     or 0)
+                    # NEU: Gespielte Spiele (manuell oder Import)
+                    games_played_add = int(request.form.get("games_played") or 0)
                 except ValueError:
-                    legs_add, finish, max180_add, darts301_add = 0, 0, 0, 0
+                    legs_add = finish = max180_add = darts301_add = 0
+                    s60_add = s100_add = s140_add = s170_add = s180_add = 0
+                    games_played_add = 0
 
-                if legs_add > 0 or finish > 0 or max180_add > 0 or darts301_add > 0:
+                any_value = any([
+                    legs_add, finish, max180_add, darts301_add,
+                    s60_add, s100_add, s140_add, s170_add, s180_add,
+                    games_played_add,  # NEU
+                ])
+                if any_value:
                     new_score = {
                         "player_id": player_id,
                         "legs":      legs_add,
                         "finish":    finish,
                         "max180":    max180_add,
                         "darts301":  darts301_add,
+                        "s60":       s60_add,
+                        "s100":      s100_add,
+                        "s140":      s140_add,
+                        "s170":      s170_add,
+                        "s180":      s180_add,
+                        "games_played": games_played_add,  # NEU
                         "date":      datetime.now().strftime("%d.%m.%Y %H:%M")
                     }
                     scores.append(new_score)
@@ -369,6 +457,19 @@ def admin():
             except ValueError:
                 pass
 
+        # --- 7b. AUTODARTS-NAME SPEICHERN ---
+        elif action == "save_autodarts_name":
+            try:
+                ad_id   = int(request.form.get("autodarts_player_id"))
+                ad_name = request.form.get("autodarts_name", "").strip()
+                for p in players:
+                    if p["id"] == ad_id:
+                        p["autodarts_name"] = ad_name
+                        break
+                save_json(PLAYERS_FILE, players)
+            except ValueError:
+                pass
+
         # --- 8. KONFIGURATION SPEICHERN ---
         elif action == "save_config":
             try:
@@ -401,6 +502,12 @@ def admin():
             "finish":  s.get("finish",  0),
             "max180":  s.get("max180",  0),
             "darts301": s.get("darts301", 0),
+            "s60":     s.get("s60",     0),
+            "s100":    s.get("s100",    0),
+            "s140":    s.get("s140",    0),
+            "s170":    s.get("s170",    0),
+            "s180":    s.get("s180",    0),
+            "games_played": s.get("games_played", 0),  # NEU
         })
 
     bg_image = f"uploads/{BACKGROUND_FILENAME}" if background_exists() else None
@@ -413,6 +520,86 @@ def admin():
         bg_image=bg_image,
         config=config,
     )
+
+
+@app.route("/admin/import", methods=["POST"])
+def admin_import():
+    """
+    Empfängt geparste Statistik-Daten als JSON und speichert sie als Score-Einträge.
+    Matching: player_id (explizit) → autodarts_name → player_name (neu anlegen).
+    NEU: Berechnet gespielte Spiele aus der Summe aller Legs des Imports.
+    """
+    try:
+        payload = request.get_json(force=True)
+        if not payload or not isinstance(payload, list):
+            return {"ok": False, "error": "Ungültiges Format"}, 400
+
+        players = load_json(PLAYERS_FILE)
+        scores  = load_json(SCORES_FILE)
+        imported = 0
+        now = datetime.now().strftime("%d.%m.%Y %H:%M")
+
+        # Autodarts-Name → player_id Lookup (case-insensitive)
+        autodarts_map = {
+            p.get("autodarts_name", "").strip().lower(): p["id"]
+            for p in players
+            if p.get("autodarts_name", "").strip()
+        }
+
+        # NEU: Berechne Gesamtanzahl der gespielten Spiele (Summe aller Legs)
+        total_legs_in_import = sum(entry.get("legs", 0) for entry in payload)
+        
+        for entry in payload:
+            pid = entry.get("player_id")
+            if pid:
+                pid = int(pid)
+            else:
+                # Fallback: über autodarts_name matchen
+                ad_name = (entry.get("autodarts_name") or entry.get("player_name") or "").strip()
+                pid = autodarts_map.get(ad_name.lower())
+                if not pid:
+                    name = (entry.get("player_name") or ad_name or "").strip()
+                    if not name:
+                        continue
+                    pid = get_player_id(name, players)
+
+            legs   = int(entry.get("legs",    0) or 0)
+            finish = int(entry.get("finish",   0) or 0)
+            m180   = int(entry.get("max180",   0) or 0)
+            d301   = int(entry.get("darts301", 0) or 0)
+            s60    = int(entry.get("s60",      0) or 0)
+            s100   = int(entry.get("s100",     0) or 0)
+            s140   = int(entry.get("s140",     0) or 0)
+            s170   = int(entry.get("s170",     0) or 0)
+            s180   = int(entry.get("s180",     0) or 0)
+
+            if not any([legs, finish, m180, d301, s60, s100, s140, s170, s180]):
+                continue
+
+            # NEU: Speichere die Gesamtspielzahl für JEDEN Eintrag dieses Imports
+            # (wird für die Win-Rate-Berechnung benötigt)
+            scores.append({
+                "player_id": pid,
+                "legs":  legs,  
+                "finish": finish, 
+                "max180": m180,
+                "darts301": d301,
+                "s60": s60, 
+                "s100": s100, 
+                "s140": s140, 
+                "s170": s170, 
+                "s180": s180,
+                "games_played": total_legs_in_import,  # NEU: Alle Spieler bekommen dieselbe Gesamtzahl
+                "date": now,
+            })
+            imported += 1
+
+        save_json(SCORES_FILE, scores)
+        save_json(PLAYERS_FILE, players)
+        return {"ok": True, "imported": imported}
+
+    except Exception as e:
+        return {"ok": False, "error": str(e)}, 500
 
 
 if __name__ == '__main__':
