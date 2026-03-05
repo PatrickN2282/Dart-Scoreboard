@@ -7,14 +7,13 @@
 
     <style>
         :root {
-            --config-font-family:       {{ config.font_family | safe }};
-            --config-static-h2-size:    {{ config.static_h2_size }};
-            --config-rotation-h2-size:  {{ config.rotation_h2_size }};
-            --config-static-td-size:    {{ config.static_td_size }};
-            --config-rotation-td-size:  {{ config.rotation_td_size }};
+            --config-font-family: {{ config.font_family | safe }};
+            --config-static-h2-size: {{ config.static_h2_size }};
+            --config-rotation-h2-size: {{ config.rotation_h2_size }};
+            --config-static-td-size: {{ config.static_td_size }};
+            --config-rotation-td-size: {{ config.rotation_td_size }};
         }
 
-        /* Einträge jenseits des statischen Limits ausblenden */
         .card[data-view="static"] table tr:nth-child(n + {{ config.static_limit + 2 }}) {
             display: none !important;
         }
@@ -22,8 +21,7 @@
             overflow: hidden !important;
         }
 
-        /* Bucket-Stage und WinRate-Stage: fixed overlay */
-        #bucket-stage, #winrate-stage {
+        #bucket-stage, #winrate-stage, #h2h-stage {
             display: none;
             position: fixed;
             inset: var(--nav-height, 50px) 0 0 0;
@@ -32,7 +30,6 @@
             justify-content: center;
         }
 
-        /* Fortschrittsbalken */
         #progress-bar {
             position: fixed;
             bottom: 0;
@@ -50,10 +47,82 @@
         }
         @keyframes progress-fill {
             from { width: 0%; }
-            to   { width: 100%; }
+            to { width: 100%; }
         }
 
-        /* Win Rate spezifische Styles */
+        /* Podium-Rahmen */
+        .podium-row {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .podium-gold {
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.6), 
+                        inset 0 0 50px rgba(255, 215, 0, 0.15),
+                        0 0 0 2px rgba(255, 215, 0, 0.8);
+            border-radius: 8px;
+            background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, transparent 50%);
+        }
+        
+        .podium-silver {
+            box-shadow: 0 0 20px rgba(192, 192, 192, 0.5), 
+                        inset 0 0 40px rgba(192, 192, 192, 0.1),
+                        0 0 0 2px rgba(192, 192, 192, 0.7);
+            border-radius: 8px;
+            background: linear-gradient(135deg, rgba(192,192,192,0.1) 0%, transparent 50%);
+        }
+        
+        .podium-bronze {
+            box-shadow: 0 0 18px rgba(205, 127, 50, 0.5), 
+                        inset 0 0 35px rgba(205, 127, 50, 0.1),
+                        0 0 0 2px rgba(205, 127, 50, 0.7);
+            border-radius: 8px;
+            background: linear-gradient(135deg, rgba(205,127,50,0.1) 0%, transparent 50%);
+        }
+
+        /* Kategorie-Farben */
+        [data-section="legs"] .card h2 { 
+            color: #FFD700; 
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        }
+        [data-section="max180"] .card h2 { 
+            color: #FF4444; 
+            text-shadow: 0 0 15px rgba(255, 68, 68, 0.6);
+        }
+        [data-section="finish"] .card h2 { 
+            color: #44FF44; 
+            text-shadow: 0 0 15px rgba(68, 255, 68, 0.6);
+        }
+        [data-section="darts301"] .card h2 { 
+            color: #44DDFF; 
+            text-shadow: 0 0 15px rgba(68, 221, 255, 0.6);
+        }
+        [data-section="s60"] .card h2 { 
+            color: #FFDD44; 
+            text-shadow: 0 0 15px rgba(255, 221, 68, 0.6);
+        }
+        [data-section="s100"] .card h2 { 
+            color: #FF9944; 
+            text-shadow: 0 0 15px rgba(255, 153, 68, 0.6);
+        }
+        [data-section="s140"] .card h2 { 
+            color: #FF4444; 
+            text-shadow: 0 0 15px rgba(255, 68, 68, 0.6);
+        }
+        [data-section="s170"] .card h2 { 
+            color: #DD44FF; 
+            text-shadow: 0 0 15px rgba(221, 68, 255, 0.6);
+        }
+        [data-section="winrate"] .card h2 { 
+            color: #44FF88; 
+            text-shadow: 0 0 15px rgba(68, 255, 136, 0.6);
+        }
+        [data-section="h2h"] .card h2 { 
+            color: #FF44DD; 
+            text-shadow: 0 0 15px rgba(255, 68, 221, 0.6);
+        }
+
+        /* Win Rate Bar - KORRIGIERT: Kleinere Schrift */
         .win-rate-bar {
             width: 100%;
             height: 20px;
@@ -73,10 +142,197 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 0.85em;
+            font-size: 0.4em; /* REDUZIERT von 0.85em */
             font-weight: 600;
             color: white;
             text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            white-space: nowrap;
+        }
+
+        /* ═══════════════════════════════════════════════════════════
+           H2H Styles - NEU: 5-Spalten Grid, größere Spielerkarten
+        ═══════════════════════════════════════════════════════════ */
+        
+        #h2h-stage {
+            display: none;
+            position: fixed;
+            inset: var(--nav-height, 50px) 0 0 0;
+            z-index: 1;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        #h2h-stage.active {
+            display: flex;
+        }
+        
+        #h2h-stage .section-block {
+            width: 95vw;
+            max-width: 1800px;
+            height: 90vh;
+        }
+        
+        #h2h-stage .card {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* NEU: 5-Spalten Grid - Spieler | Stats | VS | Stats | Spieler */
+        .h2h-layout {
+            display: grid;
+            grid-template-columns: 2fr 1.2fr auto 1.2fr 2fr;
+            grid-template-rows: 1fr;
+            gap: 20px;
+            width: 100%;
+            height: 100%;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        /* Spieler-Container - VERGRÖSSERT */
+        .h2h-player-side {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+            background: rgba(0,0,0,0.25);
+            border-radius: 25px;
+            height: 90%;
+            width: 100%;
+        }
+        
+        .h2h-player-img {
+            width: 280px; /* VERGRÖSSERT von 220px */
+            height: 280px; /* VERGRÖSSERT von 220px */
+            border-radius: 25px;
+            object-fit: cover;
+            border: 5px solid rgba(255,255,255,0.3);
+            box-shadow: 0 0 50px rgba(0,0,0,0.6);
+            margin-bottom: 30px;
+        }
+        
+        .h2h-player-name {
+            font-size: 2.8em; /* VERGRÖSSERT von 2.2em */
+            font-weight: 700;
+            color: #FFD700;
+            text-shadow: 0 0 25px rgba(255,215,0,0.7);
+            margin-bottom: 15px;
+        }
+        
+        .h2h-player-sub {
+            font-size: 1.5em; /* VERGRÖSSERT von 1.3em */
+            color: rgba(255,255,255,0.7);
+        }
+        
+        /* VS Badge (Mitte) */
+        .h2h-vs-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 10px;
+        }
+        
+        .h2h-vs-badge {
+            background: linear-gradient(135deg, #FF44DD, #FF88DD);
+            color: white;
+            font-size: 4em; /* VERGRÖSSERT */
+            font-weight: 900;
+            width: 160px; /* VERGRÖSSERT von 140px */
+            height: 160px; /* VERGRÖSSERT von 140px */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 60px rgba(255,68,221,0.8);
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            flex-shrink: 0;
+        }
+        
+        /* Statistik-Spalten links und rechts vom VS */
+        .h2h-stats-side {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 15px;
+            height: 100%;
+        }
+        
+        .h2h-stat-box {
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        
+        .h2h-stat-value {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .h2h-stat-label {
+            font-size: 0.9em;
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .h2h-winner {
+            color: #FFD700;
+            text-shadow: 0 0 20px rgba(255,215,0,0.8);
+            background: rgba(255,215,0,0.15);
+            border-color: rgba(255,215,0,0.5);
+            box-shadow: 0 0 30px rgba(255,215,0,0.3);
+        }
+        
+        .h2h-tie {
+            color: #AAAAAA;
+        }
+        
+        .h2h-loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 1.5em;
+            color: rgba(255,255,255,0.6);
+        }
+        
+        /* Responsive Anpassungen */
+        @media (max-width: 1600px) {
+            .h2h-player-img {
+                width: 220px;
+                height: 220px;
+            }
+            .h2h-player-name {
+                font-size: 2.2em;
+            }
+            .h2h-vs-badge {
+                width: 120px;
+                height: 120px;
+                font-size: 3em;
+            }
+            .h2h-stat-value {
+                font-size: 1.8em;
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            .h2h-layout {
+                grid-template-columns: 1.5fr 1fr auto 1fr 1.5fr;
+                gap: 15px;
+            }
+            .h2h-player-img {
+                width: 180px;
+                height: 180px;
+            }
+            .h2h-player-name {
+                font-size: 1.8em;
+            }
         }
     </style>
 </head>
@@ -133,7 +389,7 @@
                             <table>
                                 <tr><th>Platz</th><th>Name</th><th>Legs</th></tr>
                                 {% for s in most_legs[:config.rotation_limit] %}
-                                <tr class="{{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                <tr class="podium-row {{ s.podium_class }}" data-row-index="{{ loop.index }}">
                                     <td>
                                         {% if s.rank == 1 %}🥇
                                         {% elif s.rank == 2 %}🥈
@@ -168,7 +424,7 @@
                             <table>
                                 <tr><th>Platz</th><th>Name</th><th>180er</th><th>Zuletzt</th></tr>
                                 {% for s in most_180s[:config.rotation_limit] %}
-                                <tr class="{{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                <tr class="podium-row {{ s.podium_class }}" data-row-index="{{ loop.index }}">
                                     <td>
                                         {% if s.rank == 1 %}🥇
                                         {% elif s.rank == 2 %}🥈
@@ -208,7 +464,7 @@
                             <table>
                                 <tr><th>Platz</th><th>Name</th><th>Finish</th><th>Datum</th></tr>
                                 {% for s in highest_finish[:config.rotation_limit] %}
-                                <tr class="{{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                <tr class="podium-row {{ s.podium_class }}" data-row-index="{{ loop.index }}">
                                     <td>
                                         {% if s.rank == 1 %}🥇
                                         {% elif s.rank == 2 %}🥈
@@ -244,7 +500,7 @@
                             <table>
                                 <tr><th>Platz</th><th>Name</th><th>Darts</th></tr>
                                 {% for s in lowest_darts301[:config.rotation_limit] %}
-                                <tr class="{{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                <tr class="podium-row {{ s.podium_class }}" data-row-index="{{ loop.index }}">
                                     <td>
                                         {% if s.rank == 1 %}🥇
                                         {% elif s.rank == 2 %}🥈
@@ -267,12 +523,9 @@
         </div><!-- /.bottom -->
     </div><!-- /.container -->
 
-    <!-- ══════════════════════════════════════════════════════════════
-         Bucket-Karten (60+, 100+, 140+, 170+)
-    ══════════════════════════════════════════════════════════════ -->
+    <!-- Bucket-Karten -->
     <div id="bucket-stage">
-
-        <!-- 60+ Aufnahmen -->
+        <!-- 60+ -->
         <section class="section-block" data-section="s60">
             <div class="card" data-view="static">
                 <h2>🟡 Meiste 60+ Aufnahmen</h2>
@@ -287,7 +540,7 @@
                         <table>
                             <tr><th>Platz</th><th>Name</th><th>60+</th></tr>
                             {% for s in most_s60[:config.rotation_limit] %}
-                            <tr class="{{ s.podium_class }}">
+                            <tr class="podium-row {{ s.podium_class }}">
                                 <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
                                 <td>{{ s.name }}</td><td>{{ s.s60 }}</td>
                             </tr>
@@ -299,7 +552,7 @@
             </div>
         </section>
 
-        <!-- 100+ Aufnahmen -->
+        <!-- 100+ -->
         <section class="section-block" data-section="s100">
             <div class="card" data-view="static">
                 <h2>🟠 Meiste 100+ Aufnahmen</h2>
@@ -314,7 +567,7 @@
                         <table>
                             <tr><th>Platz</th><th>Name</th><th>100+</th></tr>
                             {% for s in most_s100[:config.rotation_limit] %}
-                            <tr class="{{ s.podium_class }}">
+                            <tr class="podium-row {{ s.podium_class }}">
                                 <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
                                 <td>{{ s.name }}</td><td>{{ s.s100 }}</td>
                             </tr>
@@ -326,7 +579,7 @@
             </div>
         </section>
 
-        <!-- 140+ Aufnahmen -->
+        <!-- 140+ -->
         <section class="section-block" data-section="s140">
             <div class="card" data-view="static">
                 <h2>🔴 Meiste 140+ Aufnahmen</h2>
@@ -341,7 +594,7 @@
                         <table>
                             <tr><th>Platz</th><th>Name</th><th>140+</th></tr>
                             {% for s in most_s140[:config.rotation_limit] %}
-                            <tr class="{{ s.podium_class }}">
+                            <tr class="podium-row {{ s.podium_class }}">
                                 <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
                                 <td>{{ s.name }}</td><td>{{ s.s140 }}</td>
                             </tr>
@@ -353,7 +606,7 @@
             </div>
         </section>
 
-        <!-- 170+ Aufnahmen -->
+        <!-- 170+ -->
         <section class="section-block" data-section="s170">
             <div class="card" data-view="static">
                 <h2>💜 Meiste 170+ Aufnahmen</h2>
@@ -368,7 +621,7 @@
                         <table>
                             <tr><th>Platz</th><th>Name</th><th>170+</th></tr>
                             {% for s in most_s170[:config.rotation_limit] %}
-                            <tr class="{{ s.podium_class }}">
+                            <tr class="podium-row {{ s.podium_class }}">
                                 <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
                                 <td>{{ s.name }}</td><td>{{ s.s170 }}</td>
                             </tr>
@@ -379,14 +632,10 @@
                 {% else %}<p>Keine Einträge vorhanden.</p>{% endif %}
             </div>
         </section>
-
     </div><!-- /#bucket-stage -->
 
-    <!-- ══════════════════════════════════════════════════════════════
-         Win Rate Stage (Gewonnen/Gespielt Statistik)
-    ══════════════════════════════════════════════════════════════ -->
+    <!-- Win Rate Stage -->
     <div id="winrate-stage">
-
         <section class="section-block" data-section="winrate">
             <div class="card" data-view="static">
                 <h2>📈 Beste Gewinnrate</h2>
@@ -399,15 +648,9 @@
                     </div>
                     <div class="card-right">
                         <table>
-                            <tr>
-                                <th>Platz</th>
-                                <th>Name</th>
-                                <th>Gewonnen</th>
-                                <th>Gespielt</th>
-                                <th>Rate</th>
-                            </tr>
+                            <tr><th>Platz</th><th>Name</th><th>Gewonnen</th><th>Gespielt</th><th>Rate</th></tr>
                             {% for s in win_rate_stats[:config.rotation_limit] %}
-                            <tr class="{{ s.podium_class }}">
+                            <tr class="podium-row {{ s.podium_class }}">
                                 <td>
                                     {% if s.rank == 1 %}🥇
                                     {% elif s.rank == 2 %}🥈
@@ -429,15 +672,28 @@
                     </div>
                 </div>
                 {% else %}
-                <p>Keine ausreichenden Daten vorhanden (mindestens 1 Spiel erforderlich).</p>
+                <p>Keine ausreichenden Daten vorhanden.</p>
                 {% endif %}
             </div>
         </section>
-
     </div><!-- /#winrate-stage -->
 
+    <!-- ══════════════════════════════════════════════════════════════
+         H2H Stage - NEU: 5-Spalten Layout mit Statistik-Boxen
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="h2h-stage">
+        <section class="section-block" data-section="h2h">
+            <div class="card" data-view="static">
+                <h2>⚔️ Head-to-Head</h2>
+                <div id="h2h-content" class="h2h-loading">
+                    Lade zufälliges Duell...
+                </div>
+            </div>
+        </section>
+    </div><!-- /#h2h-stage -->
+
     <script>
-        // ── Uhrzeit ──────────────────────────────────────────────────
+        // Uhrzeit
         function updateClock() {
             document.getElementById('clock').textContent =
                 new Date().toLocaleTimeString('de-DE', {
@@ -447,59 +703,60 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // ╔══════════════════════════════════════════════════════════════╗
-        // ║                 TIMING-KONFIGURATION                        ║
-        // ╚══════════════════════════════════════════════════════════════╝
+        // Konfiguration
         const CFG = {
-            GRID_DURATION : 5 * 1 * 1000,  // 5 Minuten
-            CARD_DURATION : 5 * 1000,      // 90 Sekunden
-            REFRESH_MS    : 10 * 60 * 1000, // 10 Minuten
-            FADE_MS       : 300,
+            GRID_DURATION: 5 * 60 * 1000,
+            CARD_DURATION: 1 * 60 * 1000,
+            REFRESH_MS: 10 * 60 * 1000,
+            FADE_MS: 300,
         };
 
-        // ── DOM-Referenzen ──────────────────────────────────────────
-        const toggle               = document.getElementById('mode-toggle');
-        const gridSections         = document.querySelectorAll('.container .section-block');
-        const bucketStage          = document.getElementById('bucket-stage');
-        const bucketSections       = document.querySelectorAll('#bucket-stage .section-block');
-        const winrateStage         = document.getElementById('winrate-stage');
-        const scoreboard           = document.getElementById('scoreboard');
+        // DOM-Elemente
+        const toggle = document.getElementById('mode-toggle');
+        const gridSections = document.querySelectorAll('.container .section-block');
+        const bucketStage = document.getElementById('bucket-stage');
+        const bucketSections = document.querySelectorAll('#bucket-stage .section-block');
+        const winrateStage = document.getElementById('winrate-stage');
+        const h2hStage = document.getElementById('h2h-stage');
+        const h2hContent = document.getElementById('h2h-content');
+        const scoreboard = document.getElementById('scoreboard');
         const playerPhotoContainer = document.getElementById('player-photo-container');
-        const playerPhoto          = document.getElementById('player-photo');
-        const progressBar          = document.getElementById('progress-bar');
+        const playerPhoto = document.getElementById('player-photo');
+        const progressBar = document.getElementById('progress-bar');
 
-        // ── Daten ───────────────────────────────────────────────────
+        // Daten
         const dataMap = {
-            legs:     {{ most_legs        | tojson | safe }},
-            finish:   {{ highest_finish   | tojson | safe }},
-            max180:   {{ most_180s        | tojson | safe }},
-            darts301: {{ lowest_darts301  | tojson | safe }},
-            s60:      {{ most_s60         | tojson | safe }},
-            s100:     {{ most_s100        | tojson | safe }},
-            s140:     {{ most_s140        | tojson | safe }},
-            s170:     {{ most_s170        | tojson | safe }},
-            winrate:  {{ win_rate_stats   | tojson | safe }},
+            legs: {{ most_legs | tojson | safe }},
+            finish: {{ highest_finish | tojson | safe }},
+            max180: {{ most_180s | tojson | safe }},
+            darts301: {{ lowest_darts301 | tojson | safe }},
+            s60: {{ most_s60 | tojson | safe }},
+            s100: {{ most_s100 | tojson | safe }},
+            s140: {{ most_s140 | tojson | safe }},
+            s170: {{ most_s170 | tojson | safe }},
+            winrate: {{ win_rate_stats | tojson | safe }},
         };
 
-        // ── Slot-Sequenz ────────────────────────────────────────────
+        // Slots
         const SLOTS = [
-            { type: 'grid',     duration: CFG.GRID_DURATION },
-            { type: 'legs',     duration: CFG.CARD_DURATION },
-            { type: 'finish',   duration: CFG.CARD_DURATION },
-            { type: 'max180',   duration: CFG.CARD_DURATION },
+            { type: 'grid', duration: CFG.GRID_DURATION },
+            { type: 'legs', duration: CFG.CARD_DURATION },
+            { type: 'finish', duration: CFG.CARD_DURATION },
+            { type: 'max180', duration: CFG.CARD_DURATION },
             { type: 'darts301', duration: CFG.CARD_DURATION },
-            { type: 's60',      duration: CFG.CARD_DURATION },
-            { type: 's100',     duration: CFG.CARD_DURATION },
-            { type: 's140',     duration: CFG.CARD_DURATION },
-            { type: 's170',     duration: CFG.CARD_DURATION },
-            { type: 'winrate',  duration: CFG.CARD_DURATION },
+            { type: 's60', duration: CFG.CARD_DURATION },
+            { type: 's100', duration: CFG.CARD_DURATION },
+            { type: 's140', duration: CFG.CARD_DURATION },
+            { type: 's170', duration: CFG.CARD_DURATION },
+            { type: 'winrate', duration: CFG.CARD_DURATION },
+            { type: 'h2h', duration: CFG.CARD_DURATION },
         ];
 
-        let slotIndex  = 0;
-        let loopTimer  = null;
+        let slotIndex = 0;
+        let loopTimer = null;
         let refreshTimer = null;
 
-        // ── Einlauf-Animation ──────────────────────────────────────
+        // Animationen
         function triggerRowAnimation(container) {
             container.querySelectorAll('table tr:not(:first-child)').forEach(row => {
                 row.style.animation = 'none';
@@ -508,40 +765,147 @@
             });
         }
 
-        // ── Fortschrittsbalken starten ─────────────────────────────
         function startProgressBar(duration) {
             progressBar.style.animation = 'none';
-            void progressBar.offsetHeight; // Reflow
+            void progressBar.offsetHeight;
             progressBar.style.animation = `progress-fill ${duration}ms linear forwards`;
         }
 
-        // ── 2×2 Grid anzeigen ───────────────────────────────────────
+        // H2H Daten laden - NEU: 5-Spalten Grid Layout
+        async function loadH2HData() {
+            try {
+                const response = await fetch('/api/h2h');
+                const data = await response.json();
+                
+                if (!data || !data.players || data.players.length < 2) {
+                    h2hContent.innerHTML = '<p>Mindestens 2 Spieler mit Daten erforderlich.</p>';
+                    return;
+                }
+                
+                const p1 = data.players[0];
+                const p2 = data.players[1];
+                
+                // Vergleichsfunktion
+                const compare = (v1, v2, higherIsBetter = true) => {
+                    if (v1 === v2) return ['h2h-tie', 'h2h-tie'];
+                    if (higherIsBetter) {
+                        if (v1 > v2) return ['h2h-winner', ''];
+                        return ['', 'h2h-winner'];
+                    } else {
+                        if (v1 < v2) return ['h2h-winner', ''];
+                        return ['', 'h2h-winner'];
+                    }
+                };
+                
+                const winsCmp = compare(p1.wins, p2.wins);
+                const rateCmp = compare(p1.win_rate, p2.win_rate);
+                const finishCmp = compare(p1.finish, p2.finish);
+                const t180Cmp = compare(p1.max180, p2.max180);
+                
+                h2hContent.innerHTML = `
+                    <div class="h2h-layout">
+                        <!-- Spieler 1 (links, größte Spalte) -->
+                        <div class="h2h-player-side">
+                            <img src="{{ url_for('static', filename='uploads/') }}${p1.image}" 
+                                 alt="${p1.name}" class="h2h-player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                            <div class="h2h-player-name">${p1.name}</div>
+                            <div class="h2h-player-sub">${p1.total_games} Spiele</div>
+                        </div>
+                        
+                        <!-- Stats Spieler 1 -->
+                        <div class="h2h-stats-side">
+                            <div class="h2h-stat-box ${winsCmp[0]}">
+                                <div class="h2h-stat-value">${p1.wins}</div>
+                                <div class="h2h-stat-label">🏆 Siege</div>
+                            </div>
+                            <div class="h2h-stat-box ${rateCmp[0]}">
+                                <div class="h2h-stat-value">${p1.win_rate}%</div>
+                                <div class="h2h-stat-label">📊 Rate</div>
+                            </div>
+                            <div class="h2h-stat-box ${finishCmp[0]}">
+                                <div class="h2h-stat-value">${p1.finish}</div>
+                                <div class="h2h-stat-label">🎯 Finish</div>
+                            </div>
+                            <div class="h2h-stat-box ${t180Cmp[0]}">
+                                <div class="h2h-stat-value">${p1.max180}</div>
+                                <div class="h2h-stat-label">💥 180er</div>
+                            </div>
+                        </div>
+                        
+                        <!-- VS Badge (Mitte) -->
+                        <div class="h2h-vs-center">
+                            <div class="h2h-vs-badge">VS</div>
+                        </div>
+                        
+                        <!-- Stats Spieler 2 -->
+                        <div class="h2h-stats-side">
+                            <div class="h2h-stat-box ${winsCmp[1]}">
+                                <div class="h2h-stat-value">${p2.wins}</div>
+                                <div class="h2h-stat-label">🏆 Siege</div>
+                            </div>
+                            <div class="h2h-stat-box ${rateCmp[1]}">
+                                <div class="h2h-stat-value">${p2.win_rate}%</div>
+                                <div class="h2h-stat-label">📊 Rate</div>
+                            </div>
+                            <div class="h2h-stat-box ${finishCmp[1]}">
+                                <div class="h2h-stat-value">${p2.finish}</div>
+                                <div class="h2h-stat-label">🎯 Finish</div>
+                            </div>
+                            <div class="h2h-stat-box ${t180Cmp[1]}">
+                                <div class="h2h-stat-value">${p2.max180}</div>
+                                <div class="h2h-stat-label">💥 180er</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Spieler 2 (rechts, größte Spalte) -->
+                        <div class="h2h-player-side">
+                            <img src="{{ url_for('static', filename='uploads/') }}${p2.image}" 
+                                 alt="${p2.name}" class="h2h-player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                            <div class="h2h-player-name">${p2.name}</div>
+                            <div class="h2h-player-sub">${p2.total_games} Spiele</div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('H2H laden fehlgeschlagen:', error);
+                h2hContent.innerHTML = '<p>Fehler beim Laden des Duells.</p>';
+            }
+        }
+
+        // Grid anzeigen
         function showGrid() {
             toggle.textContent = "📊 Übersicht";
             scoreboard.classList.remove('rotating');
 
-            // Alle Stages ausblenden
             bucketStage.style.display = 'none';
             winrateStage.style.display = 'none';
+            h2hStage.style.display = 'none';
+            h2hStage.classList.remove('active');
             
             bucketSections.forEach(s => { 
                 s.style.display = 'none'; 
                 s.style.opacity = '0'; 
             });
 
-            // Win Rate ausblenden
             const winrateSection = document.querySelector('#winrate-stage .section-block');
             if (winrateSection) {
                 winrateSection.style.display = 'none';
                 winrateSection.style.opacity = '0';
             }
 
-            // Grid einblenden
+            const h2hSection = document.querySelector('#h2h-stage .section-block');
+            if (h2hSection) {
+                h2hSection.style.display = 'none';
+                h2hSection.style.opacity = '0';
+            }
+
             gridSections.forEach(s => {
                 const card = s.querySelector('.card');
                 if (card) card.setAttribute('data-view', 'static');
-                s.style.opacity    = '0';
-                s.style.display    = '';
+                s.style.opacity = '0';
+                s.style.display = '';
                 s.style.transition = `opacity ${CFG.FADE_MS}ms ease`;
             });
             
@@ -555,21 +919,19 @@
             }));
         }
 
-        // ── Einzelkarte anzeigen ────────────────────────────────────
+        // Einzelkarte anzeigen
         function showCard(id) {
             toggle.textContent = "🌀 Rotation";
             scoreboard.classList.add('rotating');
 
-            // Grid ausblenden
             gridSections.forEach(s => {
                 s.style.transition = '';
-                s.style.opacity    = '0';
-                s.style.display    = 'none';
+                s.style.opacity = '0';
+                s.style.display = 'none';
                 const card = s.querySelector('.card');
                 if (card) card.setAttribute('data-view', 'rotation');
             });
 
-            // Bucket ausblenden
             bucketSections.forEach(s => {
                 s.style.display = 'none';
                 s.style.opacity = '0';
@@ -578,7 +940,6 @@
             });
             bucketStage.style.display = 'none';
 
-            // Win Rate ausblenden
             const winrateSection = document.querySelector('#winrate-stage .section-block');
             if (winrateSection) {
                 winrateSection.style.display = 'none';
@@ -587,26 +948,37 @@
                 if (card) card.setAttribute('data-view', 'rotation');
             }
             winrateStage.style.display = 'none';
+
+            const h2hSection = document.querySelector('#h2h-stage .section-block');
+            if (h2hSection) {
+                h2hSection.style.display = 'none';
+                h2hSection.style.opacity = '0';
+                const card = h2hSection.querySelector('.card');
+                if (card) card.setAttribute('data-view', 'rotation');
+            }
+            h2hStage.style.display = 'none';
+            h2hStage.classList.remove('active');
             
             playerPhotoContainer.style.display = 'none';
 
-            // Ziel-Sektion suchen
             const el = document.querySelector(`[data-section="${id}"]`);
             if (!el) {
                 console.warn(`Sektion "${id}" nicht gefunden!`);
                 return;
             }
 
-            // Richtigen Container anzeigen
             if (id === 'winrate') {
                 winrateStage.style.display = 'flex';
+            } else if (id === 'h2h') {
+                h2hStage.style.display = 'flex';
+                h2hStage.classList.add('active');
+                loadH2HData();
             } else if (['s60', 's100', 's140', 's170'].includes(id)) {
                 bucketStage.style.display = 'flex';
             }
 
-            // Karte einblenden
-            el.style.opacity    = '0';
-            el.style.display    = 'flex';
+            el.style.opacity = '0';
+            el.style.display = 'flex';
             el.style.transition = `opacity ${CFG.FADE_MS}ms ease`;
 
             requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -614,15 +986,15 @@
                 triggerRowAnimation(el);
             }));
 
-            // Profilbild aktualisieren
-            updatePlayerPhoto(id);
+            if (id !== 'h2h') {
+                updatePlayerPhoto(id);
+            }
         }
 
-        // ── Profilbild aktualisieren ───────────────────────────────
         function updatePlayerPhoto(id) {
             const entries = dataMap[id];
-            const base    = "{{ url_for('static', filename='uploads/') }}";
-            const dummy   = "{{ url_for('static', filename='uploads/dummy.png') }}";
+            const base = "{{ url_for('static', filename='uploads/') }}";
+            const dummy = "{{ url_for('static', filename='uploads/dummy.png') }}";
             
             if (entries && entries.length > 0 && entries[0].image) {
                 playerPhoto.src = base + entries[0].image;
@@ -636,7 +1008,6 @@
             playerPhotoContainer.style.display = 'flex';
         }
 
-        // ── Einen Slot anzeigen ─────────────────────────────────────
         function showSlot(index) {
             const slot = SLOTS[index];
             if (slot.type === 'grid') {
@@ -646,7 +1017,6 @@
             }
         }
 
-        // ── Loop-Schritt ────────────────────────────────────────────
         function step(index) {
             clearTimeout(loopTimer);
             slotIndex = index % SLOTS.length;
@@ -657,13 +1027,13 @@
             loopTimer = setTimeout(() => step(slotIndex + 1), SLOTS[slotIndex].duration);
         }
 
-        // ── Manueller Toggle ────────────────────────────────────────
+        // Manueller Toggle
         toggle.addEventListener('click', () => {
             const isGrid = SLOTS[slotIndex].type === 'grid';
             step(isGrid ? 1 : 0);
         });
 
-        // ── Auto-Refresh ────────────────────────────────────────────
+        // Auto-Refresh
         function scheduleRefresh() {
             clearTimeout(refreshTimer);
             refreshTimer = setTimeout(() => location.reload(), CFG.REFRESH_MS);
@@ -673,7 +1043,7 @@
             document.addEventListener(evt, scheduleRefresh, { passive: true })
         );
 
-        // ── Init ────────────────────────────────────────────────────
+        // Init
         document.addEventListener('DOMContentLoaded', () => {
             step(0);
             scheduleRefresh();
