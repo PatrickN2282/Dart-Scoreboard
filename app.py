@@ -4,7 +4,9 @@ import json
 import random
 import shutil
 import stat
+import subprocess
 import time
+import shlex
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import socket
@@ -21,6 +23,7 @@ DATA_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 PLAYERS_FILE = os.path.join(DATA_DIR, 'players.json')
 SCORES_FILE  = os.path.join(DATA_DIR, 'scores.json')
 CONFIG_FILE  = os.path.join(DATA_DIR, 'config.json')
+VERSION_FILE = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'VERSION')
 # Ergebnisse gegen BOT-Gegner werden getrennt von der normalen Spieler-Statistik
 # gespeichert, damit Bots nicht als Spieler auftauchen und "echte" Statistiken
 # nicht durch (meist deutlich einfachere/schwerere) Bot-Matches verfälscht werden.
@@ -29,6 +32,9 @@ BOT_SCORES_FILE = os.path.join(DATA_DIR, 'bot_scores.json')
 # Verzeichnis mit optionalen Zusatzfunktionen (z.B. Bildschirmschoner-Skripte)
 ADDONS_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Addons')
 SCREENSAVER_ADDON_DIR = os.path.join(ADDONS_DIR, 'Raspberry-Screensaver')
+CEC_ADDON_DIR = os.path.join(ADDONS_DIR, 'Raspberry-CEC')
+CEC_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'dart-scoreboard')
+CEC_CONFIG_FILE = os.path.join(CEC_CONFIG_DIR, 'cec.conf')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -52,6 +58,15 @@ DEFAULT_CONFIG = {
     "rotation_duration_h2h": 60,
     # Minuten bis die Seite automatisch neu geladen wird
     "rotation_refresh_minutes": 10,
+    "autodarts_email": "",
+    "autodarts_password": "",
+    "autodarts_enabled": False,
+    "autodarts_interval_minutes": 60,
+    "autodarts_user_data_dir": "",
+    "cec_enabled": False,
+    "cec_device_name": "Dart Scoreboard",
+    "cec_standby_time": "22:00",
+    "cec_wake_time": "08:00",
 }
 
 # Datei für bereits importierte Match-IDs
@@ -111,6 +126,32 @@ def load_json(filepath):
         if filepath == CONFIG_FILE:
             return DEFAULT_CONFIG
         return []
+
+
+def get_app_version():
+    try:
+        with open(VERSION_FILE, 'r', encoding='utf-8') as f:
+            version = f.read().strip()
+        if re.fullmatch(r'\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?', version):
+            return version
+    except OSError:
+        pass
+    return "0.0.0"
+
+
+def write_cec_config(config):
+    """Schreibt die vom CEC-Addon gelesene Laufzeitkonfiguration."""
+    os.makedirs(CEC_CONFIG_DIR, mode=0o700, exist_ok=True)
+    content = (
+        "# Wird vom Dart Scoreboard Adminbereich verwaltet.\n"
+        f"CEC_ENABLED={'1' if config.get('cec_enabled') else '0'}\n"
+        f"CEC_NAME={shlex.quote(config.get('cec_device_name', 'Dart Scoreboard'))}\n"
+        f"CEC_STANDBY_TIME={shlex.quote(config.get('cec_standby_time', '22:00'))}\n"
+        f"CEC_WAKE_TIME={shlex.quote(config.get('cec_wake_time', '08:00'))}\n"
+    )
+    with open(CEC_CONFIG_FILE, 'w', encoding='utf-8') as f:
+        f.write(content)
+    os.chmod(CEC_CONFIG_FILE, 0o600)
 
 
 def save_json(filepath, data):
@@ -1324,6 +1365,15 @@ def admin():
                 else:
                     autodarts_enabled = config.get("autodarts_enabled", False)
 
+                if "cec_device_name" in request.form:
+                    cec_enabled = request.form.get("cec_enabled") == 'on'
+                else:
+                    cec_enabled = config.get("cec_enabled", False)
+
+                def _form_time(name, fallback):
+                    value = _form_str(name, fallback)
+                    return value if re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d', value) else fallback
+
                 new_config = {
                     "static_limit": _form_int("static_limit", config.get("static_limit", 5)),
                     "rotation_limit": _form_int("rotation_limit", config.get("rotation_limit", 10)),
@@ -1345,10 +1395,25 @@ def admin():
                     "autodarts_enabled": autodarts_enabled,
                     "autodarts_interval_minutes": _form_int("autodarts_interval_minutes", config.get("autodarts_interval_minutes", 60)),
                     "autodarts_user_data_dir": _form_str("autodarts_user_data_dir", config.get("autodarts_user_data_dir", "")),
+                    "cec_enabled": cec_enabled,
+                    "cec_device_name": (_form_str(
+                        "cec_device_name", config.get("cec_device_name", "Dart Scoreboard")
+                    ).strip()[:14] or config.get("cec_device_name", "Dart Scoreboard")),
+                    "cec_standby_time": _form_time("cec_standby_time", config.get("cec_standby_time", "22:00")),
+                    "cec_wake_time": _form_time("cec_wake_time", config.get("cec_wake_time", "08:00")),
                 }
                 current_config = load_json(CONFIG_FILE)
                 current_config.update(new_config)
                 save_json(CONFIG_FILE, current_config)
+                write_cec_config(current_config)
+                if "cec_device_name" in request.form:
+                    try:
+                        subprocess.run(
+                            ['systemctl', '--user', 'try-restart', 'hdmi-audio-cec.service'],
+                            capture_output=True, text=True, timeout=15, check=False,
+                        )
+                    except (OSError, subprocess.SubprocessError):
+                        pass
             except ValueError:
                 pass
 
@@ -1399,6 +1464,7 @@ def admin():
         autodarts_last_result=last_result,
         autodarts_status=autodarts_status,
         bot_stats=bot_stats,
+        app_version=get_app_version(),
     )
 
 
@@ -2021,6 +2087,54 @@ def admin_install_screensaver():
         if is_ajax:
             return jsonify({"ok": False, "error": msg}), 500
         return redirect(url_for('admin'))
+
+
+@app.route('/admin/install_cec', methods=['POST'])
+def admin_install_cec():
+    """Installiert und aktiviert den CEC-Manager als systemd-User-Service."""
+    script_src = os.path.join(CEC_ADDON_DIR, 'hdmi-audio-cec.sh')
+    service_src = os.path.join(CEC_ADDON_DIR, 'hdmi-audio-cec.service')
+
+    if not os.path.isfile(script_src) or not os.path.isfile(service_src):
+        return jsonify({"ok": False, "error": "CEC-Addon-Dateien wurden nicht gefunden."}), 404
+
+    try:
+        home_dir = os.path.expanduser('~')
+        bin_dir = os.path.join(home_dir, '.local', 'bin')
+        service_dir = os.path.join(home_dir, '.config', 'systemd', 'user')
+        script_dst = os.path.join(bin_dir, 'hdmi-audio-cec.sh')
+        service_dst = os.path.join(service_dir, 'hdmi-audio-cec.service')
+
+        os.makedirs(bin_dir, exist_ok=True)
+        os.makedirs(service_dir, exist_ok=True)
+        shutil.copyfile(script_src, script_dst)
+        shutil.copyfile(service_src, service_dst)
+        os.chmod(script_dst, os.stat(script_dst).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        write_cec_config(load_json(CONFIG_FILE))
+
+        result = subprocess.run(
+            ['systemctl', '--user', 'daemon-reload'],
+            capture_output=True, text=True, timeout=15, check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr.strip() or 'systemctl --user ist nicht verfügbar.')
+        result = subprocess.run(
+            ['systemctl', '--user', 'enable', '--now', 'hdmi-audio-cec.service'],
+            capture_output=True, text=True, timeout=30, check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr.strip() or 'CEC-Service konnte nicht aktiviert werden.')
+
+        return jsonify({
+            "ok": True,
+            "message": "CEC-Manager installiert und aktiviert. Die Konfiguration wird beim Speichern übernommen.",
+        })
+    except (OSError, subprocess.SubprocessError, RuntimeError) as e:
+        app.logger.exception('CEC-Installation fehlgeschlagen')
+        return jsonify({
+            "ok": False,
+            "error": "CEC-Installation fehlgeschlagen. Details stehen im Server-Log.",
+        }), 500
 
 
 if __name__ == '__main__':

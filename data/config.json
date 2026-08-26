@@ -7,10 +7,13 @@
     "static_td_size": "2.0em",
     "rotation_td_size": "1.5em",
     "font_family": "'Segoe UI', Roboto, sans-serif",
-    "autodarts_last_run": "26.08.2026 02:38",
-    "autodarts_email": "support@smartps.de",
-    "autodarts_password": "Smart2026!",
+    "autodarts_email": "",
+    "autodarts_password": "",
     "autodarts_enabled": false,
     "autodarts_interval_minutes": 60,
-    "autodarts_user_data_dir": "/home/patrickn/.config/chromium/"
+    "autodarts_user_data_dir": "",
+    "cec_enabled": false,
+    "cec_device_name": "Dart Scoreboard",
+    "cec_standby_time": "22:00",
+    "cec_wake_time": "08:00"
 }

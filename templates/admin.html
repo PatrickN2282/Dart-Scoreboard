@@ -10,7 +10,7 @@
 
     <!-- ── Top-Leiste ── -->
     <header class="admin-topbar">
-        <h1>🎯 Dart Highscore · Admin</h1>
+        <h1>🎯 Dart Highscore · Admin <small>v{{ app_version }}</small></h1>
         <a href="/" class="back-link">← Scoreboard</a>
     </header>
 
@@ -693,6 +693,48 @@
             <div id="tab-addons" class="tab-content">
 
                 <div class="panel">
+                    <h2 class="panel-title">📺 CEC-Manager</h2>
+                    <p style="font-size:0.88em; color:var(--clr-text-muted); margin:0 0 16px; line-height:1.6;">
+                        Hält den angeschlossenen Fernseher während der aktiven Zeit wach, schickt ihn zum Feierabend
+                        in Standby und weckt ihn zur eingestellten Zeit wieder auf. Erfordert einen CEC-fähigen TV.
+                    </p>
+                    <form method="POST" action="{{ url_for('admin') }}">
+                        <input type="hidden" name="action" value="save_config">
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="cec_device_name">CEC-Gerätename</label>
+                                <input type="text" name="cec_device_name" id="cec_device_name" maxlength="14"
+                                       value="{{ config.cec_device_name or 'Dart Scoreboard' }}">
+                                <span class="info-text">Maximal 14 Zeichen (CEC-Standard).</span>
+                            </div>
+                            <div class="input-group">
+                                <label for="cec_enabled">CEC-Zeitplan aktiv</label>
+                                <input type="checkbox" name="cec_enabled" id="cec_enabled"
+                                       {% if config.cec_enabled %} checked {% endif %}>
+                            </div>
+                            <div class="input-group">
+                                <label for="cec_standby_time">Standby ab</label>
+                                <input type="time" name="cec_standby_time" id="cec_standby_time"
+                                       value="{{ config.cec_standby_time or '22:00' }}" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="cec_wake_time">Aufwecken ab</label>
+                                <input type="time" name="cec_wake_time" id="cec_wake_time"
+                                       value="{{ config.cec_wake_time or '08:00' }}" required>
+                            </div>
+                        </div>
+                        <div class="form-actions" style="margin-top:16px;">
+                            <button type="submit" class="btn btn-primary">💾 CEC-Konfiguration speichern</button>
+                        </div>
+                    </form>
+                    <hr class="form-divider" style="margin:18px 0;">
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <button type="button" id="install-cec-btn" class="btn btn-primary">📺 CEC-Manager installieren</button>
+                        <span id="install-cec-status" style="font-size:0.88em;"></span>
+                    </div>
+                </div>
+
+                <div class="panel">
                     <h2 class="panel-title">🖥️ Bildschirmschoner installieren</h2>
                     <p style="font-size:0.88em; color:var(--clr-text-muted); margin: 0 0 16px; line-height:1.6;">
                         Installiert den Bildschirmschoner aus <code>/Addons/Raspberry-Screensaver</code> im
@@ -1250,6 +1292,38 @@
                 statusEl.style.color = 'var(--clr-text-muted)';
                 try {
                     const res = await fetch("{{ url_for('admin_install_screensaver') }}", {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                        statusEl.textContent = '✓ ' + data.message;
+                        statusEl.style.color = 'var(--clr-accent)';
+                    } else {
+                        statusEl.textContent = '✗ ' + (data.error || 'Installation fehlgeschlagen.');
+                        statusEl.style.color = '#e05252';
+                    }
+                } catch (e) {
+                    statusEl.textContent = '✗ Netzwerkfehler: ' + e.message;
+                    statusEl.style.color = '#e05252';
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        })();
+
+        // -- Addons: CEC-Manager installieren --
+        (function () {
+            const btn = document.getElementById('install-cec-btn');
+            const statusEl = document.getElementById('install-cec-status');
+            if (!btn || !statusEl) return;
+
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                statusEl.textContent = '⏳ Wird installiert …';
+                statusEl.style.color = 'var(--clr-text-muted)';
+                try {
+                    const res = await fetch("{{ url_for('admin_install_cec') }}", {
                         method: 'POST',
                         headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     });
