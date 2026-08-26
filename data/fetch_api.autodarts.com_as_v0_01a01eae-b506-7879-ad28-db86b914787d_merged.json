@@ -1,0 +1,5207 @@
+{
+  "id": "01a01eae-b506-7879-ad28-db86b914787d",
+  "createdAt": "2026-08-20T10:19:34.936508Z",
+  "finishedAt": "2026-08-20T10:37:15.470842Z",
+  "host": {
+    "id": "e5c3772d-1ca8-4d20-a458-b129ec5afbdb",
+    "name": "smartps",
+    "avatarUrl": "https://gravatar.com/avatar/15574b6190bab18f810834b2919972cf",
+    "country": "",
+    "average": 0,
+    "membership": "free"
+  },
+  "type": "Local",
+  "scores": [
+    {
+      "sets": 0,
+      "legs": 1
+    },
+    {
+      "sets": 0,
+      "legs": 3
+    }
+  ],
+  "variant": "X01",
+  "players": [
+    {
+      "id": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+      "index": 0,
+      "user": {
+        "id": "2c345d44-d657-4278-bd38-16e21fb63b05",
+        "name": "ykn_90",
+        "avatarUrl": "https://gravatar.com/avatar/aeba46358735465ab257b0823b3e000e",
+        "country": "de",
+        "average": 33.60023446658851,
+        "membership": "plus"
+      },
+      "userId": "2c345d44-d657-4278-bd38-16e21fb63b05",
+      "name": "ykn_90",
+      "avatarUrl": "https://gravatar.com/avatar/aeba46358735465ab257b0823b3e000e",
+      "hostId": "e5c3772d-1ca8-4d20-a458-b129ec5afbdb",
+      "host": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "country": "",
+        "average": 0,
+        "membership": ""
+      },
+      "boardId": "dedd7b04-cb53-4231-b095-a17f3bb847cb",
+      "cpuPPR": null,
+      "tournamentPlayerId": null,
+      "isPending": false,
+      "refereeState": ""
+    },
+    {
+      "id": "01a01eae-dce1-7b68-8164-02991118b770",
+      "index": 1,
+      "user": {
+        "id": "29502946-8025-4596-bfbd-93ea943aa43b",
+        "name": "pixelstarfish",
+        "avatarUrl": "https://gravatar.com/avatar/219e7d3a1a00701c5f651ed8de26e60f",
+        "country": "",
+        "average": 35.292202572347264,
+        "membership": "free"
+      },
+      "userId": "29502946-8025-4596-bfbd-93ea943aa43b",
+      "name": "pixelstarfish",
+      "avatarUrl": "https://gravatar.com/avatar/219e7d3a1a00701c5f651ed8de26e60f",
+      "hostId": "e5c3772d-1ca8-4d20-a458-b129ec5afbdb",
+      "host": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "country": "",
+        "average": 0,
+        "membership": ""
+      },
+      "boardId": "dedd7b04-cb53-4231-b095-a17f3bb847cb",
+      "cpuPPR": null,
+      "tournamentPlayerId": null,
+      "isPending": false,
+      "refereeState": ""
+    }
+  ],
+  "targetSets": null,
+  "targetLegs": 3,
+  "hasReferee": false,
+  "hostId": "e5c3772d-1ca8-4d20-a458-b129ec5afbdb",
+  "winner": 1,
+  "games": [
+    {
+      "id": "01a01eb1-c7f6-7984-a455-f7edbdbce08d",
+      "matchId": "01a01eae-b506-7879-ad28-db86b914787d",
+      "createdAt": "2026-08-20T10:22:42.67724Z",
+      "finishedAt": "2026-08-20T10:26:16.990562Z",
+      "set": 0,
+      "leg": 0,
+      "variant": "X01",
+      "winner": 0,
+      "winnerPlayerId": "01a01eae-dce1-7b68-8164-02991118b770",
+      "scores": [
+        0,
+        9
+      ],
+      "turns": [
+        {
+          "id": "01a01eb1-c7f6-721d-b3ea-6d09710dd141",
+          "createdAt": "2026-08-20T10:22:42.678138Z",
+          "finishedAt": "2026-08-20T10:22:56.011655Z",
+          "round": 1,
+          "turn": 0,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 275,
+          "points": 26,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb1-e004-7a5a-83f5-e67dce484673",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:22:48.83917Z",
+              "segment": {
+                "name": "S5",
+                "number": 5,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.07477174739622831,
+                "y": 0.40954126448862027
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb1-e7fb-74e5-8c51-19db62462539",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:22:50.876052Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.04022404258400216,
+                "y": 0.4905596973900378
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb1-f0ff-7600-a8e9-734cbc97c33e",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:22:53.183728Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.14092981973522153,
+                "y": 0.3885039752013102
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb1-fc0b-7a11-ac04-9b035329c663",
+          "createdAt": "2026-08-20T10:22:56.01166Z",
+          "finishedAt": "2026-08-20T10:23:04.441593Z",
+          "round": 1,
+          "turn": 1,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 257,
+          "points": 44,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-030a-71fa-9946-019070c9b22a",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:22:57.804019Z",
+              "segment": {
+                "name": "D20",
+                "number": 20,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": -0.087739684979269,
+                "y": 0.9377987109285332
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-0a02-7279-8461-f75a06ade0a3",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:22:59.5868Z",
+              "segment": {
+                "name": "T1",
+                "number": 1,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": 0.19031679706747165,
+                "y": 0.5545092129368072
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-1144-72c6-bbf5-878658b935f8",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:01.447556Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.11974012191643027,
+                "y": 0.5027401180205383
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-1cf9-7926-94e3-a00fa671a1d0",
+          "createdAt": "2026-08-20T10:23:04.441599Z",
+          "finishedAt": "2026-08-20T10:23:18.128674Z",
+          "round": 2,
+          "turn": 2,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 215,
+          "points": 60,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-3453-719d-a4a5-9b6eb859f6b6",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:10.420673Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.04656262999438496,
+                "y": 0.8218755360744027
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-3d5a-7958-8ccc-88125e8390af",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:12.73151Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.11754682103164941,
+                "y": 0.8032523448144677
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-45d9-7380-9364-b4585e60648c",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:14.908735Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.07335975515513897,
+                "y": 0.5268347983041092
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-5270-7a60-940f-31d1624dbd46",
+          "createdAt": "2026-08-20T10:23:18.12868Z",
+          "finishedAt": "2026-08-20T10:23:26.506357Z",
+          "round": 2,
+          "turn": 3,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 217,
+          "points": 40,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-5a38-73bb-bcbb-ed3be57ccf5b",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:20.136852Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.05971296523905828,
+                "y": 0.6500796498337558
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-6278-7469-91c0-0b950402260b",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:22.23309Z",
+              "segment": {
+                "name": "M20",
+                "number": 20,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": -0.1347228443071086,
+                "y": 1.0030847231414475
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-68a2-793b-ba55-82cfad871b86",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:23.812462Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.05159062870839074,
+                "y": 0.5402990846131865
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-732a-7583-a2e1-0d41f2b227f1",
+          "createdAt": "2026-08-20T10:23:26.506361Z",
+          "finishedAt": "2026-08-20T10:23:38.913702Z",
+          "round": 3,
+          "turn": 4,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 194,
+          "points": 21,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-84de-7aeb-b726-957fd7106b0a",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:31.041266Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.03874245465548038,
+                "y": 0.8063170895721979
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-8e8e-7e5c-bef7-92086aed341a",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:33.52025Z",
+              "segment": {
+                "name": "M5",
+                "number": 5,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": -0.18798840599099872,
+                "y": 1.0011481152513968
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-97c8-7a2a-8973-bb11e5353f9e",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:35.882298Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.08523639525058144,
+                "y": 0.4316575563804174
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-a3a1-7ac2-8cb2-7c0eee12acf4",
+          "createdAt": "2026-08-20T10:23:38.913705Z",
+          "finishedAt": "2026-08-20T10:23:48.81909Z",
+          "round": 3,
+          "turn": 5,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 146,
+          "points": 71,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-ad77-71a4-86e5-e5644d2c4728",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:41.431788Z",
+              "segment": {
+                "name": "T19",
+                "number": 19,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": -0.2548008617135819,
+                "y": -0.5535021883852123
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-b42d-7365-a9d6-3f91cef05362",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:43.149603Z",
+              "segment": {
+                "name": "S7",
+                "number": 7,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.36074753410432653,
+                "y": -0.3794747752697409
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-ba97-70a1-924c-5b353a3e4c58",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:44.791967Z",
+              "segment": {
+                "name": "S7",
+                "number": 7,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.38679287609356794,
+                "y": -0.5174417312857659
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-ca53-716d-9dd8-3b3942d48c90",
+          "createdAt": "2026-08-20T10:23:48.819093Z",
+          "finishedAt": "2026-08-20T10:24:11.054498Z",
+          "round": 4,
+          "turn": 6,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 151,
+          "points": 43,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-0c6d-75d1-9b01-e69e1d7eeb1d",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:05.742235Z",
+              "segment": {
+                "name": "S5",
+                "number": 5,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.2069342179788009,
+                "y": 0.7920043978429627
+              },
+              "entry": "manual_coords",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-0e02-7a1d-8ed5-22596c13a304",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:06.148521Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.08092459412764229,
+                "y": 0.7737276478679505
+              },
+              "entry": "manual_coords",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-12e0-7628-b202-e6c4c64cb726",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:07.392928Z",
+              "segment": {
+                "name": "S18",
+                "number": 18,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.574396843452973,
+                "y": 0.6320828355616055
+              },
+              "entry": "manual_coords",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-212e-77aa-a5aa-e8e05e66871a",
+          "createdAt": "2026-08-20T10:24:11.054502Z",
+          "finishedAt": "2026-08-20T10:24:22.599587Z",
+          "round": 4,
+          "turn": 7,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 88,
+          "points": 58,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-330a-7b8a-b208-0b33a15903f7",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:15.627719Z",
+              "segment": {
+                "name": "S19",
+                "number": 19,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.17016239274735975,
+                "y": -0.4542913693755508
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-3b04-7bcc-af44-e8ed7c310205",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:17.669743Z",
+              "segment": {
+                "name": "S19",
+                "number": 19,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.18544260323683165,
+                "y": -0.7138497266000947
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-42f7-77a8-b3f2-63f70a1ee597",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:19.703999Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.09341123350669728,
+                "y": 0.729913524222404
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-4e47-7909-861c-fb0884c1677a",
+          "createdAt": "2026-08-20T10:24:22.599592Z",
+          "finishedAt": "2026-08-20T10:24:34.351662Z",
+          "round": 5,
+          "turn": 8,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 125,
+          "points": 26,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-5ab9-7968-ad06-ca2f45cdfcd3",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:25.787771Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.16066609966866896,
+                "y": 0.8314725883881577
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-6483-7221-8f29-62cee5f31c34",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:28.291599Z",
+              "segment": {
+                "name": "S5",
+                "number": 5,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.027794957210629793,
+                "y": 0.13164423363851735
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-70a2-75b1-bf53-bcdd458ea3de",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:31.395056Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.0031316838591591485,
+                "y": 0.6586131083679339
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-7c2f-7a1e-850e-fc2f6b1c722b",
+          "createdAt": "2026-08-20T10:24:34.351663Z",
+          "finishedAt": "2026-08-20T10:24:44.587977Z",
+          "round": 5,
+          "turn": 9,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 48,
+          "points": 40,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-8647-798f-bc65-8a565a1632aa",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:36.937386Z",
+              "segment": {
+                "name": "T1",
+                "number": 1,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": 0.20846329725348067,
+                "y": 0.5409844561289681
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-8e87-7869-80a5-dcd66739c607",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:39.048044Z",
+              "segment": {
+                "name": "S13",
+                "number": 13,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.3204557823864162,
+                "y": 0.14167297405888837
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-9796-7cf7-888a-c1e48887b12f",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:41.367267Z",
+              "segment": {
+                "name": "T8",
+                "number": 8,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": -0.5740600530567077,
+                "y": -0.14226957924033629
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-a42b-7ef0-a619-3ddb6ca9846c",
+          "createdAt": "2026-08-20T10:24:44.587979Z",
+          "finishedAt": "2026-08-20T10:24:55.670701Z",
+          "round": 6,
+          "turn": 10,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 62,
+          "points": 63,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-ae88-7113-a4d3-4c8c1ec979ba",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:47.241067Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.013852891520693468,
+                "y": 0.7503497852966331
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-b84f-7dec-9350-1d47283bd94d",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:49.744409Z",
+              "segment": {
+                "name": "D20",
+                "number": 20,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": 0.07485687546694579,
+                "y": 0.9733215472406241
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-c211-79f6-913c-b6dc0e44bdc0",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:52.242098Z",
+              "segment": {
+                "name": "S3",
+                "number": 3,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.0415666299944164,
+                "y": -0.3301090838742728
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-cf76-7abc-bd3d-fba785e3d9ba",
+          "createdAt": "2026-08-20T10:24:55.670703Z",
+          "finishedAt": "2026-08-20T10:25:05.971887Z",
+          "round": 6,
+          "turn": 11,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 39,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-d842-7599-a4e2-56c1f29f93a5",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:57.925874Z",
+              "segment": {
+                "name": "S16",
+                "number": 16,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.7804435035209887,
+                "y": -0.4628320064223103
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-df7d-7da7-b22b-3229298c3005",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:59.774319Z",
+              "segment": {
+                "name": "D7",
+                "number": 7,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": -0.6093978917538725,
+                "y": -0.7313869106523113
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-e766-76d7-8bc2-ec6e149e23b5",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:01.814423Z",
+              "segment": {
+                "name": "S9",
+                "number": 9,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.7810849075056792,
+                "y": 0.499362939310748
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-f7b3-7d8f-98e3-1344c4a3a9b2",
+          "createdAt": "2026-08-20T10:25:05.971888Z",
+          "finishedAt": "2026-08-20T10:25:17.319273Z",
+          "round": 7,
+          "turn": 12,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 4,
+          "points": 58,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb4-0101-7cd9-ad95-cae63594c94d",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:08.354869Z",
+              "segment": {
+                "name": "S4",
+                "number": 4,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.2534528801331189,
+                "y": 0.20254004475117088
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-0f6d-737f-84be-e7d37aa73605",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:12.045655Z",
+              "segment": {
+                "name": "M1",
+                "number": 1,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": 0.4234115547702864,
+                "y": 1.0231250257718179
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-17b0-765a-98c4-05d453e184f5",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:14.161143Z",
+              "segment": {
+                "name": "T18",
+                "number": 18,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": 0.37693048530264167,
+                "y": 0.48461722823625825
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-2407-743b-9417-f956822563cc",
+          "createdAt": "2026-08-20T10:25:17.319277Z",
+          "finishedAt": "2026-08-20T10:25:24.071054Z",
+          "round": 7,
+          "turn": 13,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-2cd9-719f-94d3-3abecea72a67",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:19.578356Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.04810821758321938,
+                "y": 0.9247616332408963
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-3e66-737b-9ddc-1aaf852c2e41",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:24.070228Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-3e66-7a9a-8c4c-18c9fcd436cf",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:24.070695Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-3e67-70d8-9b97-5b11385e3e1a",
+          "createdAt": "2026-08-20T10:25:24.071055Z",
+          "finishedAt": "2026-08-20T10:25:37.14549Z",
+          "round": 8,
+          "turn": 14,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 4,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-4928-75c4-bd63-5b543b1d92ec",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:26.826964Z",
+              "segment": {
+                "name": "S15",
+                "number": 15,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.561399426540919,
+                "y": -0.3529505872835543
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-7178-772e-965e-e38346125087",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:37.144471Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-7178-7dc3-81ae-fad397577d27",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:37.144902Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-7179-777f-881e-068b70635315",
+          "createdAt": "2026-08-20T10:25:37.145491Z",
+          "finishedAt": "2026-08-20T10:25:47.344481Z",
+          "round": 8,
+          "turn": 15,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-7fda-788e-b5d9-edf65d7d4747",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:40.831901Z",
+              "segment": {
+                "name": "D20",
+                "number": 20,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": 0.022501664094793924,
+                "y": 0.9808554144923005
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-994f-78c2-a6c8-cd0b0ecaa92c",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:47.343574Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-994f-7cee-840a-4eb7f3f1593b",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:47.343849Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-9950-775e-90f4-8f621da64609",
+          "createdAt": "2026-08-20T10:25:47.344483Z",
+          "finishedAt": "2026-08-20T10:25:57.729001Z",
+          "round": 9,
+          "turn": 16,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 4,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-a3fd-7c85-9b9d-a102e7932640",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:50.078444Z",
+              "segment": {
+                "name": "M3",
+                "number": 3,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": 0.011027177764069872,
+                "y": -1.3964057090086575
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-ad8f-767f-96fb-397d06907429",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:52.528042Z",
+              "segment": {
+                "name": "S15",
+                "number": 15,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.7291438582984476,
+                "y": -0.566477614154735
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-c1e0-7638-974c-caa3dd96c9d8",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:57.728408Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-c1e1-700c-8ec3-63f9a2a86029",
+          "createdAt": "2026-08-20T10:25:57.729003Z",
+          "finishedAt": "2026-08-20T10:26:05.847827Z",
+          "round": 9,
+          "turn": 17,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-c846-7122-83de-c48455b40b1b",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:59.368479Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.08949146572563038,
+                "y": 0.7811932306562658
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-e193-7745-8faa-46d9c4a87704",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:26:05.843477Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-e195-7267-bcd1-41ad40f95ae4",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:26:05.845158Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-e197-7cad-9963-dd8af789135b",
+          "createdAt": "2026-08-20T10:26:05.84783Z",
+          "finishedAt": "2026-08-20T10:26:16.990562Z",
+          "round": 10,
+          "turn": 18,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 0,
+          "points": 4,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb4-f63d-71fc-ab49-3ad5f3550dc2",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:26:11.137123Z",
+              "segment": {
+                "name": "S2",
+                "number": 2,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.5203472465996508,
+                "y": -0.763037576341067
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-ff30-7cd8-b261-376ea283abed",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:26:13.425343Z",
+              "segment": {
+                "name": "D1",
+                "number": 1,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": 0.41962963525948976,
+                "y": 0.8911219389539133
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "inMode": "Straight",
+        "outMode": "Double",
+        "bullMode": "25/50",
+        "baseScore": 301,
+        "maxRounds": 50
+      }
+    },
+    {
+      "id": "01a01eb1-c7f6-7984-a455-f7edbdbce08d",
+      "matchId": "01a01eae-b506-7879-ad28-db86b914787d",
+      "createdAt": "2026-08-20T10:22:42.67724Z",
+      "finishedAt": "2026-08-20T10:26:16.990562Z",
+      "set": 0,
+      "leg": 0,
+      "variant": "X01",
+      "winner": 0,
+      "winnerPlayerId": "01a01eae-dce1-7b68-8164-02991118b770",
+      "scores": [
+        0,
+        9
+      ],
+      "turns": [
+        {
+          "id": "01a01eb1-c7f6-721d-b3ea-6d09710dd141",
+          "createdAt": "2026-08-20T10:22:42.678138Z",
+          "finishedAt": "2026-08-20T10:22:56.011655Z",
+          "round": 1,
+          "turn": 0,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 275,
+          "points": 26,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb1-e004-7a5a-83f5-e67dce484673",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:22:48.83917Z",
+              "segment": {
+                "name": "S5",
+                "number": 5,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.07477174739622831,
+                "y": 0.40954126448862027
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb1-e7fb-74e5-8c51-19db62462539",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:22:50.876052Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.04022404258400216,
+                "y": 0.4905596973900378
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb1-f0ff-7600-a8e9-734cbc97c33e",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:22:53.183728Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.14092981973522153,
+                "y": 0.3885039752013102
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb1-fc0b-7a11-ac04-9b035329c663",
+          "createdAt": "2026-08-20T10:22:56.01166Z",
+          "finishedAt": "2026-08-20T10:23:04.441593Z",
+          "round": 1,
+          "turn": 1,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 257,
+          "points": 44,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-030a-71fa-9946-019070c9b22a",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:22:57.804019Z",
+              "segment": {
+                "name": "D20",
+                "number": 20,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": -0.087739684979269,
+                "y": 0.9377987109285332
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-0a02-7279-8461-f75a06ade0a3",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:22:59.5868Z",
+              "segment": {
+                "name": "T1",
+                "number": 1,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": 0.19031679706747165,
+                "y": 0.5545092129368072
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-1144-72c6-bbf5-878658b935f8",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:01.447556Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.11974012191643027,
+                "y": 0.5027401180205383
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-1cf9-7926-94e3-a00fa671a1d0",
+          "createdAt": "2026-08-20T10:23:04.441599Z",
+          "finishedAt": "2026-08-20T10:23:18.128674Z",
+          "round": 2,
+          "turn": 2,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 215,
+          "points": 60,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-3453-719d-a4a5-9b6eb859f6b6",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:10.420673Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.04656262999438496,
+                "y": 0.8218755360744027
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-3d5a-7958-8ccc-88125e8390af",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:12.73151Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.11754682103164941,
+                "y": 0.8032523448144677
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-45d9-7380-9364-b4585e60648c",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:14.908735Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.07335975515513897,
+                "y": 0.5268347983041092
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-5270-7a60-940f-31d1624dbd46",
+          "createdAt": "2026-08-20T10:23:18.12868Z",
+          "finishedAt": "2026-08-20T10:23:26.506357Z",
+          "round": 2,
+          "turn": 3,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 217,
+          "points": 40,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-5a38-73bb-bcbb-ed3be57ccf5b",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:20.136852Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.05971296523905828,
+                "y": 0.6500796498337558
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-6278-7469-91c0-0b950402260b",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:22.23309Z",
+              "segment": {
+                "name": "M20",
+                "number": 20,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": -0.1347228443071086,
+                "y": 1.0030847231414475
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-68a2-793b-ba55-82cfad871b86",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:23.812462Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.05159062870839074,
+                "y": 0.5402990846131865
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-732a-7583-a2e1-0d41f2b227f1",
+          "createdAt": "2026-08-20T10:23:26.506361Z",
+          "finishedAt": "2026-08-20T10:23:38.913702Z",
+          "round": 3,
+          "turn": 4,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 194,
+          "points": 21,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-84de-7aeb-b726-957fd7106b0a",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:31.041266Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.03874245465548038,
+                "y": 0.8063170895721979
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-8e8e-7e5c-bef7-92086aed341a",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:33.52025Z",
+              "segment": {
+                "name": "M5",
+                "number": 5,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": -0.18798840599099872,
+                "y": 1.0011481152513968
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-97c8-7a2a-8973-bb11e5353f9e",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:35.882298Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.08523639525058144,
+                "y": 0.4316575563804174
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-a3a1-7ac2-8cb2-7c0eee12acf4",
+          "createdAt": "2026-08-20T10:23:38.913705Z",
+          "finishedAt": "2026-08-20T10:23:48.81909Z",
+          "round": 3,
+          "turn": 5,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 146,
+          "points": 71,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-ad77-71a4-86e5-e5644d2c4728",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:41.431788Z",
+              "segment": {
+                "name": "T19",
+                "number": 19,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": -0.2548008617135819,
+                "y": -0.5535021883852123
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-b42d-7365-a9d6-3f91cef05362",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:43.149603Z",
+              "segment": {
+                "name": "S7",
+                "number": 7,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.36074753410432653,
+                "y": -0.3794747752697409
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-ba97-70a1-924c-5b353a3e4c58",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:44.791967Z",
+              "segment": {
+                "name": "S7",
+                "number": 7,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.38679287609356794,
+                "y": -0.5174417312857659
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-ca53-716d-9dd8-3b3942d48c90",
+          "createdAt": "2026-08-20T10:23:48.819093Z",
+          "finishedAt": "2026-08-20T10:24:11.054498Z",
+          "round": 4,
+          "turn": 6,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 151,
+          "points": 43,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-0c6d-75d1-9b01-e69e1d7eeb1d",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:05.742235Z",
+              "segment": {
+                "name": "S5",
+                "number": 5,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.2069342179788009,
+                "y": 0.7920043978429627
+              },
+              "entry": "manual_coords",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-0e02-7a1d-8ed5-22596c13a304",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:06.148521Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.08092459412764229,
+                "y": 0.7737276478679505
+              },
+              "entry": "manual_coords",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-12e0-7628-b202-e6c4c64cb726",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:07.392928Z",
+              "segment": {
+                "name": "S18",
+                "number": 18,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.574396843452973,
+                "y": 0.6320828355616055
+              },
+              "entry": "manual_coords",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-212e-77aa-a5aa-e8e05e66871a",
+          "createdAt": "2026-08-20T10:24:11.054502Z",
+          "finishedAt": "2026-08-20T10:24:22.599587Z",
+          "round": 4,
+          "turn": 7,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 88,
+          "points": 58,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-330a-7b8a-b208-0b33a15903f7",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:15.627719Z",
+              "segment": {
+                "name": "S19",
+                "number": 19,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.17016239274735975,
+                "y": -0.4542913693755508
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-3b04-7bcc-af44-e8ed7c310205",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:17.669743Z",
+              "segment": {
+                "name": "S19",
+                "number": 19,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.18544260323683165,
+                "y": -0.7138497266000947
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-42f7-77a8-b3f2-63f70a1ee597",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:19.703999Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.09341123350669728,
+                "y": 0.729913524222404
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-4e47-7909-861c-fb0884c1677a",
+          "createdAt": "2026-08-20T10:24:22.599592Z",
+          "finishedAt": "2026-08-20T10:24:34.351662Z",
+          "round": 5,
+          "turn": 8,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 125,
+          "points": 26,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-5ab9-7968-ad06-ca2f45cdfcd3",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:25.787771Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.16066609966866896,
+                "y": 0.8314725883881577
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-6483-7221-8f29-62cee5f31c34",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:28.291599Z",
+              "segment": {
+                "name": "S5",
+                "number": 5,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.027794957210629793,
+                "y": 0.13164423363851735
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-70a2-75b1-bf53-bcdd458ea3de",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:31.395056Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.0031316838591591485,
+                "y": 0.6586131083679339
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-7c2f-7a1e-850e-fc2f6b1c722b",
+          "createdAt": "2026-08-20T10:24:34.351663Z",
+          "finishedAt": "2026-08-20T10:24:44.587977Z",
+          "round": 5,
+          "turn": 9,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 48,
+          "points": 40,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-8647-798f-bc65-8a565a1632aa",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:36.937386Z",
+              "segment": {
+                "name": "T1",
+                "number": 1,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": 0.20846329725348067,
+                "y": 0.5409844561289681
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-8e87-7869-80a5-dcd66739c607",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:39.048044Z",
+              "segment": {
+                "name": "S13",
+                "number": 13,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.3204557823864162,
+                "y": 0.14167297405888837
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-9796-7cf7-888a-c1e48887b12f",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:41.367267Z",
+              "segment": {
+                "name": "T8",
+                "number": 8,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": -0.5740600530567077,
+                "y": -0.14226957924033629
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-a42b-7ef0-a619-3ddb6ca9846c",
+          "createdAt": "2026-08-20T10:24:44.587979Z",
+          "finishedAt": "2026-08-20T10:24:55.670701Z",
+          "round": 6,
+          "turn": 10,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 62,
+          "points": 63,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-ae88-7113-a4d3-4c8c1ec979ba",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:47.241067Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.013852891520693468,
+                "y": 0.7503497852966331
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-b84f-7dec-9350-1d47283bd94d",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:49.744409Z",
+              "segment": {
+                "name": "D20",
+                "number": 20,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": 0.07485687546694579,
+                "y": 0.9733215472406241
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-c211-79f6-913c-b6dc0e44bdc0",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:52.242098Z",
+              "segment": {
+                "name": "S3",
+                "number": 3,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.0415666299944164,
+                "y": -0.3301090838742728
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-cf76-7abc-bd3d-fba785e3d9ba",
+          "createdAt": "2026-08-20T10:24:55.670703Z",
+          "finishedAt": "2026-08-20T10:25:05.971887Z",
+          "round": 6,
+          "turn": 11,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 39,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-d842-7599-a4e2-56c1f29f93a5",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:57.925874Z",
+              "segment": {
+                "name": "S16",
+                "number": 16,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.7804435035209887,
+                "y": -0.4628320064223103
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-df7d-7da7-b22b-3229298c3005",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:59.774319Z",
+              "segment": {
+                "name": "D7",
+                "number": 7,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": -0.6093978917538725,
+                "y": -0.7313869106523113
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-e766-76d7-8bc2-ec6e149e23b5",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:01.814423Z",
+              "segment": {
+                "name": "S9",
+                "number": 9,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.7810849075056792,
+                "y": 0.499362939310748
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-f7b3-7d8f-98e3-1344c4a3a9b2",
+          "createdAt": "2026-08-20T10:25:05.971888Z",
+          "finishedAt": "2026-08-20T10:25:17.319273Z",
+          "round": 7,
+          "turn": 12,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 4,
+          "points": 58,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb4-0101-7cd9-ad95-cae63594c94d",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:08.354869Z",
+              "segment": {
+                "name": "S4",
+                "number": 4,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.2534528801331189,
+                "y": 0.20254004475117088
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-0f6d-737f-84be-e7d37aa73605",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:12.045655Z",
+              "segment": {
+                "name": "M1",
+                "number": 1,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": 0.4234115547702864,
+                "y": 1.0231250257718179
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-17b0-765a-98c4-05d453e184f5",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:14.161143Z",
+              "segment": {
+                "name": "T18",
+                "number": 18,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": 0.37693048530264167,
+                "y": 0.48461722823625825
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-2407-743b-9417-f956822563cc",
+          "createdAt": "2026-08-20T10:25:17.319277Z",
+          "finishedAt": "2026-08-20T10:25:24.071054Z",
+          "round": 7,
+          "turn": 13,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-2cd9-719f-94d3-3abecea72a67",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:19.578356Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.04810821758321938,
+                "y": 0.9247616332408963
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-3e66-737b-9ddc-1aaf852c2e41",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:24.070228Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-3e66-7a9a-8c4c-18c9fcd436cf",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:24.070695Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-3e67-70d8-9b97-5b11385e3e1a",
+          "createdAt": "2026-08-20T10:25:24.071055Z",
+          "finishedAt": "2026-08-20T10:25:37.14549Z",
+          "round": 8,
+          "turn": 14,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 4,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-4928-75c4-bd63-5b543b1d92ec",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:26.826964Z",
+              "segment": {
+                "name": "S15",
+                "number": 15,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.561399426540919,
+                "y": -0.3529505872835543
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-7178-772e-965e-e38346125087",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:37.144471Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-7178-7dc3-81ae-fad397577d27",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:37.144902Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-7179-777f-881e-068b70635315",
+          "createdAt": "2026-08-20T10:25:37.145491Z",
+          "finishedAt": "2026-08-20T10:25:47.344481Z",
+          "round": 8,
+          "turn": 15,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-7fda-788e-b5d9-edf65d7d4747",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:40.831901Z",
+              "segment": {
+                "name": "D20",
+                "number": 20,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": 0.022501664094793924,
+                "y": 0.9808554144923005
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-994f-78c2-a6c8-cd0b0ecaa92c",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:47.343574Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-994f-7cee-840a-4eb7f3f1593b",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:47.343849Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-9950-775e-90f4-8f621da64609",
+          "createdAt": "2026-08-20T10:25:47.344483Z",
+          "finishedAt": "2026-08-20T10:25:57.729001Z",
+          "round": 9,
+          "turn": 16,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 4,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-a3fd-7c85-9b9d-a102e7932640",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:50.078444Z",
+              "segment": {
+                "name": "M3",
+                "number": 3,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": 0.011027177764069872,
+                "y": -1.3964057090086575
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-ad8f-767f-96fb-397d06907429",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:52.528042Z",
+              "segment": {
+                "name": "S15",
+                "number": 15,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.7291438582984476,
+                "y": -0.566477614154735
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-c1e0-7638-974c-caa3dd96c9d8",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:57.728408Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-c1e1-700c-8ec3-63f9a2a86029",
+          "createdAt": "2026-08-20T10:25:57.729003Z",
+          "finishedAt": "2026-08-20T10:26:05.847827Z",
+          "round": 9,
+          "turn": 17,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-c846-7122-83de-c48455b40b1b",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:59.368479Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.08949146572563038,
+                "y": 0.7811932306562658
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-e193-7745-8faa-46d9c4a87704",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:26:05.843477Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-e195-7267-bcd1-41ad40f95ae4",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:26:05.845158Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-e197-7cad-9963-dd8af789135b",
+          "createdAt": "2026-08-20T10:26:05.84783Z",
+          "finishedAt": "2026-08-20T10:26:16.990562Z",
+          "round": 10,
+          "turn": 18,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 0,
+          "points": 4,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb4-f63d-71fc-ab49-3ad5f3550dc2",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:26:11.137123Z",
+              "segment": {
+                "name": "S2",
+                "number": 2,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.5203472465996508,
+                "y": -0.763037576341067
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-ff30-7cd8-b261-376ea283abed",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:26:13.425343Z",
+              "segment": {
+                "name": "D1",
+                "number": 1,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": 0.41962963525948976,
+                "y": 0.8911219389539133
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "inMode": "Straight",
+        "outMode": "Double",
+        "bullMode": "25/50",
+        "baseScore": 301,
+        "maxRounds": 50
+      }
+    },
+    {
+      "id": "01a01eb1-c7f6-7984-a455-f7edbdbce08d",
+      "matchId": "01a01eae-b506-7879-ad28-db86b914787d",
+      "createdAt": "2026-08-20T10:22:42.67724Z",
+      "finishedAt": "2026-08-20T10:26:16.990562Z",
+      "set": 0,
+      "leg": 0,
+      "variant": "X01",
+      "winner": 0,
+      "winnerPlayerId": "01a01eae-dce1-7b68-8164-02991118b770",
+      "scores": [
+        0,
+        9
+      ],
+      "turns": [
+        {
+          "id": "01a01eb1-c7f6-721d-b3ea-6d09710dd141",
+          "createdAt": "2026-08-20T10:22:42.678138Z",
+          "finishedAt": "2026-08-20T10:22:56.011655Z",
+          "round": 1,
+          "turn": 0,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 275,
+          "points": 26,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb1-e004-7a5a-83f5-e67dce484673",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:22:48.83917Z",
+              "segment": {
+                "name": "S5",
+                "number": 5,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.07477174739622831,
+                "y": 0.40954126448862027
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb1-e7fb-74e5-8c51-19db62462539",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:22:50.876052Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.04022404258400216,
+                "y": 0.4905596973900378
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb1-f0ff-7600-a8e9-734cbc97c33e",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:22:53.183728Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.14092981973522153,
+                "y": 0.3885039752013102
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb1-fc0b-7a11-ac04-9b035329c663",
+          "createdAt": "2026-08-20T10:22:56.01166Z",
+          "finishedAt": "2026-08-20T10:23:04.441593Z",
+          "round": 1,
+          "turn": 1,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 257,
+          "points": 44,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-030a-71fa-9946-019070c9b22a",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:22:57.804019Z",
+              "segment": {
+                "name": "D20",
+                "number": 20,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": -0.087739684979269,
+                "y": 0.9377987109285332
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-0a02-7279-8461-f75a06ade0a3",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:22:59.5868Z",
+              "segment": {
+                "name": "T1",
+                "number": 1,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": 0.19031679706747165,
+                "y": 0.5545092129368072
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-1144-72c6-bbf5-878658b935f8",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:01.447556Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.11974012191643027,
+                "y": 0.5027401180205383
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-1cf9-7926-94e3-a00fa671a1d0",
+          "createdAt": "2026-08-20T10:23:04.441599Z",
+          "finishedAt": "2026-08-20T10:23:18.128674Z",
+          "round": 2,
+          "turn": 2,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 215,
+          "points": 60,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-3453-719d-a4a5-9b6eb859f6b6",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:10.420673Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.04656262999438496,
+                "y": 0.8218755360744027
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-3d5a-7958-8ccc-88125e8390af",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:12.73151Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.11754682103164941,
+                "y": 0.8032523448144677
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-45d9-7380-9364-b4585e60648c",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:14.908735Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.07335975515513897,
+                "y": 0.5268347983041092
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-5270-7a60-940f-31d1624dbd46",
+          "createdAt": "2026-08-20T10:23:18.12868Z",
+          "finishedAt": "2026-08-20T10:23:26.506357Z",
+          "round": 2,
+          "turn": 3,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 217,
+          "points": 40,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-5a38-73bb-bcbb-ed3be57ccf5b",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:20.136852Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.05971296523905828,
+                "y": 0.6500796498337558
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-6278-7469-91c0-0b950402260b",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:22.23309Z",
+              "segment": {
+                "name": "M20",
+                "number": 20,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": -0.1347228443071086,
+                "y": 1.0030847231414475
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-68a2-793b-ba55-82cfad871b86",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:23.812462Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.05159062870839074,
+                "y": 0.5402990846131865
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-732a-7583-a2e1-0d41f2b227f1",
+          "createdAt": "2026-08-20T10:23:26.506361Z",
+          "finishedAt": "2026-08-20T10:23:38.913702Z",
+          "round": 3,
+          "turn": 4,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 194,
+          "points": 21,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-84de-7aeb-b726-957fd7106b0a",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:31.041266Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.03874245465548038,
+                "y": 0.8063170895721979
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-8e8e-7e5c-bef7-92086aed341a",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:33.52025Z",
+              "segment": {
+                "name": "M5",
+                "number": 5,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": -0.18798840599099872,
+                "y": 1.0011481152513968
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-97c8-7a2a-8973-bb11e5353f9e",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:35.882298Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.08523639525058144,
+                "y": 0.4316575563804174
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-a3a1-7ac2-8cb2-7c0eee12acf4",
+          "createdAt": "2026-08-20T10:23:38.913705Z",
+          "finishedAt": "2026-08-20T10:23:48.81909Z",
+          "round": 3,
+          "turn": 5,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 146,
+          "points": 71,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-ad77-71a4-86e5-e5644d2c4728",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:41.431788Z",
+              "segment": {
+                "name": "T19",
+                "number": 19,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": -0.2548008617135819,
+                "y": -0.5535021883852123
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-b42d-7365-a9d6-3f91cef05362",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:43.149603Z",
+              "segment": {
+                "name": "S7",
+                "number": 7,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.36074753410432653,
+                "y": -0.3794747752697409
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-ba97-70a1-924c-5b353a3e4c58",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:44.791967Z",
+              "segment": {
+                "name": "S7",
+                "number": 7,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.38679287609356794,
+                "y": -0.5174417312857659
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-ca53-716d-9dd8-3b3942d48c90",
+          "createdAt": "2026-08-20T10:23:48.819093Z",
+          "finishedAt": "2026-08-20T10:24:11.054498Z",
+          "round": 4,
+          "turn": 6,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 151,
+          "points": 43,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-0c6d-75d1-9b01-e69e1d7eeb1d",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:05.742235Z",
+              "segment": {
+                "name": "S5",
+                "number": 5,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.2069342179788009,
+                "y": 0.7920043978429627
+              },
+              "entry": "manual_coords",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-0e02-7a1d-8ed5-22596c13a304",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:06.148521Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.08092459412764229,
+                "y": 0.7737276478679505
+              },
+              "entry": "manual_coords",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-12e0-7628-b202-e6c4c64cb726",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:07.392928Z",
+              "segment": {
+                "name": "S18",
+                "number": 18,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.574396843452973,
+                "y": 0.6320828355616055
+              },
+              "entry": "manual_coords",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-212e-77aa-a5aa-e8e05e66871a",
+          "createdAt": "2026-08-20T10:24:11.054502Z",
+          "finishedAt": "2026-08-20T10:24:22.599587Z",
+          "round": 4,
+          "turn": 7,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 88,
+          "points": 58,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-330a-7b8a-b208-0b33a15903f7",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:15.627719Z",
+              "segment": {
+                "name": "S19",
+                "number": 19,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.17016239274735975,
+                "y": -0.4542913693755508
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-3b04-7bcc-af44-e8ed7c310205",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:17.669743Z",
+              "segment": {
+                "name": "S19",
+                "number": 19,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.18544260323683165,
+                "y": -0.7138497266000947
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-42f7-77a8-b3f2-63f70a1ee597",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:19.703999Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.09341123350669728,
+                "y": 0.729913524222404
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-4e47-7909-861c-fb0884c1677a",
+          "createdAt": "2026-08-20T10:24:22.599592Z",
+          "finishedAt": "2026-08-20T10:24:34.351662Z",
+          "round": 5,
+          "turn": 8,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 125,
+          "points": 26,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-5ab9-7968-ad06-ca2f45cdfcd3",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:25.787771Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.16066609966866896,
+                "y": 0.8314725883881577
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-6483-7221-8f29-62cee5f31c34",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:28.291599Z",
+              "segment": {
+                "name": "S5",
+                "number": 5,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.027794957210629793,
+                "y": 0.13164423363851735
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-70a2-75b1-bf53-bcdd458ea3de",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:31.395056Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.0031316838591591485,
+                "y": 0.6586131083679339
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-7c2f-7a1e-850e-fc2f6b1c722b",
+          "createdAt": "2026-08-20T10:24:34.351663Z",
+          "finishedAt": "2026-08-20T10:24:44.587977Z",
+          "round": 5,
+          "turn": 9,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 48,
+          "points": 40,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-8647-798f-bc65-8a565a1632aa",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:36.937386Z",
+              "segment": {
+                "name": "T1",
+                "number": 1,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": 0.20846329725348067,
+                "y": 0.5409844561289681
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-8e87-7869-80a5-dcd66739c607",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:39.048044Z",
+              "segment": {
+                "name": "S13",
+                "number": 13,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.3204557823864162,
+                "y": 0.14167297405888837
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-9796-7cf7-888a-c1e48887b12f",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:41.367267Z",
+              "segment": {
+                "name": "T8",
+                "number": 8,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": -0.5740600530567077,
+                "y": -0.14226957924033629
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-a42b-7ef0-a619-3ddb6ca9846c",
+          "createdAt": "2026-08-20T10:24:44.587979Z",
+          "finishedAt": "2026-08-20T10:24:55.670701Z",
+          "round": 6,
+          "turn": 10,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 62,
+          "points": 63,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-ae88-7113-a4d3-4c8c1ec979ba",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:47.241067Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.013852891520693468,
+                "y": 0.7503497852966331
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-b84f-7dec-9350-1d47283bd94d",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:49.744409Z",
+              "segment": {
+                "name": "D20",
+                "number": 20,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": 0.07485687546694579,
+                "y": 0.9733215472406241
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-c211-79f6-913c-b6dc0e44bdc0",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:52.242098Z",
+              "segment": {
+                "name": "S3",
+                "number": 3,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.0415666299944164,
+                "y": -0.3301090838742728
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-cf76-7abc-bd3d-fba785e3d9ba",
+          "createdAt": "2026-08-20T10:24:55.670703Z",
+          "finishedAt": "2026-08-20T10:25:05.971887Z",
+          "round": 6,
+          "turn": 11,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 39,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-d842-7599-a4e2-56c1f29f93a5",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:57.925874Z",
+              "segment": {
+                "name": "S16",
+                "number": 16,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.7804435035209887,
+                "y": -0.4628320064223103
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-df7d-7da7-b22b-3229298c3005",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:59.774319Z",
+              "segment": {
+                "name": "D7",
+                "number": 7,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": -0.6093978917538725,
+                "y": -0.7313869106523113
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-e766-76d7-8bc2-ec6e149e23b5",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:01.814423Z",
+              "segment": {
+                "name": "S9",
+                "number": 9,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.7810849075056792,
+                "y": 0.499362939310748
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-f7b3-7d8f-98e3-1344c4a3a9b2",
+          "createdAt": "2026-08-20T10:25:05.971888Z",
+          "finishedAt": "2026-08-20T10:25:17.319273Z",
+          "round": 7,
+          "turn": 12,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 4,
+          "points": 58,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb4-0101-7cd9-ad95-cae63594c94d",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:08.354869Z",
+              "segment": {
+                "name": "S4",
+                "number": 4,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.2534528801331189,
+                "y": 0.20254004475117088
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-0f6d-737f-84be-e7d37aa73605",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:12.045655Z",
+              "segment": {
+                "name": "M1",
+                "number": 1,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": 0.4234115547702864,
+                "y": 1.0231250257718179
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-17b0-765a-98c4-05d453e184f5",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:14.161143Z",
+              "segment": {
+                "name": "T18",
+                "number": 18,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": 0.37693048530264167,
+                "y": 0.48461722823625825
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-2407-743b-9417-f956822563cc",
+          "createdAt": "2026-08-20T10:25:17.319277Z",
+          "finishedAt": "2026-08-20T10:25:24.071054Z",
+          "round": 7,
+          "turn": 13,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-2cd9-719f-94d3-3abecea72a67",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:19.578356Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.04810821758321938,
+                "y": 0.9247616332408963
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-3e66-737b-9ddc-1aaf852c2e41",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:24.070228Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-3e66-7a9a-8c4c-18c9fcd436cf",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:24.070695Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-3e67-70d8-9b97-5b11385e3e1a",
+          "createdAt": "2026-08-20T10:25:24.071055Z",
+          "finishedAt": "2026-08-20T10:25:37.14549Z",
+          "round": 8,
+          "turn": 14,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 4,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-4928-75c4-bd63-5b543b1d92ec",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:26.826964Z",
+              "segment": {
+                "name": "S15",
+                "number": 15,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.561399426540919,
+                "y": -0.3529505872835543
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-7178-772e-965e-e38346125087",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:37.144471Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-7178-7dc3-81ae-fad397577d27",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:37.144902Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-7179-777f-881e-068b70635315",
+          "createdAt": "2026-08-20T10:25:37.145491Z",
+          "finishedAt": "2026-08-20T10:25:47.344481Z",
+          "round": 8,
+          "turn": 15,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-7fda-788e-b5d9-edf65d7d4747",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:40.831901Z",
+              "segment": {
+                "name": "D20",
+                "number": 20,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": 0.022501664094793924,
+                "y": 0.9808554144923005
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-994f-78c2-a6c8-cd0b0ecaa92c",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:47.343574Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-994f-7cee-840a-4eb7f3f1593b",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:47.343849Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-9950-775e-90f4-8f621da64609",
+          "createdAt": "2026-08-20T10:25:47.344483Z",
+          "finishedAt": "2026-08-20T10:25:57.729001Z",
+          "round": 9,
+          "turn": 16,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 4,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-a3fd-7c85-9b9d-a102e7932640",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:50.078444Z",
+              "segment": {
+                "name": "M3",
+                "number": 3,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": 0.011027177764069872,
+                "y": -1.3964057090086575
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-ad8f-767f-96fb-397d06907429",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:52.528042Z",
+              "segment": {
+                "name": "S15",
+                "number": 15,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.7291438582984476,
+                "y": -0.566477614154735
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-c1e0-7638-974c-caa3dd96c9d8",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:57.728408Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-c1e1-700c-8ec3-63f9a2a86029",
+          "createdAt": "2026-08-20T10:25:57.729003Z",
+          "finishedAt": "2026-08-20T10:26:05.847827Z",
+          "round": 9,
+          "turn": 17,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-c846-7122-83de-c48455b40b1b",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:59.368479Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.08949146572563038,
+                "y": 0.7811932306562658
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-e193-7745-8faa-46d9c4a87704",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:26:05.843477Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-e195-7267-bcd1-41ad40f95ae4",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:26:05.845158Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-e197-7cad-9963-dd8af789135b",
+          "createdAt": "2026-08-20T10:26:05.84783Z",
+          "finishedAt": "2026-08-20T10:26:16.990562Z",
+          "round": 10,
+          "turn": 18,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 0,
+          "points": 4,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb4-f63d-71fc-ab49-3ad5f3550dc2",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:26:11.137123Z",
+              "segment": {
+                "name": "S2",
+                "number": 2,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.5203472465996508,
+                "y": -0.763037576341067
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-ff30-7cd8-b261-376ea283abed",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:26:13.425343Z",
+              "segment": {
+                "name": "D1",
+                "number": 1,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": 0.41962963525948976,
+                "y": 0.8911219389539133
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "inMode": "Straight",
+        "outMode": "Double",
+        "bullMode": "25/50",
+        "baseScore": 301,
+        "maxRounds": 50
+      }
+    },
+    {
+      "id": "01a01eb1-c7f6-7984-a455-f7edbdbce08d",
+      "matchId": "01a01eae-b506-7879-ad28-db86b914787d",
+      "createdAt": "2026-08-20T10:22:42.67724Z",
+      "finishedAt": "2026-08-20T10:26:16.990562Z",
+      "set": 0,
+      "leg": 0,
+      "variant": "X01",
+      "winner": 0,
+      "winnerPlayerId": "01a01eae-dce1-7b68-8164-02991118b770",
+      "scores": [
+        0,
+        9
+      ],
+      "turns": [
+        {
+          "id": "01a01eb1-c7f6-721d-b3ea-6d09710dd141",
+          "createdAt": "2026-08-20T10:22:42.678138Z",
+          "finishedAt": "2026-08-20T10:22:56.011655Z",
+          "round": 1,
+          "turn": 0,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 275,
+          "points": 26,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb1-e004-7a5a-83f5-e67dce484673",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:22:48.83917Z",
+              "segment": {
+                "name": "S5",
+                "number": 5,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.07477174739622831,
+                "y": 0.40954126448862027
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb1-e7fb-74e5-8c51-19db62462539",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:22:50.876052Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.04022404258400216,
+                "y": 0.4905596973900378
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb1-f0ff-7600-a8e9-734cbc97c33e",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:22:53.183728Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.14092981973522153,
+                "y": 0.3885039752013102
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb1-fc0b-7a11-ac04-9b035329c663",
+          "createdAt": "2026-08-20T10:22:56.01166Z",
+          "finishedAt": "2026-08-20T10:23:04.441593Z",
+          "round": 1,
+          "turn": 1,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 257,
+          "points": 44,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-030a-71fa-9946-019070c9b22a",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:22:57.804019Z",
+              "segment": {
+                "name": "D20",
+                "number": 20,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": -0.087739684979269,
+                "y": 0.9377987109285332
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-0a02-7279-8461-f75a06ade0a3",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:22:59.5868Z",
+              "segment": {
+                "name": "T1",
+                "number": 1,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": 0.19031679706747165,
+                "y": 0.5545092129368072
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-1144-72c6-bbf5-878658b935f8",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:01.447556Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.11974012191643027,
+                "y": 0.5027401180205383
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-1cf9-7926-94e3-a00fa671a1d0",
+          "createdAt": "2026-08-20T10:23:04.441599Z",
+          "finishedAt": "2026-08-20T10:23:18.128674Z",
+          "round": 2,
+          "turn": 2,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 215,
+          "points": 60,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-3453-719d-a4a5-9b6eb859f6b6",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:10.420673Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.04656262999438496,
+                "y": 0.8218755360744027
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-3d5a-7958-8ccc-88125e8390af",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:12.73151Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.11754682103164941,
+                "y": 0.8032523448144677
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-45d9-7380-9364-b4585e60648c",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:14.908735Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.07335975515513897,
+                "y": 0.5268347983041092
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-5270-7a60-940f-31d1624dbd46",
+          "createdAt": "2026-08-20T10:23:18.12868Z",
+          "finishedAt": "2026-08-20T10:23:26.506357Z",
+          "round": 2,
+          "turn": 3,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 217,
+          "points": 40,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-5a38-73bb-bcbb-ed3be57ccf5b",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:20.136852Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.05971296523905828,
+                "y": 0.6500796498337558
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-6278-7469-91c0-0b950402260b",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:22.23309Z",
+              "segment": {
+                "name": "M20",
+                "number": 20,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": -0.1347228443071086,
+                "y": 1.0030847231414475
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-68a2-793b-ba55-82cfad871b86",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:23.812462Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.05159062870839074,
+                "y": 0.5402990846131865
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-732a-7583-a2e1-0d41f2b227f1",
+          "createdAt": "2026-08-20T10:23:26.506361Z",
+          "finishedAt": "2026-08-20T10:23:38.913702Z",
+          "round": 3,
+          "turn": 4,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 194,
+          "points": 21,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-84de-7aeb-b726-957fd7106b0a",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:31.041266Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.03874245465548038,
+                "y": 0.8063170895721979
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-8e8e-7e5c-bef7-92086aed341a",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:33.52025Z",
+              "segment": {
+                "name": "M5",
+                "number": 5,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": -0.18798840599099872,
+                "y": 1.0011481152513968
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-97c8-7a2a-8973-bb11e5353f9e",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:35.882298Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.08523639525058144,
+                "y": 0.4316575563804174
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-a3a1-7ac2-8cb2-7c0eee12acf4",
+          "createdAt": "2026-08-20T10:23:38.913705Z",
+          "finishedAt": "2026-08-20T10:23:48.81909Z",
+          "round": 3,
+          "turn": 5,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 146,
+          "points": 71,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb2-ad77-71a4-86e5-e5644d2c4728",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:23:41.431788Z",
+              "segment": {
+                "name": "T19",
+                "number": 19,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": -0.2548008617135819,
+                "y": -0.5535021883852123
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-b42d-7365-a9d6-3f91cef05362",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:23:43.149603Z",
+              "segment": {
+                "name": "S7",
+                "number": 7,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.36074753410432653,
+                "y": -0.3794747752697409
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb2-ba97-70a1-924c-5b353a3e4c58",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:23:44.791967Z",
+              "segment": {
+                "name": "S7",
+                "number": 7,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.38679287609356794,
+                "y": -0.5174417312857659
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb2-ca53-716d-9dd8-3b3942d48c90",
+          "createdAt": "2026-08-20T10:23:48.819093Z",
+          "finishedAt": "2026-08-20T10:24:11.054498Z",
+          "round": 4,
+          "turn": 6,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 151,
+          "points": 43,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-0c6d-75d1-9b01-e69e1d7eeb1d",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:05.742235Z",
+              "segment": {
+                "name": "S5",
+                "number": 5,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.2069342179788009,
+                "y": 0.7920043978429627
+              },
+              "entry": "manual_coords",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-0e02-7a1d-8ed5-22596c13a304",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:06.148521Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.08092459412764229,
+                "y": 0.7737276478679505
+              },
+              "entry": "manual_coords",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-12e0-7628-b202-e6c4c64cb726",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:07.392928Z",
+              "segment": {
+                "name": "S18",
+                "number": 18,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.574396843452973,
+                "y": 0.6320828355616055
+              },
+              "entry": "manual_coords",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-212e-77aa-a5aa-e8e05e66871a",
+          "createdAt": "2026-08-20T10:24:11.054502Z",
+          "finishedAt": "2026-08-20T10:24:22.599587Z",
+          "round": 4,
+          "turn": 7,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 88,
+          "points": 58,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-330a-7b8a-b208-0b33a15903f7",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:15.627719Z",
+              "segment": {
+                "name": "S19",
+                "number": 19,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.17016239274735975,
+                "y": -0.4542913693755508
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-3b04-7bcc-af44-e8ed7c310205",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:17.669743Z",
+              "segment": {
+                "name": "S19",
+                "number": 19,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.18544260323683165,
+                "y": -0.7138497266000947
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-42f7-77a8-b3f2-63f70a1ee597",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:19.703999Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.09341123350669728,
+                "y": 0.729913524222404
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-4e47-7909-861c-fb0884c1677a",
+          "createdAt": "2026-08-20T10:24:22.599592Z",
+          "finishedAt": "2026-08-20T10:24:34.351662Z",
+          "round": 5,
+          "turn": 8,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 125,
+          "points": 26,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-5ab9-7968-ad06-ca2f45cdfcd3",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:25.787771Z",
+              "segment": {
+                "name": "S1",
+                "number": 1,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.16066609966866896,
+                "y": 0.8314725883881577
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-6483-7221-8f29-62cee5f31c34",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:28.291599Z",
+              "segment": {
+                "name": "S5",
+                "number": 5,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.027794957210629793,
+                "y": 0.13164423363851735
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-70a2-75b1-bf53-bcdd458ea3de",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:31.395056Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.0031316838591591485,
+                "y": 0.6586131083679339
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-7c2f-7a1e-850e-fc2f6b1c722b",
+          "createdAt": "2026-08-20T10:24:34.351663Z",
+          "finishedAt": "2026-08-20T10:24:44.587977Z",
+          "round": 5,
+          "turn": 9,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 48,
+          "points": 40,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-8647-798f-bc65-8a565a1632aa",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:36.937386Z",
+              "segment": {
+                "name": "T1",
+                "number": 1,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": 0.20846329725348067,
+                "y": 0.5409844561289681
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-8e87-7869-80a5-dcd66739c607",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:39.048044Z",
+              "segment": {
+                "name": "S13",
+                "number": 13,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.3204557823864162,
+                "y": 0.14167297405888837
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-9796-7cf7-888a-c1e48887b12f",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:41.367267Z",
+              "segment": {
+                "name": "T8",
+                "number": 8,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": -0.5740600530567077,
+                "y": -0.14226957924033629
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-a42b-7ef0-a619-3ddb6ca9846c",
+          "createdAt": "2026-08-20T10:24:44.587979Z",
+          "finishedAt": "2026-08-20T10:24:55.670701Z",
+          "round": 6,
+          "turn": 10,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 62,
+          "points": 63,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-ae88-7113-a4d3-4c8c1ec979ba",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:47.241067Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.013852891520693468,
+                "y": 0.7503497852966331
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-b84f-7dec-9350-1d47283bd94d",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:49.744409Z",
+              "segment": {
+                "name": "D20",
+                "number": 20,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": 0.07485687546694579,
+                "y": 0.9733215472406241
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-c211-79f6-913c-b6dc0e44bdc0",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:24:52.242098Z",
+              "segment": {
+                "name": "S3",
+                "number": 3,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.0415666299944164,
+                "y": -0.3301090838742728
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-cf76-7abc-bd3d-fba785e3d9ba",
+          "createdAt": "2026-08-20T10:24:55.670703Z",
+          "finishedAt": "2026-08-20T10:25:05.971887Z",
+          "round": 6,
+          "turn": 11,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 39,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb3-d842-7599-a4e2-56c1f29f93a5",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:24:57.925874Z",
+              "segment": {
+                "name": "S16",
+                "number": 16,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.7804435035209887,
+                "y": -0.4628320064223103
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-df7d-7da7-b22b-3229298c3005",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:24:59.774319Z",
+              "segment": {
+                "name": "D7",
+                "number": 7,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": -0.6093978917538725,
+                "y": -0.7313869106523113
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb3-e766-76d7-8bc2-ec6e149e23b5",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:01.814423Z",
+              "segment": {
+                "name": "S9",
+                "number": 9,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": -0.7810849075056792,
+                "y": 0.499362939310748
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb3-f7b3-7d8f-98e3-1344c4a3a9b2",
+          "createdAt": "2026-08-20T10:25:05.971888Z",
+          "finishedAt": "2026-08-20T10:25:17.319273Z",
+          "round": 7,
+          "turn": 12,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 4,
+          "points": 58,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb4-0101-7cd9-ad95-cae63594c94d",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:08.354869Z",
+              "segment": {
+                "name": "S4",
+                "number": 4,
+                "bed": "SingleInner",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.2534528801331189,
+                "y": 0.20254004475117088
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-0f6d-737f-84be-e7d37aa73605",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:12.045655Z",
+              "segment": {
+                "name": "M1",
+                "number": 1,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": 0.4234115547702864,
+                "y": 1.0231250257718179
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-17b0-765a-98c4-05d453e184f5",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:14.161143Z",
+              "segment": {
+                "name": "T18",
+                "number": 18,
+                "bed": "Triple",
+                "multiplier": 3
+              },
+              "coords": {
+                "x": 0.37693048530264167,
+                "y": 0.48461722823625825
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-2407-743b-9417-f956822563cc",
+          "createdAt": "2026-08-20T10:25:17.319277Z",
+          "finishedAt": "2026-08-20T10:25:24.071054Z",
+          "round": 7,
+          "turn": 13,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-2cd9-719f-94d3-3abecea72a67",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:19.578356Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.04810821758321938,
+                "y": 0.9247616332408963
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-3e66-737b-9ddc-1aaf852c2e41",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:24.070228Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-3e66-7a9a-8c4c-18c9fcd436cf",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:24.070695Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-3e67-70d8-9b97-5b11385e3e1a",
+          "createdAt": "2026-08-20T10:25:24.071055Z",
+          "finishedAt": "2026-08-20T10:25:37.14549Z",
+          "round": 8,
+          "turn": 14,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 4,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-4928-75c4-bd63-5b543b1d92ec",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:26.826964Z",
+              "segment": {
+                "name": "S15",
+                "number": 15,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.561399426540919,
+                "y": -0.3529505872835543
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-7178-772e-965e-e38346125087",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:37.144471Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-7178-7dc3-81ae-fad397577d27",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:37.144902Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-7179-777f-881e-068b70635315",
+          "createdAt": "2026-08-20T10:25:37.145491Z",
+          "finishedAt": "2026-08-20T10:25:47.344481Z",
+          "round": 8,
+          "turn": 15,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-7fda-788e-b5d9-edf65d7d4747",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:40.831901Z",
+              "segment": {
+                "name": "D20",
+                "number": 20,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": 0.022501664094793924,
+                "y": 0.9808554144923005
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-994f-78c2-a6c8-cd0b0ecaa92c",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:47.343574Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-994f-7cee-840a-4eb7f3f1593b",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:47.343849Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-9950-775e-90f4-8f621da64609",
+          "createdAt": "2026-08-20T10:25:47.344483Z",
+          "finishedAt": "2026-08-20T10:25:57.729001Z",
+          "round": 9,
+          "turn": 16,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 4,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-a3fd-7c85-9b9d-a102e7932640",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:50.078444Z",
+              "segment": {
+                "name": "M3",
+                "number": 3,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "coords": {
+                "x": 0.011027177764069872,
+                "y": -1.3964057090086575
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-ad8f-767f-96fb-397d06907429",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:25:52.528042Z",
+              "segment": {
+                "name": "S15",
+                "number": 15,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.7291438582984476,
+                "y": -0.566477614154735
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-c1e0-7638-974c-caa3dd96c9d8",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:25:57.728408Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-c1e1-700c-8ec3-63f9a2a86029",
+          "createdAt": "2026-08-20T10:25:57.729003Z",
+          "finishedAt": "2026-08-20T10:26:05.847827Z",
+          "round": 9,
+          "turn": 17,
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "score": 9,
+          "points": 0,
+          "marks": null,
+          "busted": true,
+          "throws": [
+            {
+              "id": "01a01eb4-c846-7122-83de-c48455b40b1b",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:25:59.368479Z",
+              "segment": {
+                "name": "S20",
+                "number": 20,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.08949146572563038,
+                "y": 0.7811932306562658
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-e193-7745-8faa-46d9c4a87704",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:26:05.843477Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-e195-7267-bcd1-41ad40f95ae4",
+              "throw": 2,
+              "createdAt": "2026-08-20T10:26:05.845158Z",
+              "segment": {
+                "name": "Miss",
+                "number": 0,
+                "bed": "Outside",
+                "multiplier": 0
+              },
+              "entry": "fill_miss",
+              "marks": null
+            }
+          ]
+        },
+        {
+          "id": "01a01eb4-e197-7cad-9963-dd8af789135b",
+          "createdAt": "2026-08-20T10:26:05.84783Z",
+          "finishedAt": "2026-08-20T10:26:16.990562Z",
+          "round": 10,
+          "turn": 18,
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "score": 0,
+          "points": 4,
+          "marks": null,
+          "busted": false,
+          "throws": [
+            {
+              "id": "01a01eb4-f63d-71fc-ab49-3ad5f3550dc2",
+              "throw": 0,
+              "createdAt": "2026-08-20T10:26:11.137123Z",
+              "segment": {
+                "name": "S2",
+                "number": 2,
+                "bed": "SingleOuter",
+                "multiplier": 1
+              },
+              "coords": {
+                "x": 0.5203472465996508,
+                "y": -0.763037576341067
+              },
+              "entry": "detected",
+              "marks": null
+            },
+            {
+              "id": "01a01eb4-ff30-7cd8-b261-376ea283abed",
+              "throw": 1,
+              "createdAt": "2026-08-20T10:26:13.425343Z",
+              "segment": {
+                "name": "D1",
+                "number": 1,
+                "bed": "Double",
+                "multiplier": 2
+              },
+              "coords": {
+                "x": 0.41962963525948976,
+                "y": 0.8911219389539133
+              },
+              "entry": "detected",
+              "marks": null
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "inMode": "Straight",
+        "outMode": "Double",
+        "bullMode": "25/50",
+        "baseScore": 301,
+        "maxRounds": 50
+      }
+    }
+  ],
+  "duration": "17m41s",
+  "totalLegs": 4,
+  "totalSets": 1,
+  "settings": {
+    "inMode": "Straight",
+    "outMode": "Double",
+    "bullMode": "25/50",
+    "baseScore": 301,
+    "maxRounds": 50
+  },
+  "matchStats": [
+    {
+      "setsWon": 0,
+      "set": 0,
+      "legsWon": 1,
+      "gameId": "00000000-0000-0000-0000-000000000000",
+      "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+      "dartsThrown": 107,
+      "average": 29.1588785046729,
+      "first9Average": 53.833333333333336,
+      "checkouts": 29,
+      "checkoutPoints": 7,
+      "less60": 32,
+      "plus60": 3,
+      "plus100": 1,
+      "plus140": 0,
+      "plus170": 0,
+      "total180": 0,
+      "score": 0,
+      "first9Score": 0,
+      "averageUntil170": 51.23076923076923,
+      "dartsUntil170": 0,
+      "scoreUntil170": 0,
+      "checkoutsHit": 1,
+      "checkoutPercent": 0.034482758620689655,
+      "checkoutPointsAverage": 0
+    },
+    {
+      "setsWon": 0,
+      "set": 0,
+      "legsWon": 3,
+      "gameId": "00000000-0000-0000-0000-000000000000",
+      "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+      "dartsThrown": 108,
+      "average": 33.388888888888886,
+      "first9Average": 49.75,
+      "checkouts": 43,
+      "checkoutPoints": 40,
+      "less60": 30,
+      "plus60": 5,
+      "plus100": 2,
+      "plus140": 0,
+      "plus170": 0,
+      "total180": 0,
+      "score": 0,
+      "first9Score": 0,
+      "averageUntil170": 53.4,
+      "dartsUntil170": 0,
+      "scoreUntil170": 0,
+      "checkoutsHit": 3,
+      "checkoutPercent": 0.06976744186046512,
+      "checkoutPointsAverage": 0
+    }
+  ],
+  "setStats": null,
+  "legStats": [
+    {
+      "stats": [
+        {
+          "gameId": "01a01eb1-c7f6-7984-a455-f7edbdbce08d",
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "dartsThrown": 29,
+          "average": 31.137931034482754,
+          "first9Average": 35.66666666666667,
+          "checkouts": 8,
+          "checkoutPoints": 4,
+          "less60": 8,
+          "plus60": 2,
+          "plus100": 0,
+          "plus140": 0,
+          "plus170": 0,
+          "total180": 0,
+          "score": 301,
+          "first9Score": 107,
+          "averageUntil170": 37.5,
+          "dartsUntil170": 12,
+          "scoreUntil170": 150,
+          "checkoutsHit": 1,
+          "checkoutPercent": 0.125,
+          "checkoutPointsAverage": 0
+        },
+        {
+          "gameId": "01a01eb1-c7f6-7984-a455-f7edbdbce08d",
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "dartsThrown": 27,
+          "average": 32.44444444444444,
+          "first9Average": 51.666666666666664,
+          "checkouts": 2,
+          "checkoutPoints": 0,
+          "less60": 8,
+          "plus60": 1,
+          "plus100": 0,
+          "plus140": 0,
+          "plus170": 0,
+          "total180": 0,
+          "score": 292,
+          "first9Score": 155,
+          "averageUntil170": 51.666666666666664,
+          "dartsUntil170": 9,
+          "scoreUntil170": 155,
+          "checkoutsHit": 0,
+          "checkoutPercent": 0,
+          "checkoutPointsAverage": 0
+        }
+      ],
+      "playerIndices": [
+        1,
+        0
+      ],
+      "winner": 1,
+      "set": 1,
+      "leg": 1
+    },
+    {
+      "stats": [
+        {
+          "gameId": "01a01eb5-0d35-7c23-9807-6c93d5fbf0d4",
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "dartsThrown": 47,
+          "average": 19.212765957446805,
+          "first9Average": 58.33333333333333,
+          "checkouts": 25,
+          "checkoutPoints": 7,
+          "less60": 15,
+          "plus60": 0,
+          "plus100": 1,
+          "plus140": 0,
+          "plus170": 0,
+          "total180": 0,
+          "score": 301,
+          "first9Score": 175,
+          "averageUntil170": 58.33333333333333,
+          "dartsUntil170": 9,
+          "scoreUntil170": 175,
+          "checkoutsHit": 1,
+          "checkoutPercent": 0.04,
+          "checkoutPointsAverage": 0
+        },
+        {
+          "gameId": "01a01eb5-0d35-7c23-9807-6c93d5fbf0d4",
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "dartsThrown": 45,
+          "average": 19.933333333333334,
+          "first9Average": 42.33333333333333,
+          "checkouts": 30,
+          "checkoutPoints": 0,
+          "less60": 14,
+          "plus60": 0,
+          "plus100": 1,
+          "plus140": 0,
+          "plus170": 0,
+          "total180": 0,
+          "score": 299,
+          "first9Score": 127,
+          "averageUntil170": 57,
+          "dartsUntil170": 12,
+          "scoreUntil170": 228,
+          "checkoutsHit": 0,
+          "checkoutPercent": 0,
+          "checkoutPointsAverage": 0
+        }
+      ],
+      "playerIndices": [
+        0,
+        1
+      ],
+      "winner": 0,
+      "set": 1,
+      "leg": 2
+    },
+    {
+      "stats": [
+        {
+          "gameId": "01a01ebb-190d-77e1-bcb1-0d329472adf7",
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "dartsThrown": 17,
+          "average": 53.117647058823536,
+          "first9Average": 39.33333333333333,
+          "checkouts": 2,
+          "checkoutPoints": 40,
+          "less60": 4,
+          "plus60": 2,
+          "plus100": 0,
+          "plus140": 0,
+          "plus170": 0,
+          "total180": 0,
+          "score": 301,
+          "first9Score": 118,
+          "averageUntil170": 44.5,
+          "dartsUntil170": 12,
+          "scoreUntil170": 178,
+          "checkoutsHit": 1,
+          "checkoutPercent": 0.5,
+          "checkoutPointsAverage": 0
+        },
+        {
+          "gameId": "01a01ebb-190d-77e1-bcb1-0d329472adf7",
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "dartsThrown": 15,
+          "average": 31.4,
+          "first9Average": 38.333333333333336,
+          "checkouts": 0,
+          "checkoutPoints": 0,
+          "less60": 5,
+          "plus60": 0,
+          "plus100": 0,
+          "plus140": 0,
+          "plus170": 0,
+          "total180": 0,
+          "score": 157,
+          "first9Score": 115,
+          "averageUntil170": 33.75,
+          "dartsUntil170": 12,
+          "scoreUntil170": 135,
+          "checkoutsHit": 0,
+          "checkoutPercent": 0,
+          "checkoutPointsAverage": 0
+        }
+      ],
+      "playerIndices": [
+        1,
+        0
+      ],
+      "winner": 1,
+      "set": 1,
+      "leg": 3
+    },
+    {
+      "stats": [
+        {
+          "gameId": "01a01ebc-d958-7707-a30a-da8f545ddbc5",
+          "playerId": "01a01eae-c55b-7efe-b493-b81c8f9645e0",
+          "dartsThrown": 18,
+          "average": 48.33333333333333,
+          "first9Average": 67,
+          "checkouts": 2,
+          "checkoutPoints": 0,
+          "less60": 4,
+          "plus60": 2,
+          "plus100": 0,
+          "plus140": 0,
+          "plus170": 0,
+          "total180": 0,
+          "score": 290,
+          "first9Score": 201,
+          "averageUntil170": 67,
+          "dartsUntil170": 9,
+          "scoreUntil170": 201,
+          "checkoutsHit": 0,
+          "checkoutPercent": 0,
+          "checkoutPointsAverage": 0
+        },
+        {
+          "gameId": "01a01ebc-d958-7707-a30a-da8f545ddbc5",
+          "playerId": "01a01eae-dce1-7b68-8164-02991118b770",
+          "dartsThrown": 17,
+          "average": 53.117647058823536,
+          "first9Average": 81.66666666666666,
+          "checkouts": 3,
+          "checkoutPoints": 14,
+          "less60": 4,
+          "plus60": 1,
+          "plus100": 1,
+          "plus140": 0,
+          "plus170": 0,
+          "total180": 0,
+          "score": 301,
+          "first9Score": 245,
+          "averageUntil170": 81.66666666666666,
+          "dartsUntil170": 9,
+          "scoreUntil170": 245,
+          "checkoutsHit": 1,
+          "checkoutPercent": 0.3333333333333333,
+          "checkoutPointsAverage": 0
+        }
+      ],
+      "playerIndices": [
+        0,
+        1
+      ],
+      "winner": 1,
+      "set": 1,
+      "leg": 4
+    }
+  ]
+}

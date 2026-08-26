@@ -1,0 +1,26 @@
+{
+  "https://api.autodarts.com/as/v0/matches?page=0&limit=20": {
+    "status": 401,
+    "text": "{\"statusCode\":401,\"error\":{\"status\":401,\"code\":\"unauthorized\",\"message\":\"unauthorized\"}}\n"
+  },
+  "https://api.autodarts.com/as/v0/matches?limit=10": {
+    "status": 401,
+    "text": "{\"statusCode\":401,\"error\":{\"status\":401,\"code\":\"unauthorized\",\"message\":\"unauthorized\"}}\n"
+  },
+  "https://api.autodarts.com/as/v0/matches": {
+    "status": 401,
+    "text": "{\"statusCode\":401,\"error\":{\"status\":401,\"code\":\"unauthorized\",\"message\":\"unauthorized\"}}\n"
+  },
+  "https://api.autodarts.com/us/v0/match-id": {
+    "status": 401,
+    "text": "{\"statusCode\":401,\"error\":{\"status\":401,\"code\":\"unauthorized\",\"message\":\"unauthorized\"}}\n"
+  },
+  "https://api.autodarts.com/as/v0/match": {
+    "status": 404,
+    "text": "404 page not found\n"
+  },
+  "https://api.autodarts.com/as/v0/matches/history": {
+    "status": 401,
+    "text": "{\"statusCode\":401,\"error\":{\"status\":401,\"code\":\"unauthorized\",\"message\":\"unauthorized\"}}\n"
+  }
+}

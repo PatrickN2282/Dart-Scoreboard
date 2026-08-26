@@ -1,0 +1,224 @@
+[
+  {
+    "type": "request",
+    "url": "https://play.autodarts.com/history/matches",
+    "method": "GET",
+    "resourceType": "document"
+  },
+  {
+    "type": "response",
+    "url": "https://play.autodarts.com/history/matches",
+    "status": 200,
+    "body_snippet": "<!DOCTYPE html>\n<html lang=\"en\" translate=\"no\">\n<head>\n  <meta charset=\"utf-8\" />\n  <title>Autodarts Play</title>\n  <base href=\"/\" />\n\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n  <link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />\n\n  <meta name=\"theme-color\" content=\"#384688\" />\n  <meta\n    name=\"description\"\n    content=\"Play online darts with automatic scoring with Autodarts.\"\n  />\n  <link rel=\"apple-touch-icon\" sizes='192x192' href=\"/apple-touch-icon.png\" />\n  <link rel=\"manifest\" href='/site.webmanifest' />\n\n  <script type=\"module\" crossorigin src=\"/assets/index-yDk8342k.js\"></script>\n  <link rel=\"stylesheet\" crossorigin href=\"/assets/index-Btw_9-DK.css\">\n</head>\n<body>\n<noscript>You need to enable JavaScript to run this app.</noscript>\n<div id=\"root\"></div>\n\n</body>\n</html>\n"
+  },
+  {
+    "type": "request",
+    "url": "https://o4509356937641984.ingest.de.sentry.io/api/4509357085163600/envelope/?sentry_version=7&sentry_key=caf53133b490a9ba57e2714ad209c9bd&sentry_client=sentry.javascript.react%2F10.42.0",
+    "method": "POST",
+    "resourceType": "fetch"
+  },
+  {
+    "type": "request",
+    "url": "https://o4509356937641984.ingest.de.sentry.io/api/4509357085163600/envelope/?sentry_version=7&sentry_key=caf53133b490a9ba57e2714ad209c9bd&sentry_client=sentry.javascript.react%2F10.42.0",
+    "method": "POST",
+    "resourceType": "fetch"
+  },
+  {
+    "type": "request",
+    "url": "https://o4509356937641984.ingest.de.sentry.io/api/4509357085163600/envelope/?sentry_version=7&sentry_key=caf53133b490a9ba57e2714ad209c9bd&sentry_client=sentry.javascript.react%2F10.42.0",
+    "method": "POST",
+    "resourceType": "fetch"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/.well-known/openid-configuration",
+    "method": "GET",
+    "resourceType": "fetch"
+  },
+  {
+    "type": "response",
+    "url": "https://api.autodarts.com/.well-known/openid-configuration",
+    "status": 200,
+    "body_snippet": "{\"issuer\":\"https://api.autodarts.com/auth\",\"authorization_endpoint\":\"https://api.autodarts.com/auth/v1/oauth/authorize\",\"token_endpoint\":\"https://api.autodarts.com/auth/v1/exchange\",\"device_authorization_endpoint\":\"https://api.autodarts.com/auth/v1/device/code\",\"userinfo_endpoint\":\"https://api.autodarts.com/auth/v1/userinfo\",\"grant_types_supported\":[\"authorization_code\",\"client_credentials\",\"urn:ietf:params:oauth:grant-type:device_code\",\"password\",\"otp\",\"refresh_token\"],\"id_token_signing_alg_values_supported\":[\"RS256\"],\"token_endpoint_auth_methods_supported\":[\"none\",\"client_secret_post\"],\"jwks_uri\":\"https://api.autodarts.com/auth/.well-known/jwks.json\",\"revocation_endpoint\":\"https://api.autodarts.com/auth/v1/logout\",\"subject_types_supported\":[\"public\"],\"scopes_supported\":[\"openid\",\"profile\",\"email\"],\"code_challenge_methods_supported\":[\"S256\"],\"providers_supported\":[\"google\",\"apple\"]}\n"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/auth/v1/login",
+    "method": "POST",
+    "resourceType": "fetch"
+  },
+  {
+    "type": "request",
+    "url": "https://o4509356937641984.ingest.de.sentry.io/api/4509357085163600/envelope/?sentry_version=7&sentry_key=caf53133b490a9ba57e2714ad209c9bd&sentry_client=sentry.javascript.react%2F10.42.0",
+    "method": "POST",
+    "resourceType": "fetch"
+  },
+  {
+    "type": "request",
+    "url": "https://o4509356937641984.ingest.de.sentry.io/api/4509357085163600/envelope/?sentry_version=7&sentry_key=caf53133b490a9ba57e2714ad209c9bd&sentry_client=sentry.javascript.react%2F10.42.0",
+    "method": "POST",
+    "resourceType": "fetch"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/user/v1/profile",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/consent/v0",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://play.autodarts.com/locales/add/en/translation",
+    "method": "POST",
+    "resourceType": "fetch"
+  },
+  {
+    "type": "request",
+    "url": "https://discover.autodarts.com/",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/status/v0",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/as/v0/friends/online-status",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/as/v0/friends",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/gs/v0/match-making",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/gs/v0/match-making/penalty",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/as/v0/notifications",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/us/v0/match-id",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/us/v0/discovery-id",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/bs/v0/boards",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/us/v0/profile/settings",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/auth/v1/account/me",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/auth/v0/permissions",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/gs/v0/match-making",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://play.ws.autodarts.com/ms/v0/tickets",
+    "method": "POST",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://api.autodarts.com/as/v0/friends/",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://gravatar.com/avatar/5c54dfa0c48532444c0ec66a1b03eaec?d=404&s=64",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://gravatar.com/avatar/72c5032abdadbe90896d00e2f055503c?d=404&s=64",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://gravatar.com/avatar/695989fc04403ce42283a938a2abfa4f?d=404&s=64",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://gravatar.com/avatar/3708cc1f4a340bc02f9cd264754d9cb1?d=404&s=64",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://gravatar.com/avatar/cc4391ff8be67bd4285dbec8b2e596eb?d=404&s=64",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://gravatar.com/avatar/aeba46358735465ab257b0823b3e000e?d=404&s=64",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "request",
+    "url": "https://gravatar.com/avatar/219e7d3a1a00701c5f651ed8de26e60f?d=404&s=64",
+    "method": "GET",
+    "resourceType": "xhr"
+  },
+  {
+    "type": "response",
+    "url": "https://api.autodarts.com/auth/v1/login",
+    "status": 200,
+    "body_snippet": "{\"access_token\":\"eyJhbGciOiJSUzI1NiIsImtpZCI6ImpLU2M0X05kMHVFbXdyR3ZxdlNWcGciLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FwaS5hdXRvZGFydHMuY29tL2F1dGgiLCJzdWIiOiJlNWMzNzcyZC0xY2E4LTRkMjAtYTQ1OC1iMTI5ZWM1YWZiZGIiLCJhdWQiOlsiYWNjb3VudCJdLCJleHAiOjE3ODc2OTY1MDcsImlhdCI6MTc4NzY5NTYwNywiYXpwIjoiYXV0b2RhcnRzLXBsYXkiLCJlbWFpbCI6InN1cHBvcnRAc21hcnRwcy5kZSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJzbWFydHBzIiwibmFtZSI6IlNtYXJ0IFBTIiwiZ2l2ZW5fbmFtZSI6IlNtYXJ0IiwiZmFtaWx5X25hbWUiOiJQUyIsInBpY3R1cmUiOiJodHRwczovL2dyYXZhdGFyLmNvbS9hdmF0YXIvMTU1NzRiNjE5MGJhYjE4ZjgxMDgzNGIyOTE5OTcyY2YiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbInVzZXIiXX19.jEfPjc9QSClzm7-ejJ3M3KeEWxkuep4MhJt1sNwAzpsAPYvMeWom6DUga3dWEVPiuqxKsgIPviK1fBlADGH3Z6Sa_aGPC0-umm4jVaRzBItKW4Xx3vSOtvnWQk2ugmc_L3UHDPaqdm_ox8A7_My6FyL_qf2cHV4BdXhF5h8T7ls33PKZ7Wh_cFZpP5VtOF7uBWUPtTk8GbD_1YWWkqAo4f6E9-fZoowNG-NbGLBb-fQ5azUKk-M1CjmhcuFceno0Uv9QIbrY341YJqiabcJKoxfUUSi69h7jyPufVniHjiulx7d6Jwr3dJJoZZ93fGw"
+  }
+]

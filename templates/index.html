@@ -523,6 +523,76 @@
         </div><!-- /.bottom -->
     </div><!-- /.container -->
 
+    <!-- Neue 4-Karten Ansicht: T20 / Checkout / First3 / Average -->
+    <div class="container" style="margin-top:18px;">
+        <div class="top">
+            <section class="section-block" data-section="new4">
+                <div class="card" data-view="static">
+                    <h2>📋 Neue Top‑Statistiken</h2>
+                    <div class="card-content">
+                        <div class="card-right" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+                            <div>
+                                <h3 style="margin:0 0 8px;">🎯 Meiste T20 Treffer</h3>
+                                <table>
+                                    <tr><th>Platz</th><th>Name</th><th>T20</th></tr>
+                                    {% for s in most_t20[:config.static_limit] %}
+                                    <tr class="podium-row {{ s.podium_class }}">
+                                        <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
+                                        <td>{{ s.name }}</td>
+                                        <td>{{ s.t20 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+
+                            <div>
+                                <h3 style="margin:0 0 8px;">✅ Beste Checkout‑Quote</h3>
+                                <table>
+                                    <tr><th>Platz</th><th>Name</th><th>Quote</th></tr>
+                                    {% for s in most_checkout[:config.static_limit] %}
+                                    <tr class="podium-row {{ s.podium_class }}">
+                                        <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
+                                        <td>{{ s.name }}</td>
+                                        <td>{{ s.checkout_ratio }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+
+                            <div>
+                                <h3 style="margin:0 0 8px;">First 3 Darts (Avg)</h3>
+                                <table>
+                                    <tr><th>Platz</th><th>Name</th><th>First3</th></tr>
+                                    {% for s in most_first3[:config.static_limit] %}
+                                    <tr class="podium-row {{ s.podium_class }}">
+                                        <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
+                                        <td>{{ s.name }}</td>
+                                        <td>{{ s.first3_average }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+
+                            <div>
+                                <h3 style="margin:0 0 8px;">Durchschnitt (Avg)</h3>
+                                <table>
+                                    <tr><th>Platz</th><th>Name</th><th>Avg</th></tr>
+                                    {% for s in most_average[:config.static_limit] %}
+                                    <tr class="podium-row {{ s.podium_class }}">
+                                        <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
+                                        <td>{{ s.name }}</td>
+                                        <td>{{ s.average }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
     <!-- Bucket-Karten -->
     <div id="bucket-stage">
         <!-- 60+ -->
@@ -735,7 +805,12 @@
             s140: {{ most_s140 | tojson | safe }},
             s170: {{ most_s170 | tojson | safe }},
             winrate: {{ win_rate_stats | tojson | safe }},
-        };
+                new4: {
+                    t20: {{ most_t20 | tojson | safe }},
+                    checkout: {{ most_checkout | tojson | safe }},
+                    first3: {{ most_first3 | tojson | safe }},
+                    average: {{ most_average | tojson | safe }}
+                },
 
         // Slots
         const SLOTS = [
@@ -747,7 +822,7 @@
             { type: 's60', duration: CFG.CARD_DURATION },
             { type: 's100', duration: CFG.CARD_DURATION },
             { type: 's140', duration: CFG.CARD_DURATION },
-            { type: 's170', duration: CFG.CARD_DURATION },
+                { type: 'player', duration: CFG.CARD_DURATION },
             { type: 'winrate', duration: CFG.CARD_DURATION },
             { type: 'h2h', duration: CFG.CARD_DURATION },
         ];
@@ -784,6 +859,11 @@
                 
                 const p1 = data.players[0];
                 const p2 = data.players[1];
+                // Ensure new fields exist for backward compatibility
+                p1.checkout_ratio = p1.checkout_ratio ?? null;
+                p2.checkout_ratio = p2.checkout_ratio ?? null;
+                p1.t20_hits = p1.t20_hits || 0;
+                p2.t20_hits = p2.t20_hits || 0;
                 
                 // Vergleichsfunktion
                 const compare = (v1, v2, higherIsBetter = true) => {
@@ -831,6 +911,14 @@
                                 <div class="h2h-stat-value">${p1.max180}</div>
                                 <div class="h2h-stat-label">💥 180er</div>
                             </div>
+                            <div class="h2h-stat-box">
+                                <div class="h2h-stat-value">${p1.checkout_ratio !== null ? p1.checkout_ratio + '%' : '–'}</div>
+                                <div class="h2h-stat-label">✅ Checkout-Quote</div>
+                            </div>
+                            <div class="h2h-stat-box">
+                                <div class="h2h-stat-value">${p1.t20_hits || 0}</div>
+                                <div class="h2h-stat-label">🎯 T20 Treffer</div>
+                            </div>
                         </div>
                         
                         <!-- VS Badge (Mitte) -->
@@ -855,6 +943,22 @@
                             <div class="h2h-stat-box ${t180Cmp[1]}">
                                 <div class="h2h-stat-value">${p2.max180}</div>
                                 <div class="h2h-stat-label">💥 180er</div>
+                            </div>
+                            <div class="h2h-stat-box">
+                                <div class="h2h-stat-value">${p2.checkout_ratio !== null ? p2.checkout_ratio + '%' : '–'}</div>
+                                <div class="h2h-stat-label">✅ Checkout-Quote</div>
+                            </div>
+                            <div class="h2h-stat-box">
+                                <div class="h2h-stat-value">${p2.t20_hits || 0}</div>
+                                <div class="h2h-stat-label">🎯 T20 Treffer</div>
+                            </div>
+                            <div class="h2h-stat-box">
+                                <div class="h2h-stat-value">${p2.checkout_ratio !== null ? p2.checkout_ratio + '%' : '–'}</div>
+                                <div class="h2h-stat-label">✅ Checkout-Quote</div>
+                            </div>
+                            <div class="h2h-stat-box">
+                                <div class="h2h-stat-value">${p2.t20_hits || 0}</div>
+                                <div class="h2h-stat-label">🎯 T20 Treffer</div>
                             </div>
                         </div>
                         
@@ -988,6 +1092,38 @@
 
             if (id !== 'h2h') {
                 updatePlayerPhoto(id);
+            }
+            // If rotation slot is 'player', load a random player card occasionally
+            if (id === 'player') {
+                // fetch a random player card and show it in a temporary overlay
+                fetch('/api/player_card').then(r => r.json()).then(d => {
+                    if (!d.ok) return;
+                    const p = d.player;
+                    // create card overlay
+                    const overlay = document.createElement('div');
+                    overlay.style.position = 'fixed';
+                    overlay.style.inset = '120px 120px 120px 120px';
+                    overlay.style.zIndex = 2000;
+                    overlay.style.background = 'rgba(0,0,0,0.5)';
+                    overlay.style.borderRadius = '12px';
+                    overlay.style.display = 'flex';
+                    overlay.style.alignItems = 'center';
+                    overlay.style.justifyContent = 'center';
+                    overlay.innerHTML = `
+                        <div style="background:rgba(0,0,0,0.85);padding:28px;border-radius:10px;width:60%;display:flex;gap:24px;align-items:center;color:white;">
+                            <img src="{{ url_for('static', filename='uploads/') }}${p.image}" style="width:180px;height:180px;border-radius:12px;object-fit:cover;" />
+                            <div style="flex:1">
+                                <h2 style="margin:0 0 8px;">${p.name}</h2>
+                                <div style="font-size:1.1em;margin-bottom:6px;">Avg: ${p.average !== null ? p.average : '–'}</div>
+                                <div style="font-size:1.0em;margin-bottom:6px;">First 3: ${p.first3_average !== null ? p.first3_average : '–'}</div>
+                                <div style="font-size:1.0em;margin-bottom:6px;">T20: ${p.t20_hits}</div>
+                                <div style="font-size:1.0em;">Checkout: ${p.checkout_ratio !== null ? p.checkout_ratio + '%' : '–'}</div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(overlay);
+                    setTimeout(() => { overlay.remove(); }, CFG.CARD_DURATION - 500);
+                }).catch(()=>{});
             }
         }
 

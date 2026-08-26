@@ -138,6 +138,55 @@
                     </form>
                 </div>
 
+                <div class="panel">
+                    <h2 class="panel-title">🔗 Autodarts Import – Zugangsdaten</h2>
+                    <p style="font-size:0.88em; color:var(--clr-text-muted); margin: 0 0 12px;">
+                        Trage hier die Autodarts-Zugangsdaten ein, damit das System Spiele abrufen kann.
+                        Die Zugangsdaten werden lokal in `data/config.json` gespeichert.
+                    </p>
+                    <form method="POST" action="{{ url_for('admin') }}">
+                        <input type="hidden" name="action" value="save_config">
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="autodarts_email">Autodarts E-Mail</label>
+                                <input type="email" name="autodarts_email" id="autodarts_email"
+                                       value="{{ config.autodarts_email or '' }}">
+                            </div>
+                            <div class="input-group">
+                                <label for="autodarts_password">Autodarts Passwort</label>
+                                <input type="password" name="autodarts_password" id="autodarts_password"
+                                       value="{{ config.autodarts_password or '' }}">
+                            </div>
+                            <div class="input-group">
+                                <label for="autodarts_interval_minutes">Intervall (Minuten)</label>
+                                <input type="number" name="autodarts_interval_minutes" id="autodarts_interval_minutes"
+                                       min="1" value="{{ config.autodarts_interval_minutes or 60 }}">
+                            </div>
+                            <div class="input-group">
+                                <label for="autodarts_user_data_dir">Chromium Profile-Ordner</label>
+                                <input type="text" name="autodarts_user_data_dir" id="autodarts_user_data_dir"
+                                       placeholder="/home/pi/.config/chromium" value="{{ config.autodarts_user_data_dir or '' }}">
+                                <span class="info-text">Optional: Pfad zum Chromium-Profil, damit die eingeloggte Session benutzt wird.</span>
+                            </div>
+                            <div class="input-group">
+                                <label for="autodarts_enabled">Aktiv</label>
+                                <input type="checkbox" name="autodarts_enabled" id="autodarts_enabled"
+                                       {% if config.autodarts_enabled %} checked {% endif %}>
+                            </div>
+                        </div>
+                        <div class="form-actions" style="margin-top:12px;">
+                            <button type="submit" class="btn btn-primary">💾 Speichern</button>
+                        </div>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('admin_run_autodarts') }}" style="margin-top:12px;">
+                        <label for="autodarts_pages">Max. Seiten</label>
+                        <input type="number" id="autodarts_pages" name="autodarts_pages" value="2" min="1" style="width:84px; margin-left:8px;">
+                        <button type="submit" class="btn btn-ghost" style="margin-left:8px;">▶ Jetzt ausführen</button>
+                        <span style="margin-left:12px; color:var(--clr-text-muted);">Letzter Lauf: {{ config.autodarts_last_run or 'nie' }}</span>
+                    </form>
+                </div>
+
                 <!-- Letzten Eintrag rückgängig -->
                 <div class="panel panel-danger">
                     <h2 class="panel-title">↩️ Letzten Eintrag rückgängig</h2>
@@ -172,6 +221,7 @@
                                 <tr>
                                     <th></th>
                                     <th>Datum</th>
+                                    <th>Hash</th>
                                     <th>Spieler</th>
                                     <th style="text-align:center">🏆 Legs</th>
                                     <th style="text-align:center">🎯 Finish</th>
@@ -199,6 +249,7 @@
                                         </form>
                                     </td>
                                     <td class="td-date">{{ score.date }}</td>
+                                    <td class="td-hash">{% if score.score_hash %}<span title="{{ score.score_hash }}">{{ score.score_hash[:8] }}</span>{% else %}&nbsp;{% endif %}</td>
                                     <td class="td-name">{{ score.name }}</td>
                                     <td class="td-num {% if score.legs > 0 %}has-value{% endif %}">{{ score.legs if score.legs > 0 else '–' }}</td>
                                     <td class="td-num {% if score.finish > 0 %}has-value{% endif %}">{{ score.finish if score.finish > 0 else '–' }}</td>
@@ -510,6 +561,29 @@
                         <button class="btn btn-ghost" onclick="importClear()">✕ Leeren</button>
                     </div>
                     <div id="import-status" style="font-size:0.8em; min-height:18px; margin-bottom:8px;"></div>
+                    <!-- Manueller Match-Import -->
+                    <div style="margin-bottom:12px;">
+                        <form method="POST" action="{{ url_for('admin_import_match') }}" style="display:flex; gap:8px; align-items:center;">
+                            <input type="text" name="match_id" placeholder="Match-URL oder Match-ID hier einfügen" style="flex:1; padding:8px; border:1px solid var(--clr-border); border-radius:6px;">
+                            <button type="submit" class="btn btn-primary">🔁 Match importieren</button>
+                        </form>
+                        <div style="font-size:0.82em; color:var(--clr-text-muted); margin-top:6px;">Tipp: Wenn du ein Match in der Autodarts‑App siehst, kopiere die URL und füge sie hier ein.</div>
+                    </div>
+                    <!-- Import-Status (letzter Lauf) -->
+                    <div style="margin-top:12px; font-size:0.9em; color:var(--clr-text-muted);">
+                        <strong>Letzter Importlauf:</strong>
+                        <div style="margin-top:6px;">
+                            {% if autodarts_last_result and autodarts_last_result.collected_match_ids is defined %}
+                                Gesammelte Matches: {{ autodarts_last_result.collected_match_ids | length }}
+                                &nbsp;•&nbsp; Importiert: {{ autodarts_last_result.imported_matches | length }}
+                                {% if autodarts_last_result.errors and autodarts_last_result.errors | length > 0 %}
+                                    <div style="color:#e05252; margin-top:6px;">Fehler: {{ autodarts_last_result.errors | join(', ') }}</div>
+                                {% endif %}
+                            {% else %}
+                                Noch kein Importlauf oder keine Ergebnisse vorhanden.
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Vorschau + Mapping -->

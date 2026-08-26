@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Dart Screensaver
+Comment=Startet Chromium-Kiosk nach Inaktivität
+Exec=/home/autodarts/screensaver.sh
+Restart=always
