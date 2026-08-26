@@ -34,6 +34,9 @@
             <button class="tab-link" data-tab="tab-import">
                 <span class="tab-icon">📥</span> Import
             </button>
+            <button class="tab-link" data-tab="tab-addons">
+                <span class="tab-icon">🧩</span> Addons
+            </button>
         </nav>
 
         <!-- ── Inhalt ── -->
@@ -684,6 +687,62 @@
 
             </div><!-- /tab-import -->
 
+            <!-- ═══════════════════════════════════════
+                 TAB 6: ADDONS
+            ═══════════════════════════════════════ -->
+            <div id="tab-addons" class="tab-content">
+
+                <div class="panel">
+                    <h2 class="panel-title">🖥️ Bildschirmschoner installieren</h2>
+                    <p style="font-size:0.88em; color:var(--clr-text-muted); margin: 0 0 16px; line-height:1.6;">
+                        Installiert den Bildschirmschoner aus <code>/Addons/Raspberry-Screensaver</code> im
+                        Home-Verzeichnis dieses Rechners (Skript + Autostart-Eintrag), damit das Scoreboard
+                        nach Inaktivität automatisch im Kiosk-Modus angezeigt wird.
+                    </p>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <button type="button" id="install-screensaver-btn" class="btn btn-primary">
+                            🖥️ Screensaver installieren
+                        </button>
+                        <span id="install-screensaver-status" style="font-size:0.88em;"></span>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2 class="panel-title">🤖 Statistik gegen BOTs</h2>
+                    <p style="font-size:0.88em; color:var(--clr-text-muted); margin: 0 0 16px; line-height:1.6;">
+                        Ergebnisse gegen BOT-Gegner fließen nicht in die reguläre Spieler-Statistik ein.
+                        Stattdessen werden sie hier getrennt pro Bot-Level aufgeführt.
+                    </p>
+                    <div class="table-scroll">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Spieler</th>
+                                    <th>Bot-Level</th>
+                                    <th style="text-align:center">🏆 Legs</th>
+                                    <th style="text-align:center">🎮 Spiele</th>
+                                    <th style="text-align:center">Average</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in bot_stats %}
+                                <tr>
+                                    <td>{{ row.name }}</td>
+                                    <td>{{ row.bot_level if row.bot_level is not none else '?' }}</td>
+                                    <td style="text-align:center">{{ row.legs }}</td>
+                                    <td style="text-align:center">{{ row.games_played }}</td>
+                                    <td style="text-align:center">{{ row.average if row.average is not none else '–' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="5" style="text-align:center; color:var(--clr-text-muted);">Noch keine Matches gegen BOTs importiert.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div><!-- /tab-addons -->
+
         </main>
     </div><!-- /admin-body -->
 
@@ -1177,6 +1236,38 @@
                 if (manualBtn) manualBtn.disabled = true;
                 startPolling();
             }
+        })();
+
+        // -- Addons: Bildschirmschoner installieren --
+        (function () {
+            const btn = document.getElementById('install-screensaver-btn');
+            const statusEl = document.getElementById('install-screensaver-status');
+            if (!btn || !statusEl) return;
+
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                statusEl.textContent = '⏳ Wird installiert …';
+                statusEl.style.color = 'var(--clr-text-muted)';
+                try {
+                    const res = await fetch("{{ url_for('admin_install_screensaver') }}", {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                        statusEl.textContent = '✓ ' + data.message;
+                        statusEl.style.color = 'var(--clr-accent)';
+                    } else {
+                        statusEl.textContent = '✗ ' + (data.error || 'Installation fehlgeschlagen.');
+                        statusEl.style.color = '#e05252';
+                    }
+                } catch (e) {
+                    statusEl.textContent = '✗ Netzwerkfehler: ' + e.message;
+                    statusEl.style.color = '#e05252';
+                } finally {
+                    btn.disabled = false;
+                }
+            });
         })();
     </script>
 </body>

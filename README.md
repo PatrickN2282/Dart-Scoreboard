@@ -160,7 +160,11 @@ Alle Design-Einstellungen sind im Admin-Panel unter **Design & Limits** erreichb
 ]
 ```
 
-> **Hinweis:** `legs` und `max180` werden über alle Einträge kumuliert. `finish` und `darts301` zeigen den besten Einzelwert pro Spieler.
+> **Hinweis:** `legs` und `max180` werden über alle Einträge kumuliert. `finish` und `darts301` zeigen den besten Einzelwert pro Spieler. Beim Autodarts-Import kommen zusätzlich u.a. `average`, `first9_average` (Schnitt der ersten 9 Darts) und `first3_average` (Schnitt der ersten 3 Darts/des ersten Aufnahms je Leg) hinzu.
+
+**`bot_scores.json`**
+
+Ergebnisse aus Matches gegen einen BOT-Gegner (z.B. `autodartsbotX`) werden nicht in `scores.json`/`players.json` aufgenommen, damit BOTs nicht als Spieler erscheinen und echte Spieler-Statistiken nicht verfälscht werden. Stattdessen landen sie – mit dem gleichen Aufbau wie `scores.json` plus einem zusätzlichen Feld `bot_level` – getrennt in `bot_scores.json` und werden im Admin-Panel (Tab „Addons“) pro Spieler und Bot-Level ausgewertet.
 
 ---
 
@@ -172,6 +176,8 @@ Um das Scoreboard automatisch auf einem angeschlossenen Monitor zu starten, kann
 # Beispiel für Chromium auf Raspberry Pi OS
 chromium-browser --kiosk --noerrdialogs --disable-infobars http://localhost:5000
 ```
+
+Alternativ enthält `/Addons/Raspberry-Screensaver` ein fertiges Skript (inkl. Autostart-Eintrag) für Wayland/Sway-Umgebungen. Über den Button **🖥️ Screensaver installieren** im Admin-Panel (Tab „Addons“) wird es automatisch ins Home-Verzeichnis kopiert und eingerichtet.
 
 ---
 
