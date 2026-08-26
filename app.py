@@ -1291,7 +1291,7 @@ def autodarts_collect_and_import(max_pages=2):
                                 mid = parts[-1]
                                 if mid and mid not in match_ids:
                                     match_ids.append(mid)
-                        if not links and not match_ids:
+                        if not links:
                             errors.append('Keine Matches auf der Verlaufsseite gefunden; vermutlich nicht eingeloggt. Nutze "Manuell anmelden" oder prüfe die Zugangsdaten.')
                             _save_autodarts_debug_screenshot(page)
                             break
@@ -1336,11 +1336,8 @@ def autodarts_collect_and_import(max_pages=2):
         return {"ok": False, "error": "Keine Matches gefunden", "errors": errors, "collected_match_ids": match_ids, "page_htmls": page_htmls}
 
     # 3) Für jede noch nicht importierte Match-ID die Stats-API abrufen (Token bevorzugt).
-    if not token:
-        token, login_error = autodarts_api_login(email, password)
-        if login_error:
-            errors.append(login_error)
-
+    #    Der Login wurde bereits in Schritt 1 versucht; ein erneuter Versuch mit denselben
+    #    Zugangsdaten würde nur denselben Fehler wiederholen.
     for mid in match_ids:
         if mid in imported_matches:
             continue
