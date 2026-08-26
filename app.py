@@ -299,31 +299,48 @@ def extract_stats_from_result(res):
                         return src.get(k)
                 return default
 
-            stats[key]['points_sum'] = int(_get_any(m, ['score', 'scoreTotal', 'points_sum', 'points', 'pointsSum']) or 0)
-            stats[key]['darts_thrown'] = int(_get_any(m, ['dartsThrown', 'darts_thrown', 'darts']) or 0)
+            darts_val = int(_get_any(m, ['dartsThrown', 'darts_thrown', 'darts']) or 0)
+            raw_points = _get_any(m, ['score', 'scoreTotal', 'points_sum', 'points', 'pointsSum'])
+            avg_val = m.get('average')
+            # Autodarts' aggregated matchStats reports 'score' as 0 (it only carries a
+            # real total on the per-leg stats endpoint), so fall back to deriving the
+            # total scored points from the (reliable) average and darts thrown instead
+            # of trusting a 0 that would otherwise wipe out the average below.
+            if not raw_points and isinstance(avg_val, (int, float)) and darts_val:
+                raw_points = avg_val * darts_val / 3.0
+            stats[key]['points_sum'] = int(round(raw_points or 0))
+            stats[key]['darts_thrown'] = darts_val
             stats[key]['s60'] = int(_get_any(m, ['plus60', 'plus_60', 's60', 'count60']) or 0)
             stats[key]['s100'] = int(_get_any(m, ['plus100', 'plus_100', 's100', 'count100']) or 0)
             stats[key]['s140'] = int(_get_any(m, ['plus140', 'plus_140', 's140', 'count140']) or 0)
             stats[key]['s170'] = int(_get_any(m, ['plus170', 'plus_170', 's170', 'count170']) or 0)
             stats[key]['s180'] = int(_get_any(m, ['total180', 'total_180', 's180', 'count180']) or 0)
             stats[key]['max180'] = int(_get_any(m, ['max180', 'max_180', 'total180']) or 0)
-            stats[key]['first9_points_sum'] = int(_get_any(m, ['first9Score', 'first9_points_sum', 'first9Points', 'first9Score']) or 0)
-            stats[key]['first9_darts'] = int(_get_any(m, ['first9Darts', 'first9_darts']) or 0)
+            f9_darts_val = int(_get_any(m, ['first9Darts', 'first9_darts']) or 0)
+            raw_f9_points = _get_any(m, ['first9Score', 'first9_points_sum', 'first9Points'])
+            f9_avg_val = m.get('first9Average')
+            if not raw_f9_points and isinstance(f9_avg_val, (int, float)) and f9_darts_val:
+                raw_f9_points = f9_avg_val * f9_darts_val / 3.0
+            stats[key]['first9_points_sum'] = int(round(raw_f9_points or 0))
+            stats[key]['first9_darts'] = f9_darts_val
             stats[key]['checkout_attempts'] = int(_get_any(m, ['checkouts', 'checkoutAttempts', 'checkout_attempts']) or 0)
             stats[key]['checkout_success'] = int(_get_any(m, ['checkoutsHit', 'checkout_success', 'checkoutHits']) or 0)
             stats[key]['bestCheckout'] = int(_get_any(m, ['checkoutPoints', 'bestCheckout', 'best_finish', 'best_checkout']) or 0)
-            # set provided averages if present
-            if isinstance(m.get('average'), (int, float)):
-                stats[key]['average'] = float(m.get('average'))
-            if isinstance(m.get('first9Average'), (int, float)):
-                stats[key]['first9_average'] = float(m.get('first9Average'))
+            # set provided averages if present; these take precedence over the values
+            # derived from points_sum/darts_thrown further below, since the API's
+            # 'average'/'first9Average' fields are authoritative when present.
+            if isinstance(avg_val, (int, float)):
+                stats[key]['average'] = float(avg_val)
+            if isinstance(f9_avg_val, (int, float)):
+                stats[key]['first9_average'] = float(f9_avg_val)
             # checkout ratio if available
             if m.get('checkoutPercent') is not None:
                 try:
                     stats[key]['checkout_ratio'] = float(m.get('checkoutPercent'))
                 except Exception:
                     pass
-            # average will be computed later from points_sum/darts_thrown when available
+            # average will be recomputed below from points_sum/darts_thrown only when the
+            # API didn't already provide it (see finalize step)
 
     # Always collect segment hits from per-leg throws (do not use them to recompute the main aggregates
     # when match-level stats are available)
@@ -450,19 +467,21 @@ def extract_stats_from_result(res):
                         if prev is None or darts < prev:
                             st['min_darts_to_checkout'] = darts
 
-    # finalize: compute averages and ratios
+    # finalize: compute averages and ratios. Only derive these from points_sum/darts_thrown
+    # when we actually have darts to divide by; otherwise keep whatever value the API
+    # already provided above (do not clobber it with None/0).
     for k, v in stats.items():
         darts = v.get('darts_thrown', 0) or 0
         pts_sum = v.get('points_sum', 0) or 0
         if darts:
             v['average'] = float(pts_sum) / float(darts) * 3.0
-        else:
+        elif v.get('average') is None:
             v['average'] = None
         f9_darts = v.get('first9_darts', 0) or 0
         f9_pts = v.get('first9_points_sum', 0) or 0
         if f9_darts:
             v['first9_average'] = float(f9_pts) / float(f9_darts) * 3.0
-        else:
+        elif v.get('first9_average') is None:
             v['first9_average'] = None
         atts = v.get('checkout_attempts', 0) or 0
         succ = v.get('checkout_success', 0) or 0
@@ -1470,7 +1489,9 @@ def admin_import_match():
         total_legs = sum([s.get('legs', 0) for s in result.get('scores', [])])
         players = result.get('players', [])
         for p in players:
-            key = p.get('userId') or p.get('id') or p.get('name')
+            # must match the key precedence used in extract_stats_from_result (id first),
+            # otherwise stats lookup silently returns an empty dict for every player.
+            key = p.get('id') or p.get('userId') or p.get('name')
             st = stats.get(key, {})
             entry = {
                 'autodarts_name': p.get('name') or p.get('username') or '',
