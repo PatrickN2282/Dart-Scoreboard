@@ -1551,6 +1551,18 @@ def admin_autodarts_manual_login():
     if not user_data_dir:
         return jsonify({"ok": False, "error": "Bitte zuerst einen Chromium Profile-Ordner (autodarts_user_data_dir) speichern."}), 400
 
+    # Ein sichtbarer Browser (headless=False) benötigt ein lokales Display. Auf einem
+    # headless-Linux-Server (z.B. ohne X-Server/Xvfb) schlägt das Starten des Browsers
+    # sofort fehl. Das prüfen wir vorab, um einen sofortigen, verständlichen Fehler
+    # statt eines kryptischen Playwright-Fehlers zurückzugeben.
+    if os.name == 'posix' and not os.environ.get('DISPLAY') and not os.environ.get('WAYLAND_DISPLAY'):
+        msg = ('Kein lokales Display gefunden (Umgebungsvariable DISPLAY ist nicht gesetzt). '
+               'Die manuelle Anmeldung öffnet einen sichtbaren Browser und funktioniert daher nur '
+               'auf einem Rechner mit Bildschirm bzw. mit eingerichtetem X-Server/Xvfb, nicht auf '
+               'einem headless-Server.')
+        save_autodarts_status('manual_login_error', msg)
+        return jsonify({"ok": False, "error": msg}), 400
+
     def worker(profile_dir):
         save_autodarts_status('manual_login_pending', 'Bitte im geöffneten Browser-Fenster manuell anmelden…')
         p = None
@@ -1578,7 +1590,15 @@ def admin_autodarts_manual_login():
             else:
                 save_autodarts_status('manual_login_timeout', 'Zeitüberschreitung: Es wurde innerhalb von 5 Minuten keine erfolgreiche Anmeldung erkannt.')
         except Exception as e:
-            save_autodarts_status('manual_login_error', f'Manueller Login fehlgeschlagen (evtl. kein Display verfügbar): {e}')
+            err_text = str(e)
+            if "Executable doesn't exist" in err_text or "playwright install" in err_text:
+                hint = 'Bitte die Playwright-Browser installieren (z.B. mit "playwright install chromium").'
+            elif not os.environ.get('DISPLAY') and not os.environ.get('WAYLAND_DISPLAY'):
+                hint = 'Evtl. kein Display verfügbar (Umgebungsvariable DISPLAY ist nicht gesetzt).'
+            else:
+                hint = ''
+            prefix = f'Manueller Login fehlgeschlagen: {hint}' if hint else 'Manueller Login fehlgeschlagen:'
+            save_autodarts_status('manual_login_error', f'{prefix} {err_text}')
         finally:
             try:
                 if context:
