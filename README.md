@@ -164,7 +164,7 @@ Alle Design-Einstellungen sind im Admin-Panel unter **Design & Limits** erreichb
 
 **`bot_scores.json`**
 
-Ergebnisse aus Matches gegen einen BOT-Gegner (z.B. `autodartsbotX`) werden nicht in `scores.json`/`players.json` aufgenommen, damit BOTs nicht als Spieler erscheinen und echte Spieler-Statistiken nicht verfälscht werden. Stattdessen landen sie – mit dem gleichen Aufbau wie `scores.json` plus einem zusätzlichen Feld `bot_level` – getrennt in `bot_scores.json` und werden im Admin-Panel (Tab „Addons“) pro Spieler und Bot-Level ausgewertet.
+Ergebnisse aus Matches gegen einen BOT-Gegner mit dem Namen `BOT LEVEL 1` bis `BOT LEVEL 9` werden nicht in `scores.json`/`players.json` aufgenommen, damit BOTs nicht als Spieler erscheinen und echte Spieler-Statistiken nicht verfälscht werden. Stattdessen landen sie – mit dem gleichen Aufbau wie `scores.json` plus einem zusätzlichen Feld `bot_level` – getrennt in `bot_scores.json` und werden im Admin-Panel (Tab „Addons“) pro Spieler und Bot-Level ausgewertet.
 
 ---
 
