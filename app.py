@@ -1,6 +1,7 @@
 import os
 import json
 import random
+import time
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import socket
@@ -36,6 +37,10 @@ DEFAULT_CONFIG = {
 
 # Datei für bereits importierte Match-IDs
 IMPORTED_MATCHES_FILE = os.path.join(DATA_DIR, 'imported_matches.json')
+
+# Status-Datei für laufende/letzte Autodarts-Läufe (für Live-Feedback im Admin-Bereich)
+AUTODARTS_STATUS_FILE = os.path.join(DATA_DIR, 'autodarts_status.json')
+AUTODARTS_DEBUG_SCREENSHOT = os.path.join(DATA_DIR, 'autodarts_debug.png')
 
 try:
     from playwright.sync_api import sync_playwright
@@ -107,6 +112,61 @@ def load_imported_matches():
 def save_imported_matches(lst):
     with open(IMPORTED_MATCHES_FILE, 'w', encoding='utf-8') as f:
         json.dump(lst, f, indent=4, ensure_ascii=False)
+
+
+def load_autodarts_status():
+    """Liest den aktuellen Status eines Autodarts-Laufs (für Polling im Admin-Bereich)."""
+    if not os.path.exists(AUTODARTS_STATUS_FILE) or os.path.getsize(AUTODARTS_STATUS_FILE) == 0:
+        return {"state": "idle", "message": "Noch kein Lauf gestartet."}
+    try:
+        with open(AUTODARTS_STATUS_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {"state": "idle", "message": "Noch kein Lauf gestartet."}
+
+
+def save_autodarts_status(state: str, message: str = "", **extra):
+    """Schreibt den aktuellen Status eines Autodarts-Laufs, z.B. 'running', 'success', 'error'."""
+    status = {
+        "state": state,
+        "message": message,
+        "updated_at": datetime.now().strftime('%d.%m.%Y %H:%M:%S'),
+    }
+    status.update(extra)
+    try:
+        with open(AUTODARTS_STATUS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(status, f, indent=4, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def autodarts_api_login(email: str, password: str):
+    """Loggt sich über die Autodarts-API ein (unabhängig von Playwright/DOM-Selektoren).
+    Gibt (token, error_message) zurück. token ist None bei Fehlschlag."""
+    if not email or not password:
+        return None, "Autodarts-Credentials nicht konfiguriert"
+    try:
+        auth_resp = requests.post(
+            'https://api.autodarts.com/auth/v1/login',
+            json={'client_id': 'autodarts-play', 'email': email, 'password': password},
+            timeout=15,
+        )
+    except Exception as e:
+        return None, f"API-Login fehlgeschlagen (Verbindung): {e}"
+
+    if auth_resp.status_code == 401:
+        return None, "Falsche Zugangsdaten (E-Mail/Passwort)."
+    if not auth_resp.ok:
+        return None, f"API-Login fehlgeschlagen (Status {auth_resp.status_code})."
+
+    try:
+        token = auth_resp.json().get('access_token')
+    except Exception:
+        token = None
+
+    if not token:
+        return None, "API-Login lieferte keinen Access-Token zurück."
+    return token, None
 
 
 def get_player_id(player_name, players):
@@ -951,6 +1011,8 @@ def admin():
     except Exception:
         last_result = {}
 
+    autodarts_status = load_autodarts_status()
+
     return render_template(
         "admin.html",
         players=players,
@@ -959,6 +1021,7 @@ def admin():
         bg_image=bg_image,
         config=config,
         autodarts_last_result=last_result,
+        autodarts_status=autodarts_status,
     )
 
 
@@ -1075,12 +1138,68 @@ def admin_import():
         return {"ok": False, "error": str(e)}, 500
 
 
-def autodarts_collect_and_import(max_pages=2):
-    """Verwendet Playwright, um sich anzumelden, Match-IDs zu sammeln und Stats-API aufzurufen.
-    Gibt ein dict mit importierten IDs und Fehlern zurück."""
-    if sync_playwright is None:
-        return {"ok": False, "error": "playwright not installed"}
+def _autodarts_form_login(page, email, password):
+    """Füllt das Login-Formular auf play.autodarts.com aus (analog zu scripts/autodarts_fetch.py).
+    Gibt (erfolgreich: bool, fehlermeldung: str|None) zurück."""
+    try:
+        page.goto('https://play.autodarts.com/login', timeout=30000)
+        page.wait_for_load_state('networkidle')
+    except Exception as e:
+        return False, f'Login-Seite konnte nicht geladen werden: {e}'
 
+    filled = False
+    for email_sel, pass_sel in (
+        ('input[name="email"]', 'input[name="password"]'),
+        ('input[type="email"]', 'input[type="password"]'),
+        ('#username', '#password'),
+    ):
+        try:
+            if page.query_selector(email_sel) and page.query_selector(pass_sel):
+                page.fill(email_sel, email)
+                page.fill(pass_sel, password)
+                filled = True
+                break
+        except Exception:
+            continue
+
+    if not filled:
+        return False, 'Login-Formular nicht gefunden (Seite nutzt evtl. nur OAuth-Anbieter).'
+
+    try:
+        page.click('button[type="submit"]')
+    except Exception as e:
+        return False, f'Login-Button konnte nicht geklickt werden: {e}'
+
+    try:
+        page.wait_for_load_state('networkidle', timeout=15000)
+    except Exception:
+        pass
+
+    # Erfolg prüfen: nach Login sollte die URL nicht mehr auf die Login-Seite zeigen
+    try:
+        if '/login' in page.url or '/auth' in page.url:
+            return False, 'Falsche Zugangsdaten oder Login-Formular hat sich nicht wie erwartet verhalten.'
+    except Exception:
+        pass
+
+    return True, None
+
+
+def _save_autodarts_debug_screenshot(page):
+    """Speichert bei Login-/Scraping-Fehlern einen Screenshot + URL zur Diagnose ohne sichtbaren Browser."""
+    try:
+        page.screenshot(path=AUTODARTS_DEBUG_SCREENSHOT)
+    except Exception:
+        pass
+
+
+def autodarts_collect_and_import(max_pages=2):
+    """Sammelt Autodarts-Match-IDs und importiert deren Statistiken.
+
+    Bevorzugt den zuverlässigen API-Token-Login (unabhängig von HTML-Struktur/Selektoren).
+    Nur wenn darüber keine Matches ermittelt werden können, wird Playwright als Fallback
+    genutzt - inklusive echtem Formular-Login (Email/Passwort), analog zu
+    scripts/autodarts_fetch.py. Gibt ein dict mit importierten IDs und Fehlern zurück."""
     cfg = load_json(CONFIG_FILE)
     email = cfg.get('autodarts_email')
     password = cfg.get('autodarts_password')
@@ -1091,325 +1210,291 @@ def autodarts_collect_and_import(max_pages=2):
     new_imported = []
     errors = []
     page_htmls = []
+    match_ids = []
 
-    try:
-        p = sync_playwright().start()
-        user_data_dir = cfg.get('autodarts_user_data_dir') or None
-        if user_data_dir:
-            # reuse existing browser profile (so session cookies are present)
-            try:
-                context = p.chromium.launch_persistent_context(user_data_dir=user_data_dir, headless=True)
-                page = context.new_page()
-            except Exception as e:
-                errors.append(f'Failed to launch persistent context: {e}')
-                p.stop()
-                return {"ok": False, "error": 'persistent_context_failed', "errors": errors}
-        else:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            # Login attempt only if no profile dir provided
-            page.goto('https://play.autodarts.com')
-            page.wait_for_load_state('networkidle')
-            # try to click a sign-in link or fill form if available
-            try:
-                # try to open a sign-in modal or page
-                # click link with 'Sign in' or German variants
-                sign_sel = "a[href*='auth/v1/providers']"
-                els = page.query_selector_all(sign_sel)
-                if els:
-                    # nothing to do; OAuth providers require interactive auth
-                    errors.append('Site uses OAuth providers; automated email/password login may not be supported')
-                    browser.close()
-                    p.stop()
-                    return {"ok": False, "error": 'oauth_only', "errors": errors}
-            except Exception:
-                pass
+    # 1) Zuverlässigster Weg: Login über die Autodarts-API. Kein Browser nötig und
+    #    unabhängig von HTML-Selektoren, die sich jederzeit ändern können.
+    token, login_error = autodarts_api_login(email, password)
+    if login_error:
+        errors.append(login_error)
 
-        # Collect match ids
-        match_ids = []
-        for page_no in range(max_pages):
-            url = 'https://play.autodarts.com/history/matches' if page_no == 0 else f'https://play.autodarts.com/history/matches?page={page_no}'
-            page.goto(url)
-            page.wait_for_load_state('networkidle')
-            try:
-                html = page.content()
-                page_htmls.append({'page': page_no, 'html_snippet': html[:5000]})
-            except Exception:
-                page_htmls.append({'page': page_no, 'html_snippet': ''})
-            # Wait briefly for SPA to render match links
-            try:
-                page.wait_for_selector('a[href*="/history/matches/"]', timeout=5000)
-            except Exception:
-                pass
-            links = page.eval_on_selector_all('a[href*="/history/matches/"]', 'els => els.map(e => e.getAttribute("href"))')
-            for l in links:
-                if '/history/matches/' in l:
-                    parts = l.rstrip('/').split('/')
-                    mid = parts[-1]
+    if token:
+        try:
+            page_no = 0
+            size = 50
+            while page_no < max_pages:
+                url = f'https://api.autodarts.com/as/v0/matches/filter?size={size}&page={page_no}'
+                lm = requests.get(url, headers={'Authorization': 'Bearer ' + token}, timeout=15)
+                if not lm.ok:
+                    if lm.status_code == 401:
+                        errors.append('API-Token wurde beim Abrufen der Match-Liste abgelehnt (401).')
+                    break
+                lj = lm.json()
+                items = lj.get('items') or []
+                if not items:
+                    break
+                for item in items:
+                    mid = item.get('id') or item.get('matchId') or item.get('_id')
                     if mid and mid not in match_ids:
                         match_ids.append(mid)
+                if lj.get('last'):
+                    break
+                page_no += 1
+        except Exception as e:
+            errors.append(f'Match-Liste über API konnte nicht geladen werden: {e}')
 
-        # If no match ids found via page anchors, try token-based API listing as fallback
-        if not match_ids:
+    # 2) Fallback: Playwright-Browser, falls die API-Route keine Matches geliefert hat.
+    user_data_dir = cfg.get('autodarts_user_data_dir') or None
+    if not match_ids:
+        if sync_playwright is None:
+            errors.append('Playwright ist nicht installiert; Browser-Fallback nicht möglich (pip install playwright && playwright install chromium).')
+        else:
+            p = None
+            browser = None
+            context = None
+            page = None
             try:
-                cfg3 = load_json(CONFIG_FILE)
-                email3 = cfg3.get('autodarts_email')
-                password3 = cfg3.get('autodarts_password')
-                if email3 and password3:
-                    auth_resp = requests.post('https://api.autodarts.com/auth/v1/login', json={'client_id': 'autodarts-play', 'email': email3, 'password': password3}, timeout=15)
-                    if auth_resp.ok:
-                        token = auth_resp.json().get('access_token')
-                        # use the client-side filter endpoint which returns paged items
+                p = sync_playwright().start()
+                if user_data_dir:
+                    # Wiederverwendung eines bereits (z.B. manuell) eingeloggten Chromium-Profils
+                    try:
+                        context = p.chromium.launch_persistent_context(user_data_dir=user_data_dir, headless=True)
+                        page = context.new_page()
+                    except Exception as e:
+                        errors.append(f'Chromium-Profil konnte nicht geladen werden: {e}')
+                else:
+                    browser = p.chromium.launch(headless=True)
+                    page = browser.new_page()
+                    login_ok, form_login_error = _autodarts_form_login(page, email, password)
+                    if not login_ok:
+                        errors.append(form_login_error or 'Automatischer Formular-Login fehlgeschlagen.')
+                        _save_autodarts_debug_screenshot(page)
+
+                if page is not None:
+                    for page_no in range(max_pages):
+                        url = 'https://play.autodarts.com/history/matches' if page_no == 0 else f'https://play.autodarts.com/history/matches?page={page_no}'
+                        page.goto(url)
+                        page.wait_for_load_state('networkidle')
                         try:
-                            page_no = 0
-                            size = 50
-                            while page_no < max_pages:
-                                url = f'https://api.autodarts.com/as/v0/matches/filter?size={size}&page={page_no}'
-                                lm = requests.get(url, headers={'Authorization': f'Bearer {token}'}, timeout=15)
-                                if not lm.ok:
-                                    break
-                                lj = lm.json()
-                                items = lj.get('items') or []
-                                if not items:
-                                    break
-                                for item in items:
+                            html = page.content()
+                            page_htmls.append({'page': page_no, 'html_snippet': html[:5000]})
+                        except Exception:
+                            page_htmls.append({'page': page_no, 'html_snippet': ''})
+                        try:
+                            page.wait_for_selector('a[href*="/history/matches/"]', timeout=5000)
+                        except Exception:
+                            pass
+                        links = page.eval_on_selector_all('a[href*="/history/matches/"]', 'els => els.map(e => e.getAttribute("href"))')
+                        for l in links:
+                            if '/history/matches/' in l:
+                                parts = l.rstrip('/').split('/')
+                                mid = parts[-1]
+                                if mid and mid not in match_ids:
+                                    match_ids.append(mid)
+                        if not links:
+                            errors.append('Keine Matches auf der Verlaufsseite gefunden; vermutlich nicht eingeloggt. Nutze "Manuell anmelden" oder prüfe die Zugangsdaten.')
+                            _save_autodarts_debug_screenshot(page)
+                            break
+
+                    # Letzter Fallback: API-Aufruf über die Browser-Session (Cookies)
+                    if not match_ids:
+                        try:
+                            api_fetch = page.evaluate(
+                                '(url) => fetch(url).then(r=>r.ok? r.json(): {status:r.status}).catch(e=>({error:e.toString()}))',
+                                'https://api.autodarts.com/as/v0/matches?limit=50',
+                            )
+                            if api_fetch:
+                                candidates = []
+                                if isinstance(api_fetch, list):
+                                    candidates = api_fetch
+                                elif isinstance(api_fetch, dict):
+                                    candidates = api_fetch.get('matches') or api_fetch.get('data') or []
+                                for item in candidates:
                                     mid = item.get('id') or item.get('matchId') or item.get('_id')
                                     if mid and mid not in match_ids:
                                         match_ids.append(mid)
-                                # stop if we've reached last page
-                                if lj.get('last'):
-                                    break
-                                page_no += 1
                         except Exception:
                             pass
-            except Exception:
-                pass
-
-        # Final fallback: attempt to fetch matches from the browser context (may use session cookies)
-        if not match_ids:
-            try:
-                api_fetch = page.evaluate('(url) => fetch(url).then(r=>r.ok? r.json(): {status:r.status}).catch(e=>({error:e.toString()}))', 'https://api.autodarts.com/as/v0/matches?limit=50')
-                if api_fetch:
-                    candidates = []
-                    if isinstance(api_fetch, list):
-                        candidates = api_fetch
-                    elif isinstance(api_fetch, dict):
-                        candidates = api_fetch.get('matches') or api_fetch.get('data') or []
-                    for item in candidates:
-                        mid = item.get('id') or item.get('matchId') or item.get('_id')
-                        if mid and mid not in match_ids:
-                            match_ids.append(mid)
-            except Exception:
-                pass
-
-        # For each match id, fetch stats API via fetch (cookies present)
-        for mid in match_ids:
-            if mid in imported_matches:
-                continue
-            api_url = f'https://api.autodarts.com/as/v0/matches/{mid}/stats'
-            # Prefer token-authenticated stats fetch when credentials are configured
-            result = None
-            try:
-                cfg2 = load_json(CONFIG_FILE)
-                email2 = cfg2.get('autodarts_email')
-                password2 = cfg2.get('autodarts_password')
-                token = None
-                if email2 and password2:
-                    auth_resp = requests.post('https://api.autodarts.com/auth/v1/login', json={'client_id': 'autodarts-play', 'email': email2, 'password': password2}, timeout=15)
-                    if auth_resp.ok:
-                        token = auth_resp.json().get('access_token')
-                if token:
-                    try:
-                        r = requests.get(api_url, headers={'Authorization': f'Bearer {token}'}, timeout=15)
-                        if r.ok:
-                            result = r.json()
-                        else:
-                            # treat explicit 401 as unauthorized so we can record it
-                            if r.status_code == 401:
-                                errors.append(f'Unauthorized for match {mid}')
-                                continue
-                    except Exception as e:
-                        errors.append(f'Fetch {mid} failed (token): {e}')
-                # fallback to page fetch if no token or token fetch failed
-                if not result:
-                    try:
-                        result = page.evaluate('(url) => fetch(url).then(r=>r.ok? r.json(): {status:r.status}).catch(e=>({error:e.toString()}))', api_url)
-                    except Exception as e:
-                        errors.append(f'Fetch {mid} failed: {e}')
-                        continue
-
-            except Exception:
-                # any unexpected error: try page fetch
+            except Exception as e:
+                errors.append(f'Playwright-Fallback fehlgeschlagen: {e}')
+            finally:
                 try:
-                    result = page.evaluate('(url) => fetch(url).then(r=>r.ok? r.json(): {status:r.status}).catch(e=>({error:e.toString()}))', api_url)
-                except Exception as e:
-                    errors.append(f'Fetch {mid} failed: {e}')
-                    continue
+                    if context:
+                        context.close()
+                    elif browser:
+                        browser.close()
+                except Exception:
+                    pass
+                try:
+                    if p:
+                        p.stop()
+                except Exception:
+                    pass
 
-            # If result indicates unauthorized (from page fetch), record and continue
-            if isinstance(result, dict) and result.get('status') == 401:
-                errors.append(f'Unauthorized for match {mid}')
+    if not match_ids:
+        save_imported_matches(imported_matches)
+        return {"ok": False, "error": "Keine Matches gefunden", "errors": errors, "collected_match_ids": match_ids, "page_htmls": page_htmls}
+
+    # 3) Für jede noch nicht importierte Match-ID die Stats-API abrufen (Token bevorzugt).
+    #    Der Login wurde bereits in Schritt 1 versucht; ein erneuter Versuch mit denselben
+    #    Zugangsdaten würde nur denselben Fehler wiederholen.
+    for mid in match_ids:
+        if mid in imported_matches:
+            continue
+        if not token:
+            errors.append(f'Kein gültiges API-Token vorhanden; Stats für Match {mid} übersprungen.')
+            continue
+
+        api_url = f'https://api.autodarts.com/as/v0/matches/{mid}/stats'
+        try:
+            r = requests.get(api_url, headers={'Authorization': 'Bearer ' + token}, timeout=15)
+            if r.status_code == 401:
+                errors.append(f'Nicht autorisiert (401) für Match {mid}.')
                 continue
+            if not r.ok:
+                errors.append(f'Stats für Match {mid} konnten nicht geladen werden (Status {r.status_code}).')
+                continue
+            result = r.json()
+        except Exception as e:
+            errors.append(f'Fetch {mid} fehlgeschlagen: {e}')
+            continue
 
-            # If we have a token, try per-leg augmentation to ensure games are detailed
-            try:
-                if token:
-                    games_len = len(result.get('games', []) or [])
-                    for leg_idx in range(games_len):
-                        leg_url = f'https://api.autodarts.com/as/v0/matches/{mid}/stats?leg={leg_idx}'
-                        try:
-                            lr = requests.get(leg_url, headers={'Authorization': f'Bearer {token}'}, timeout=15)
-                            if lr.ok:
-                                lrj = lr.json()
-                                if lrj.get('games') and len(lrj.get('games')) > 0:
-                                    result['games'][leg_idx] = lrj['games'][0]
-                        except Exception:
-                            pass
-            except Exception:
-                pass
+        # Per-Leg-Ergänzung, damit einzelne Legs möglichst detailliert sind
+        try:
+            games_len = len(result.get('games', []) or [])
+            for leg_idx in range(games_len):
+                leg_url = f'https://api.autodarts.com/as/v0/matches/{mid}/stats?leg={leg_idx}'
+                try:
+                    lr = requests.get(leg_url, headers={'Authorization': 'Bearer ' + token}, timeout=15)
+                    if lr.ok:
+                        lrj = lr.json()
+                        if lrj.get('games') and len(lrj.get('games')) > 0:
+                            result['games'][leg_idx] = lrj['games'][0]
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
-            # Convert result to payload entries expected by admin_import
-            # This mapping depends on API shape; attempt reasonable mapping
-            try:
-                payload = []
-                stats = extract_stats_from_result(result)
-                # compute total legs
-                total_legs = sum([s.get('legs', 0) for s in result.get('scores', [])])
-                # build payload entries
-                players = result.get('players', [])
-                for p in players:
-                    key = p.get('id') or p.get('userId') or p.get('name')
-                    st = stats.get(key, {})
-                    entry = {
-                        'autodarts_name': p.get('name') or p.get('username') or '',
-                        'player_name': None,
-                        'legs': int(st.get('legs', 0) or 0),
-                        'finish': int(st.get('bestCheckout', 0) or 0),
-                        'max180': int(st.get('max180', 0) or 0),
-                        'darts301': 0,
-                        's60': int(st.get('s60', 0) or 0),
-                        's100': int(st.get('s100', 0) or 0),
-                        's140': int(st.get('s140', 0) or 0),
-                        's170': int(st.get('s170', 0) or 0),
-                        's180': int(st.get('s180', 0) or 0),
-                        'min_darts_to_checkout': st.get('min_darts_to_checkout'),
-                        'checkout_ratio': st.get('checkout_ratio'),
-                        'segment_hits': st.get('segment_hits', {}),
-                        'average': st.get('average'),
-                        'first9_average': st.get('first9_average'),
-                        'darts_thrown': st.get('darts_thrown'),
-                        'points_sum': st.get('points_sum'),
-                        # record that this import represents one match (not each leg as a separate game)
-                        'total_games_in_import': 1,
-                    }
-                    payload.append(entry)
+        # Convert result to payload entries expected by admin_import
+        # This mapping depends on API shape; attempt reasonable mapping
+        try:
+            payload = []
+            stats = extract_stats_from_result(result)
+            # build payload entries
+            players = result.get('players', [])
+            for p in players:
+                key = p.get('id') or p.get('userId') or p.get('name')
+                st = stats.get(key, {})
+                entry = {
+                    'autodarts_name': p.get('name') or p.get('username') or '',
+                    'player_name': None,
+                    'legs': int(st.get('legs', 0) or 0),
+                    'finish': int(st.get('bestCheckout', 0) or 0),
+                    'max180': int(st.get('max180', 0) or 0),
+                    'darts301': 0,
+                    's60': int(st.get('s60', 0) or 0),
+                    's100': int(st.get('s100', 0) or 0),
+                    's140': int(st.get('s140', 0) or 0),
+                    's170': int(st.get('s170', 0) or 0),
+                    's180': int(st.get('s180', 0) or 0),
+                    'min_darts_to_checkout': st.get('min_darts_to_checkout'),
+                    'checkout_ratio': st.get('checkout_ratio'),
+                    'segment_hits': st.get('segment_hits', {}),
+                    'average': st.get('average'),
+                    'first9_average': st.get('first9_average'),
+                    'darts_thrown': st.get('darts_thrown'),
+                    'points_sum': st.get('points_sum'),
+                    # record that this import represents one match (not each leg as a separate game)
+                    'total_games_in_import': 1,
+                }
+                payload.append(entry)
 
-                # Call admin_import logic directly by POSTing to endpoint using Flask test_client-like approach
-                # Simpler: call internal function admin_import() expects request context; we'll call via requests to localhost
-                # To avoid HTTP, we reuse admin_import logic by simulating request: call save to scores directly
-                scores = load_json(SCORES_FILE)
-                players_local = load_json(PLAYERS_FILE)
-                imported_count = 0
-                for entry in payload:
-                    # map autodarts_name to player or create new
-                    pid = None
-                    ad = (entry.get('autodarts_name') or '').strip()
-                    if ad:
-                        for pl in players_local:
-                            if pl.get('autodarts_name','').strip().lower() == ad.lower():
-                                pid = pl['id']
-                                break
-                    if not pid:
-                        name = entry.get('player_name') or entry.get('autodarts_name')
-                        pid = get_player_id(name, players_local)
+            scores = load_json(SCORES_FILE)
+            players_local = load_json(PLAYERS_FILE)
+            for entry in payload:
+                # map autodarts_name to player or create new
+                pid = None
+                ad = (entry.get('autodarts_name') or '').strip()
+                if ad:
+                    for pl in players_local:
+                        if pl.get('autodarts_name', '').strip().lower() == ad.lower():
+                            pid = pl['id']
+                            break
+                if not pid:
+                    name = entry.get('player_name') or entry.get('autodarts_name')
+                    pid = get_player_id(name, players_local)
 
-                    new_score = {
-                        'player_id': pid,
-                        'legs': entry.get('legs',0),
-                        'finish': entry.get('finish',0),
-                        'max180': entry.get('max180',0),
-                        'darts301': entry.get('darts301',0),
-                        's60': entry.get('s60',0),
-                        's100': entry.get('s100',0),
-                        's140': entry.get('s140',0),
-                        's170': entry.get('s170',0),
-                        's180': entry.get('s180',0),
-                        'games_played': int(entry.get('total_games_in_import') or entry.get('games_played') or 1),
-                        'date': datetime.now().strftime('%d.%m.%Y %H:%M'),
-                        # extended fields
-                        'segment_hits': entry.get('segment_hits', {}),
-                        'average': entry.get('average'),
-                        'first9_average': entry.get('first9_average'),
-                        'darts_thrown': entry.get('darts_thrown'),
-                        'points_sum': entry.get('points_sum'),
-                        'min_darts_to_checkout': entry.get('min_darts_to_checkout'),
-                        'checkout_ratio': entry.get('checkout_ratio'),
-                    }
-                    # compute hash and check duplicates
+                new_score = {
+                    'player_id': pid,
+                    'legs': entry.get('legs', 0),
+                    'finish': entry.get('finish', 0),
+                    'max180': entry.get('max180', 0),
+                    'darts301': entry.get('darts301', 0),
+                    's60': entry.get('s60', 0),
+                    's100': entry.get('s100', 0),
+                    's140': entry.get('s140', 0),
+                    's170': entry.get('s170', 0),
+                    's180': entry.get('s180', 0),
+                    'games_played': int(entry.get('total_games_in_import') or entry.get('games_played') or 1),
+                    'date': datetime.now().strftime('%d.%m.%Y %H:%M'),
+                    # extended fields
+                    'segment_hits': entry.get('segment_hits', {}),
+                    'average': entry.get('average'),
+                    'first9_average': entry.get('first9_average'),
+                    'darts_thrown': entry.get('darts_thrown'),
+                    'points_sum': entry.get('points_sum'),
+                    'min_darts_to_checkout': entry.get('min_darts_to_checkout'),
+                    'checkout_ratio': entry.get('checkout_ratio'),
+                }
+                # compute hash and check duplicates
+                try:
+                    new_hash = compute_score_hash(new_score)
+                    new_score['score_hash'] = new_hash
+                except Exception:
+                    new_hash = None
+
+                dup = False
+                for ex in scores:
+                    if ex.get('score_hash') and new_hash and ex.get('score_hash') == new_hash:
+                        dup = True
+                        break
                     try:
-                        new_hash = compute_score_hash(new_score)
-                        new_score['score_hash'] = new_hash
-                    except Exception:
-                        new_hash = None
-
-                    dup = False
-                    for ex in scores:
-                        if ex.get('score_hash') and new_hash and ex.get('score_hash') == new_hash:
+                        if compute_score_hash(ex) == new_hash:
                             dup = True
                             break
-                        try:
-                            if compute_score_hash(ex) == new_hash:
-                                dup = True
-                                break
-                        except Exception:
-                            continue
-                    if not dup:
-                        scores.append(new_score)
-                        imported_count += 1
+                    except Exception:
+                        continue
+                if not dup:
+                    scores.append(new_score)
 
-                save_json(SCORES_FILE, scores)
-                save_json(PLAYERS_FILE, players_local)
+            save_json(SCORES_FILE, scores)
+            save_json(PLAYERS_FILE, players_local)
 
-                # mark match id as imported
-                imported_matches.append(mid)
-                new_imported.append(mid)
+            # mark match id as imported
+            imported_matches.append(mid)
+            new_imported.append(mid)
 
-            except Exception as e:
-                errors.append(f'Process {mid} failed: {e}')
+        except Exception as e:
+            errors.append(f'Process {mid} failed: {e}')
 
-        # persist imported matches
-        save_imported_matches(imported_matches)
-        # close browser/context
-        try:
-            if user_data_dir:
-                try:
-                    context.close()
-                except Exception:
-                    pass
-            else:
-                try:
-                    browser.close()
-                except Exception:
-                    pass
-        finally:
-            try:
-                p.stop()
-            except Exception:
-                pass
+    # persist imported matches
+    save_imported_matches(imported_matches)
 
-        return {"ok": True, "imported_matches": new_imported, "errors": errors, "collected_match_ids": match_ids, "page_htmls": page_htmls}
-
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
+    return {"ok": True, "imported_matches": new_imported, "errors": errors, "collected_match_ids": match_ids, "page_htmls": page_htmls}
 
 
 @app.route('/admin/run_autodarts', methods=['POST'])
 def admin_run_autodarts():
     # Run in background thread to avoid long blocking request
     max_pages = int(request.form.get('autodarts_pages') or 2)
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.best == 'application/json'
 
     def worker(pages):
-        res = autodarts_collect_and_import(max_pages=pages)
+        save_autodarts_status('running', 'Autodarts-Abruf läuft…')
+        try:
+            res = autodarts_collect_and_import(max_pages=pages)
+        except Exception as e:
+            res = {"ok": False, "error": str(e)}
         # update last run in config
         cfg = load_json(CONFIG_FILE)
         cfg['autodarts_last_run'] = datetime.now().strftime('%d.%m.%Y %H:%M')
@@ -1418,11 +1503,99 @@ def admin_run_autodarts():
         with open(os.path.join(DATA_DIR, 'autodarts_last_result.json'), 'w', encoding='utf-8') as f:
             json.dump(res, f, indent=2, ensure_ascii=False)
 
+        if res.get('ok'):
+            errors = res.get('errors') or []
+            if errors:
+                save_autodarts_status('success', f"Lauf beendet mit {len(errors)} Hinweis(en). Importiert: {len(res.get('imported_matches') or [])}.", errors=errors)
+            else:
+                save_autodarts_status('success', f"Erfolgreich. Importiert: {len(res.get('imported_matches') or [])} Match(es).")
+        else:
+            save_autodarts_status('error', res.get('error') or 'Unbekannter Fehler.', errors=res.get('errors') or [])
+
     import threading
     t = threading.Thread(target=worker, args=(max_pages,))
     t.daemon = True
     t.start()
+
+    if is_ajax:
+        return jsonify({"ok": True, "started": True})
     return redirect(url_for('admin'))
+
+
+@app.route('/admin/autodarts_status', methods=['GET'])
+def admin_autodarts_status():
+    """Liefert den aktuellen Status eines laufenden/letzten Autodarts-Laufs für Live-Polling."""
+    status = load_autodarts_status()
+    last_result = {}
+    try:
+        lr_path = os.path.join(DATA_DIR, 'autodarts_last_result.json')
+        if os.path.exists(lr_path):
+            with open(lr_path, 'r', encoding='utf-8') as f:
+                last_result = json.load(f)
+    except Exception:
+        last_result = {}
+    return jsonify({"status": status, "last_result": last_result})
+
+
+@app.route('/admin/autodarts_manual_login', methods=['POST'])
+def admin_autodarts_manual_login():
+    """Startet einen sichtbaren Browser für die manuelle Anmeldung bei Autodarts.
+    Erfordert einen konfigurierten Chromium-Profile-Ordner (autodarts_user_data_dir) sowie
+    ein lokales Display; funktioniert daher nur auf Rechnern mit sichtbarem Bildschirm
+    (z.B. beim Debuggen), nicht auf einem headless-Server."""
+    if sync_playwright is None:
+        return jsonify({"ok": False, "error": "Playwright ist nicht installiert."}), 400
+
+    cfg = load_json(CONFIG_FILE)
+    user_data_dir = cfg.get('autodarts_user_data_dir')
+    if not user_data_dir:
+        return jsonify({"ok": False, "error": "Bitte zuerst einen Chromium Profile-Ordner (autodarts_user_data_dir) speichern."}), 400
+
+    def worker(profile_dir):
+        save_autodarts_status('manual_login_pending', 'Bitte im geöffneten Browser-Fenster manuell anmelden…')
+        p = None
+        context = None
+        try:
+            p = sync_playwright().start()
+            context = p.chromium.launch_persistent_context(profile_dir, headless=False)
+            page = context.new_page()
+            page.goto('https://play.autodarts.com/login')
+
+            # Auf erfolgreichen Login warten: URL verlässt /login bzw. /auth
+            deadline = time.time() + 300  # 5 Minuten Zeit für die manuelle Anmeldung
+            logged_in = False
+            while time.time() < deadline:
+                try:
+                    if '/login' not in page.url and '/auth' not in page.url:
+                        logged_in = True
+                        break
+                except Exception:
+                    break
+                time.sleep(1)
+
+            if logged_in:
+                save_autodarts_status('manual_login_success', 'Manuelle Anmeldung erfolgreich. Session wurde im Profil-Ordner gespeichert.')
+            else:
+                save_autodarts_status('manual_login_timeout', 'Zeitüberschreitung: Es wurde innerhalb von 5 Minuten keine erfolgreiche Anmeldung erkannt.')
+        except Exception as e:
+            save_autodarts_status('manual_login_error', f'Manueller Login fehlgeschlagen (evtl. kein Display verfügbar): {e}')
+        finally:
+            try:
+                if context:
+                    context.close()
+            except Exception:
+                pass
+            try:
+                if p:
+                    p.stop()
+            except Exception:
+                pass
+
+    import threading
+    t = threading.Thread(target=worker, args=(user_data_dir,))
+    t.daemon = True
+    t.start()
+    return jsonify({"ok": True, "started": True})
 
 
 @app.route('/admin/import_match', methods=['POST'])
@@ -1452,13 +1625,12 @@ def admin_import_match():
         return redirect(url_for('admin'))
 
     try:
-        auth_resp = requests.post('https://api.autodarts.com/auth/v1/login', json={'client_id': 'autodarts-play', 'email': email, 'password': password}, timeout=15)
-        if not auth_resp.ok:
+        token, login_error = autodarts_api_login(email, password)
+        if not token:
             return redirect(url_for('admin'))
-        token = auth_resp.json().get('access_token')
 
         # try stats endpoint first
-        headers = {'Authorization': f'Bearer {token}'}
+        headers = {'Authorization': 'Bearer ' + token}
         r = requests.get(f'https://api.autodarts.com/as/v0/matches/{mid}/stats', headers=headers, timeout=15)
         if r.ok:
             result = r.json()
