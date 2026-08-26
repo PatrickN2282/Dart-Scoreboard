@@ -1,6 +1,9 @@
 import os
+import re
 import json
 import random
+import shutil
+import stat
 import time
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify
@@ -18,6 +21,14 @@ DATA_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data')
 PLAYERS_FILE = os.path.join(DATA_DIR, 'players.json')
 SCORES_FILE  = os.path.join(DATA_DIR, 'scores.json')
 CONFIG_FILE  = os.path.join(DATA_DIR, 'config.json')
+# Ergebnisse gegen BOT-Gegner werden getrennt von der normalen Spieler-Statistik
+# gespeichert, damit Bots nicht als Spieler auftauchen und "echte" Statistiken
+# nicht durch (meist deutlich einfachere/schwerere) Bot-Matches verfälscht werden.
+BOT_SCORES_FILE = os.path.join(DATA_DIR, 'bot_scores.json')
+
+# Verzeichnis mit optionalen Zusatzfunktionen (z.B. Bildschirmschoner-Skripte)
+ADDONS_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Addons')
+SCREENSAVER_ADDON_DIR = os.path.join(ADDONS_DIR, 'Raspberry-Screensaver')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -201,6 +212,51 @@ def get_player_by_id(player_id):
     return None
 
 
+# --- BOT-Erkennung ---
+# Autodarts-Bot-Gegner (z.B. über das verbreitete "autodartsbot"-Addon) werden über
+# den Spielernamen ("autodartsbotX"/"Bot ...") oder über das API-Feld "cpuPPR"
+# (nur bei Bots gesetzt) erkannt. Bekannte Bot-Level und ihre durchschnittlichen
+# Points-per-Round (PPR) laut Bot-Konfiguration, genutzt um aus einem cpuPPR-Wert
+# das wahrscheinlichste Level abzuleiten, falls der Name kein Level verrät.
+BOT_NAME_RE = re.compile(r'^autodartsbot(\d*)$')
+BOT_PPR_LEVELS = {95: 1, 78: 2, 68: 3, 56: 4, 49: 5, 36: 6, 30: 7}
+
+
+def detect_bot_level(name, cpu_ppr=None):
+    """Ermittelt das Bot-Level eines Spielers.
+
+    Gibt eine Ganzzahl (Bot-Level, 0 falls unbekannt aber eindeutig ein Bot)
+    zurück, wenn es sich um einen BOT-Spieler handelt, sonst None (= echter
+    menschlicher Spieler)."""
+    name = (name or '').strip()
+    # Whitespace/Trennzeichen entfernen (linearer, nicht rückverfolgender
+    # Ersatz) statt sie über mehrere sich überlappende Regex-Quantoren zu
+    # matchen, um ein ReDoS über lange Ketten wiederholter Trennzeichen in
+    # vom Client gelieferten Spielernamen auszuschließen.
+    normalized = re.sub(r'[\s_-]+', '', name).lower()[:64]
+    m = BOT_NAME_RE.match(normalized)
+    if m:
+        lvl = m.group(1)
+        return int(lvl) if lvl else 0
+    if name.lower().startswith('bot'):
+        digits = re.findall(r'\d+', name)
+        return int(digits[0]) if digits else 0
+    if cpu_ppr is not None:
+        try:
+            cpu_ppr_val = float(cpu_ppr)
+        except (TypeError, ValueError):
+            return None
+        closest_ppr = min(BOT_PPR_LEVELS.keys(), key=lambda ppr: abs(ppr - cpu_ppr_val))
+        return BOT_PPR_LEVELS[closest_ppr]
+    return None
+
+
+def is_bot_player(p):
+    """p: rohes Spieler-dict aus der Autodarts-API (result['players'])."""
+    name = p.get('name') or p.get('username') or ''
+    return detect_bot_level(name, p.get('cpuPPR')) is not None
+
+
 def background_exists():
     return os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], BACKGROUND_FILENAME))
 
@@ -251,6 +307,8 @@ def get_cumulative_stats():
                 "darts_thrown": 0,
                 "first9_points_sum": 0,
                 "first9_darts": 0,
+                "first3_points_sum": 0,
+                "first3_darts": 0,
                 "checkout_success": 0,
                 "checkout_attempts": 0,
                 "segment_hits": {},
@@ -268,6 +326,8 @@ def get_cumulative_stats():
         cumulative[pid]["darts_thrown"] += s.get("darts_thrown", 0) or 0
         cumulative[pid]["first9_points_sum"] += s.get("first9_points_sum", 0) or 0
         cumulative[pid]["first9_darts"] += s.get("first9_darts", 0) or 0
+        cumulative[pid]["first3_points_sum"] += s.get("first3_points_sum", 0) or 0
+        cumulative[pid]["first3_darts"] += s.get("first3_darts", 0) or 0
         cumulative[pid]["checkout_success"] += s.get("checkout_success", 0) or 0
         cumulative[pid]["checkout_attempts"] += s.get("checkout_attempts", 0) or 0
         # merge segment_hits dict
@@ -283,6 +343,54 @@ def get_cumulative_stats():
             cumulative[pid]["last180_date"] = s.get("date", "")
 
     return cumulative, players_map, players_list
+
+
+def get_bot_cumulative_stats():
+    """Berechnet kumulative Statistiken pro Spieler getrennt nach BOT-Level.
+
+    Ergebnisse gegen BOTs fließen nie in get_cumulative_stats() ein; stattdessen
+    werden sie hier separat je (Spieler, Bot-Level) aggregiert, damit man sich
+    z.B. anschauen kann, wie gut man gegen "Bot Level 3" abschneidet, ohne dass
+    dies die "echte" Spielerstatistik verfälscht."""
+    bot_scores = load_json(BOT_SCORES_FILE)
+    players_list = load_json(PLAYERS_FILE)
+    players_map = {p["id"]: p for p in players_list}
+
+    cumulative = {}
+    for s in bot_scores:
+        pid = s.get("player_id")
+        if pid not in players_map:
+            continue
+        level = s.get("bot_level")
+        key = (pid, level)
+        if key not in cumulative:
+            cumulative[key] = {
+                "player_id": pid,
+                "bot_level": level,
+                "legs": 0,
+                "games_played": 0,
+                "points_sum": 0,
+                "darts_thrown": 0,
+            }
+        cumulative[key]["legs"] += s.get("legs", 0) or 0
+        cumulative[key]["games_played"] += s.get("games_played", 0) or 0
+        cumulative[key]["points_sum"] += s.get("points_sum", 0) or 0
+        cumulative[key]["darts_thrown"] += s.get("darts_thrown", 0) or 0
+
+    result = []
+    for (pid, level), vals in cumulative.items():
+        darts = vals["darts_thrown"] or 0
+        pts = vals["points_sum"] or 0
+        result.append({
+            "player_id": pid,
+            "name": players_map.get(pid, {}).get("name", "Unbekannt"),
+            "bot_level": level,
+            "legs": vals["legs"],
+            "games_played": vals["games_played"],
+            "average": round(float(pts) / float(darts) * 3.0, 2) if darts else None,
+        })
+    result.sort(key=lambda x: (x["name"], str(x["bot_level"]) if x["bot_level"] is not None else ""))
+    return result
 
 
 def compute_score_hash(score_obj: dict) -> str:
@@ -339,6 +447,8 @@ def extract_stats_from_result(res):
             'darts_thrown': 0,
             'first9_points_sum': 0,
             'first9_darts': 0,
+            'first3_points_sum': 0,
+            'first3_darts': 0,
             'segment_hits': {},
         }
 
@@ -441,6 +551,29 @@ def extract_stats_from_result(res):
                 key = f"{prefix}{num_s}"
                 seg_hits = st.setdefault('segment_hits', {})
                 seg_hits[key] = seg_hits.get(key, 0) + 1
+
+    # "First 3 Average" (Punkte-Schnitt des allerersten Aufnahme/Visits jedes Legs,
+    # d.h. der ersten 3 geworfenen Darts). Autodarts liefert dafür (anders als für
+    # "first9Average") kein aggregiertes Feld, daher wird dieser Wert - unabhängig
+    # davon ob match-level Stats vorliegen - immer aus den Turns berechnet.
+    for game in res.get('games', []):
+        turns_by_player_f3 = {}
+        for turn in game.get('turns', []) or []:
+            pid = turn.get('playerId')
+            if not pid:
+                continue
+            turns_by_player_f3.setdefault(pid, []).append(turn)
+        for pid, turns_list in turns_by_player_f3.items():
+            first_turn = turns_list[:1]
+            for t in first_turn:
+                if t.get('busted'):
+                    continue
+                pts = int(t.get('points', 0) or 0)
+                throws = t.get('throws') or []
+                darts = len(throws)
+                st = stats.setdefault(pid, {})
+                st['first3_points_sum'] = st.get('first3_points_sum', 0) + pts
+                st['first3_darts'] = st.get('first3_darts', 0) + darts
 
     # If match-level stats were not present, fall back to computing aggregates from turns
     if not use_match_level:
@@ -577,11 +710,167 @@ def extract_stats_from_result(res):
         f9_pts = v.get('first9_points_sum', 0) or 0
         if v.get('first9_average') is None:
             v['first9_average'] = float(f9_pts) / float(f9_darts) * 3.0 if f9_darts else None
+        f3_darts = v.get('first3_darts', 0) or 0
+        f3_pts = v.get('first3_points_sum', 0) or 0
+        v['first3_average'] = float(f3_pts) / float(f3_darts) * 3.0 if f3_darts else None
         atts = v.get('checkout_attempts', 0) or 0
         succ = v.get('checkout_success', 0) or 0
         v['checkout_ratio'] = float(succ) / float(atts) if atts else None
 
     return stats
+
+
+def import_match_result_to_scores(result, games_len=None):
+    """Wandelt ein einzelnes Autodarts-Match-Ergebnis in Score-Einträge um und
+    speichert sie. BOT-Gegner (siehe detect_bot_level) werden dabei nicht als
+    eigenständige Spieler angelegt; stattdessen werden die Ergebnisse der
+    menschlichen Spieler aus einem Match gegen einen BOT getrennt in
+    BOT_SCORES_FILE (pro Bot-Level) abgelegt, statt in die reguläre
+    Spieler-Statistik einzufließen.
+
+    Gibt (imported_count, bot_imported_count) zurück."""
+    if games_len is None:
+        games_len = len(result.get('games', []) or [])
+
+    stats = extract_stats_from_result(result)
+    players = result.get('players', [])
+
+    bot_levels = [
+        detect_bot_level(p.get('name') or p.get('username') or '', p.get('cpuPPR'))
+        for p in players
+    ]
+    bot_levels = [lvl for lvl in bot_levels if lvl is not None]
+    is_bot_match = len(bot_levels) > 0
+    distinct_bot_levels = sorted(set(bot_levels))
+    # Normalfall: genau ein BOT-Gegner (bzw. mehrere BOTs desselben Levels) im
+    # Match -> eindeutiges Level. Enthält ein Match ausnahmsweise BOTs mit
+    # unterschiedlichen Levels, wird das nicht stillschweigend verworfen,
+    # sondern als kombinierter Wert (z.B. "3+5") abgelegt.
+    bot_level = distinct_bot_levels[0] if len(distinct_bot_levels) <= 1 else '+'.join(str(l) for l in distinct_bot_levels)
+
+    scores = load_json(SCORES_FILE)
+    bot_scores = load_json(BOT_SCORES_FILE)
+    players_local = load_json(PLAYERS_FILE)
+
+    imported_count = 0
+    bot_imported_count = 0
+
+    for p in players:
+        name = p.get('name') or p.get('username') or ''
+        if detect_bot_level(name, p.get('cpuPPR')) is not None:
+            # BOT-Spieler werden nicht als Spieler angelegt und nicht als
+            # eigenständiger Score-Eintrag gespeichert.
+            continue
+
+        key = p.get('id') or p.get('userId') or p.get('name')
+        st = stats.get(key, {})
+        entry = {
+            'autodarts_name': p.get('name') or p.get('username') or '',
+            'player_name': None,
+            'legs': int(st.get('legs', 0) or 0),
+            'finish': int(st.get('bestCheckout', 0) or 0),
+            'max180': int(st.get('max180', 0) or 0),
+            'darts301': int(st.get('min_darts_to_checkout') or 0),
+            's60': int(st.get('s60', 0) or 0),
+            's100': int(st.get('s100', 0) or 0),
+            's140': int(st.get('s140', 0) or 0),
+            's170': int(st.get('s170', 0) or 0),
+            's180': int(st.get('s180', 0) or 0),
+            'min_darts_to_checkout': st.get('min_darts_to_checkout'),
+            'checkout_ratio': st.get('checkout_ratio'),
+            'checkout_success': int(st.get('checkout_success', 0) or 0),
+            'checkout_attempts': int(st.get('checkout_attempts', 0) or 0),
+            'segment_hits': st.get('segment_hits', {}),
+            'average': st.get('average'),
+            'first9_average': st.get('first9_average'),
+            'first9_points_sum': int(st.get('first9_points_sum', 0) or 0),
+            'first9_darts': int(st.get('first9_darts', 0) or 0),
+            'first3_average': st.get('first3_average'),
+            'first3_points_sum': int(st.get('first3_points_sum', 0) or 0),
+            'first3_darts': int(st.get('first3_darts', 0) or 0),
+            'darts_thrown': st.get('darts_thrown'),
+            'points_sum': st.get('points_sum'),
+            # record the number of legs played in this match, so cumulative stats
+            # aggregate "legs played" instead of "matches played" (one match can
+            # contain several legs).
+            'total_games_in_import': games_len or 1,
+        }
+
+        pid = None
+        ad = (entry.get('autodarts_name') or '').strip()
+        if ad:
+            for pl in players_local:
+                if pl.get('autodarts_name', '').strip().lower() == ad.lower():
+                    pid = pl['id']
+                    break
+        if not pid:
+            pname = entry.get('player_name') or entry.get('autodarts_name')
+            pid = get_player_id(pname, players_local)
+
+        new_score = {
+            'player_id': pid,
+            'legs': entry.get('legs', 0),
+            'finish': entry.get('finish', 0),
+            'max180': entry.get('max180', 0),
+            'darts301': entry.get('darts301', 0),
+            's60': entry.get('s60', 0),
+            's100': entry.get('s100', 0),
+            's140': entry.get('s140', 0),
+            's170': entry.get('s170', 0),
+            's180': entry.get('s180', 0),
+            'games_played': int(entry.get('total_games_in_import') or entry.get('games_played') or 1),
+            'date': datetime.now().strftime('%d.%m.%Y %H:%M'),
+            # extended fields
+            'segment_hits': entry.get('segment_hits', {}),
+            'average': entry.get('average'),
+            'first9_average': entry.get('first9_average'),
+            'first9_points_sum': entry.get('first9_points_sum', 0),
+            'first9_darts': entry.get('first9_darts', 0),
+            'first3_average': entry.get('first3_average'),
+            'first3_points_sum': entry.get('first3_points_sum', 0),
+            'first3_darts': entry.get('first3_darts', 0),
+            'darts_thrown': entry.get('darts_thrown'),
+            'points_sum': entry.get('points_sum'),
+            'min_darts_to_checkout': entry.get('min_darts_to_checkout'),
+            'checkout_ratio': entry.get('checkout_ratio'),
+            'checkout_success': entry.get('checkout_success', 0),
+            'checkout_attempts': entry.get('checkout_attempts', 0),
+        }
+        if is_bot_match:
+            new_score['bot_level'] = bot_level
+
+        try:
+            new_hash = compute_score_hash(new_score)
+            new_score['score_hash'] = new_hash
+        except Exception:
+            new_hash = None
+
+        target_list = bot_scores if is_bot_match else scores
+        dup = False
+        for ex in target_list:
+            if ex.get('score_hash') and new_hash and ex.get('score_hash') == new_hash:
+                dup = True
+                break
+            try:
+                if compute_score_hash(ex) == new_hash:
+                    dup = True
+                    break
+            except Exception:
+                continue
+        if not dup:
+            target_list.append(new_score)
+            if is_bot_match:
+                bot_imported_count += 1
+            else:
+                imported_count += 1
+
+    save_json(PLAYERS_FILE, players_local)
+    if imported_count:
+        save_json(SCORES_FILE, scores)
+    if bot_imported_count:
+        save_json(BOT_SCORES_FILE, bot_scores)
+
+    return imported_count, bot_imported_count
 
 
 def generate_head_to_head_data(cumulative, players_map, players_list):
@@ -609,9 +898,9 @@ def generate_head_to_head_data(cumulative, players_map, players_list):
         pts_sum = stats.get('points_sum', 0) or 0
         darts = stats.get('darts_thrown', 0) or 0
         average = round(float(pts_sum) / float(darts) * 3.0, 2) if darts else None
-        f9_pts = stats.get('first9_points_sum', 0) or 0
-        f9_darts = stats.get('first9_darts', 0) or 0
-        first3_average = round(float(f9_pts) / float(f9_darts) * 3.0, 2) if f9_darts else None
+        f3_pts = stats.get('first3_points_sum', 0) or 0
+        f3_darts = stats.get('first3_darts', 0) or 0
+        first3_average = round(float(f3_pts) / float(f3_darts) * 3.0, 2) if f3_darts else None
         checkout_attempts = stats.get('checkout_attempts', 0) or 0
         checkout_success = stats.get('checkout_success', 0) or 0
         checkout_ratio = round((float(checkout_success) / checkout_attempts * 100), 1) if checkout_attempts else None
@@ -737,10 +1026,10 @@ def index():
     most_average = []
     for pid, vals in cumulative.items():
         base = {"name": player_name(pid), "image": player_image(pid)}
-        f9_darts = vals.get('first9_darts', 0) or 0
-        f9_pts = vals.get('first9_points_sum', 0) or 0
-        if f9_darts:
-            first3_avg = round(float(f9_pts) / float(f9_darts) * 3.0, 2)
+        f3_darts = vals.get('first3_darts', 0) or 0
+        f3_pts = vals.get('first3_points_sum', 0) or 0
+        if f3_darts:
+            first3_avg = round(float(f3_pts) / float(f3_darts) * 3.0, 2)
             most_first3.append({**base, 'first3_average': first3_avg})
         pts = vals.get('points_sum', 0) or 0
         darts = vals.get('darts_thrown', 0) or 0
@@ -844,10 +1133,10 @@ def api_player_card():
         'darts_thrown': stats.get('darts_thrown', 0),
     }
     # first3
-    f9_darts = stats.get('first9_darts',0)
-    f9_pts = stats.get('first9_points_sum',0)
-    if f9_darts:
-        card['first3_average'] = round(float(f9_pts)/float(f9_darts)*3.0,2)
+    f3_darts = stats.get('first3_darts',0)
+    f3_pts = stats.get('first3_points_sum',0)
+    if f3_darts:
+        card['first3_average'] = round(float(f3_pts)/float(f3_darts)*3.0,2)
     # checkout ratio
     atts = stats.get('checkout_attempts',0)
     succ = stats.get('checkout_success',0)
@@ -950,6 +1239,9 @@ def admin():
                 save_json(PLAYERS_FILE, players)
                 scores = [s for s in scores if s["player_id"] != player_id_to_delete]
                 save_json(SCORES_FILE, scores)
+                bot_scores = load_json(BOT_SCORES_FILE)
+                bot_scores = [s for s in bot_scores if s.get("player_id") != player_id_to_delete]
+                save_json(BOT_SCORES_FILE, bot_scores)
             except ValueError:
                 pass
 
@@ -1080,6 +1372,7 @@ def admin():
         last_result = {}
 
     autodarts_status = load_autodarts_status()
+    bot_stats = get_bot_cumulative_stats()
 
     return render_template(
         "admin.html",
@@ -1090,6 +1383,7 @@ def admin():
         config=config,
         autodarts_last_result=last_result,
         autodarts_status=autodarts_status,
+        bot_stats=bot_stats,
     )
 
 
@@ -1443,110 +1737,10 @@ def autodarts_collect_and_import(max_pages=2):
         except Exception:
             pass
 
-        # Convert result to payload entries expected by admin_import
-        # This mapping depends on API shape; attempt reasonable mapping
+        # Convert result to score entries via die gemeinsame Import-Logik
+        # (auch verwendet von admin_import_match): erkennt und filtert BOT-Gegner.
         try:
-            payload = []
-            stats = extract_stats_from_result(result)
-            # build payload entries
-            players = result.get('players', [])
-            for p in players:
-                key = p.get('id') or p.get('userId') or p.get('name')
-                st = stats.get(key, {})
-                entry = {
-                    'autodarts_name': p.get('name') or p.get('username') or '',
-                    'player_name': None,
-                    'legs': int(st.get('legs', 0) or 0),
-                    'finish': int(st.get('bestCheckout', 0) or 0),
-                    'max180': int(st.get('max180', 0) or 0),
-                    'darts301': int(st.get('min_darts_to_checkout') or 0),
-                    's60': int(st.get('s60', 0) or 0),
-                    's100': int(st.get('s100', 0) or 0),
-                    's140': int(st.get('s140', 0) or 0),
-                    's170': int(st.get('s170', 0) or 0),
-                    's180': int(st.get('s180', 0) or 0),
-                    'min_darts_to_checkout': st.get('min_darts_to_checkout'),
-                    'checkout_ratio': st.get('checkout_ratio'),
-                    'checkout_success': int(st.get('checkout_success', 0) or 0),
-                    'checkout_attempts': int(st.get('checkout_attempts', 0) or 0),
-                    'segment_hits': st.get('segment_hits', {}),
-                    'average': st.get('average'),
-                    'first9_average': st.get('first9_average'),
-                    'first9_points_sum': int(st.get('first9_points_sum', 0) or 0),
-                    'first9_darts': int(st.get('first9_darts', 0) or 0),
-                    'darts_thrown': st.get('darts_thrown'),
-                    'points_sum': st.get('points_sum'),
-                    # record the number of legs played in this match, so cumulative stats
-                    # aggregate "legs played" instead of "matches played" (one match can
-                    # contain several legs).
-                    'total_games_in_import': games_len or 1,
-                }
-                payload.append(entry)
-
-            scores = load_json(SCORES_FILE)
-            players_local = load_json(PLAYERS_FILE)
-            for entry in payload:
-                # map autodarts_name to player or create new
-                pid = None
-                ad = (entry.get('autodarts_name') or '').strip()
-                if ad:
-                    for pl in players_local:
-                        if pl.get('autodarts_name', '').strip().lower() == ad.lower():
-                            pid = pl['id']
-                            break
-                if not pid:
-                    name = entry.get('player_name') or entry.get('autodarts_name')
-                    pid = get_player_id(name, players_local)
-
-                new_score = {
-                    'player_id': pid,
-                    'legs': entry.get('legs', 0),
-                    'finish': entry.get('finish', 0),
-                    'max180': entry.get('max180', 0),
-                    'darts301': entry.get('darts301', 0),
-                    's60': entry.get('s60', 0),
-                    's100': entry.get('s100', 0),
-                    's140': entry.get('s140', 0),
-                    's170': entry.get('s170', 0),
-                    's180': entry.get('s180', 0),
-                    'games_played': int(entry.get('total_games_in_import') or entry.get('games_played') or 1),
-                    'date': datetime.now().strftime('%d.%m.%Y %H:%M'),
-                    # extended fields
-                    'segment_hits': entry.get('segment_hits', {}),
-                    'average': entry.get('average'),
-                    'first9_average': entry.get('first9_average'),
-                    'first9_points_sum': entry.get('first9_points_sum', 0),
-                    'first9_darts': entry.get('first9_darts', 0),
-                    'darts_thrown': entry.get('darts_thrown'),
-                    'points_sum': entry.get('points_sum'),
-                    'min_darts_to_checkout': entry.get('min_darts_to_checkout'),
-                    'checkout_ratio': entry.get('checkout_ratio'),
-                    'checkout_success': entry.get('checkout_success', 0),
-                    'checkout_attempts': entry.get('checkout_attempts', 0),
-                }
-                # compute hash and check duplicates
-                try:
-                    new_hash = compute_score_hash(new_score)
-                    new_score['score_hash'] = new_hash
-                except Exception:
-                    new_hash = None
-
-                dup = False
-                for ex in scores:
-                    if ex.get('score_hash') and new_hash and ex.get('score_hash') == new_hash:
-                        dup = True
-                        break
-                    try:
-                        if compute_score_hash(ex) == new_hash:
-                            dup = True
-                            break
-                    except Exception:
-                        continue
-                if not dup:
-                    scores.append(new_score)
-
-            save_json(SCORES_FILE, scores)
-            save_json(PLAYERS_FILE, players_local)
+            import_match_result_to_scores(result, games_len=games_len)
 
             # mark match id as imported
             imported_matches.append(mid)
@@ -1750,109 +1944,9 @@ def admin_import_match():
             except Exception:
                 pass
 
-        # convert & save using shared logic
-        payload = []
-        stats = extract_stats_from_result(result)
-        total_legs = sum([s.get('legs', 0) for s in result.get('scores', [])])
-        players = result.get('players', [])
-        for p in players:
-            # must match the key precedence used in extract_stats_from_result (id first),
-            # otherwise stats lookup silently returns an empty dict for every player.
-            key = p.get('id') or p.get('userId') or p.get('name')
-            st = stats.get(key, {})
-            entry = {
-                'autodarts_name': p.get('name') or p.get('username') or '',
-                'player_name': None,
-                'legs': int(st.get('legs', 0) or 0),
-                'finish': int(st.get('bestCheckout', 0) or 0),
-                'max180': int(st.get('max180', 0) or 0),
-                'darts301': int(st.get('min_darts_to_checkout') or 0),
-                's60': int(st.get('s60', 0) or 0),
-                's100': int(st.get('s100', 0) or 0),
-                's140': int(st.get('s140', 0) or 0),
-                's170': int(st.get('s170', 0) or 0),
-                's180': int(st.get('s180', 0) or 0),
-                'min_darts_to_checkout': st.get('min_darts_to_checkout'),
-                'checkout_ratio': st.get('checkout_ratio'),
-                'checkout_success': int(st.get('checkout_success', 0) or 0),
-                'checkout_attempts': int(st.get('checkout_attempts', 0) or 0),
-                'segment_hits': st.get('segment_hits', {}),
-                'average': st.get('average'),
-                'first9_average': st.get('first9_average'),
-                'first9_points_sum': int(st.get('first9_points_sum', 0) or 0),
-                'first9_darts': int(st.get('first9_darts', 0) or 0),
-                'darts_thrown': st.get('darts_thrown'),
-                'points_sum': st.get('points_sum'),
-                # record the number of legs played in this match, so cumulative stats
-                # aggregate "legs played" instead of "matches played".
-                'total_games_in_import': games_len or 1,
-            }
-            payload.append(entry)
+        # convert & save using shared logic (auch für BOT-Erkennung/-Filterung)
+        import_match_result_to_scores(result, games_len=games_len)
 
-        # save to scores exactly like admin_import
-        scores = load_json(SCORES_FILE)
-        players_local = load_json(PLAYERS_FILE)
-        imported_count = 0
-        for entry in payload:
-            pid = None
-            ad = (entry.get('autodarts_name') or '').strip()
-            if ad:
-                for pl in players_local:
-                    if pl.get('autodarts_name','').strip().lower() == ad.lower():
-                        pid = pl['id']
-                        break
-            if not pid:
-                name = entry.get('player_name') or entry.get('autodarts_name')
-                pid = get_player_id(name, players_local)
-
-            new_score = {
-                'player_id': pid,
-                'legs': entry.get('legs',0),
-                'finish': entry.get('finish',0),
-                'max180': entry.get('max180',0),
-                'darts301': entry.get('darts301',0),
-                's60': entry.get('s60',0),
-                's100': entry.get('s100',0),
-                's140': entry.get('s140',0),
-                's170': entry.get('s170',0),
-                's180': entry.get('s180',0),
-                'games_played': int(entry.get('total_games_in_import') or entry.get('games_played') or 1),
-                'date': datetime.now().strftime('%d.%m.%Y %H:%M'),
-                'segment_hits': entry.get('segment_hits', {}),
-                'average': entry.get('average'),
-                'first9_average': entry.get('first9_average'),
-                'first9_points_sum': entry.get('first9_points_sum', 0),
-                'first9_darts': entry.get('first9_darts', 0),
-                'darts_thrown': entry.get('darts_thrown'),
-                'points_sum': entry.get('points_sum'),
-                'min_darts_to_checkout': entry.get('min_darts_to_checkout'),
-                'checkout_ratio': entry.get('checkout_ratio'),
-                'checkout_success': entry.get('checkout_success', 0),
-                'checkout_attempts': entry.get('checkout_attempts', 0),
-            }
-            try:
-                new_hash = compute_score_hash(new_score)
-                new_score['score_hash'] = new_hash
-            except Exception:
-                new_hash = None
-
-            dup = False
-            for ex in scores:
-                if ex.get('score_hash') and new_hash and ex.get('score_hash') == new_hash:
-                    dup = True
-                    break
-                try:
-                    if compute_score_hash(ex) == new_hash:
-                        dup = True
-                        break
-                except Exception:
-                    continue
-            if not dup:
-                scores.append(new_score)
-                imported_count += 1
-
-        save_json(SCORES_FILE, scores)
-        save_json(PLAYERS_FILE, players_local)
         # mark imported
         ims = load_json(IMPORTED_MATCHES_FILE)
         if mid not in ims:
@@ -1863,6 +1957,55 @@ def admin_import_match():
         pass
 
     return redirect(url_for('admin'))
+
+
+@app.route('/admin/install_screensaver', methods=['POST'])
+def admin_install_screensaver():
+    """Installiert den Bildschirmschoner aus /Addons/Raspberry-Screensaver im
+    Home-Verzeichnis des aktuellen Nutzers (Skript + Autostart-Eintrag)."""
+    script_src = os.path.join(SCREENSAVER_ADDON_DIR, 'dart_screensaver.sh')
+    desktop_src = os.path.join(SCREENSAVER_ADDON_DIR, 'dart-screensaver.desktop')
+
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.best == 'application/json'
+
+    if not os.path.isfile(script_src) or not os.path.isfile(desktop_src):
+        msg = 'Screensaver-Dateien wurden in /Addons/Raspberry-Screensaver nicht gefunden.'
+        if is_ajax:
+            return jsonify({"ok": False, "error": msg}), 404
+        return redirect(url_for('admin'))
+
+    try:
+        home_dir = os.path.expanduser('~')
+        script_dst = os.path.join(home_dir, 'screensaver.sh')
+        autostart_dir = os.path.join(home_dir, '.config', 'autostart')
+        desktop_dst = os.path.join(autostart_dir, 'dart-screensaver.desktop')
+
+        os.makedirs(autostart_dir, exist_ok=True)
+
+        shutil.copyfile(script_src, script_dst)
+        file_stat = os.stat(script_dst)
+        os.chmod(script_dst, file_stat.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+
+        with open(desktop_src, 'r', encoding='utf-8') as f:
+            desktop_content = f.read()
+        # Der mitgelieferte Exec-Pfad ist ein Platzhalter (/home/autodarts/...);
+        # auf das tatsächlich installierte Skript zeigen lassen.
+        desktop_content = re.sub(
+            r'^Exec=.*$', f'Exec={script_dst}', desktop_content, flags=re.MULTILINE
+        )
+        with open(desktop_dst, 'w', encoding='utf-8') as f:
+            f.write(desktop_content)
+
+        msg = f'Screensaver installiert: {script_dst} (Autostart: {desktop_dst}).'
+        if is_ajax:
+            return jsonify({"ok": True, "message": msg})
+        return redirect(url_for('admin'))
+    except Exception as e:
+        app.logger.exception('Screensaver-Installation fehlgeschlagen')
+        msg = 'Installation fehlgeschlagen. Details siehe Server-Log.'
+        if is_ajax:
+            return jsonify({"ok": False, "error": msg}), 500
+        return redirect(url_for('admin'))
 
 
 if __name__ == '__main__':
