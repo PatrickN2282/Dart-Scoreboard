@@ -230,6 +230,8 @@ def detect_bot_level(name, cpu_ppr=None):
     zurück, wenn es sich um einen BOT-Spieler handelt, sonst None (= echter
     menschlicher Spieler)."""
     name = (name or '').strip()
+    # Trennzeichen normalisieren und vor dem Match auf eine kleine Länge begrenzen,
+    # damit die Bot-Erkennung nicht auf unbounded clientseitige Namen angewiesen ist.
     normalized = re.sub(r'[\s_-]+', ' ', name).strip()[:64]
     m = BOT_NAME_RE.match(normalized)
     if m:
