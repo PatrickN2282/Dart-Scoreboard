@@ -15,5 +15,6 @@
     "cec_enabled": false,
     "cec_device_name": "Dart Scoreboard",
     "cec_standby_time": "22:00",
-    "cec_wake_time": "08:00"
+    "cec_wake_time": "08:00",
+    "screensaver_idle_time": 300
 }

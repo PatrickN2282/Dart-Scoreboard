@@ -99,7 +99,7 @@ Alle Design-Einstellungen sind im Admin-Panel unter **Design & Limits** erreichb
 Im Admin-Panel unter **Addons** werden die optionalen Raspberry-Pi-Erweiterungen eingerichtet:
 
 - **CEC-Manager:** Den Gerätenamen (maximal 14 Zeichen), die Standby-Zeit und die Aufweckzeit speichern und anschließend **CEC-Manager installieren**. Innerhalb des Zeitfensters von Aufwecken bis Standby hält der Manager den TV per CEC aktiv; außerhalb schickt er ihn einmalig in Standby. Gleiche Aufweck- und Standby-Zeiten bedeuten Dauerbetrieb. Voraussetzung ist ein CEC-fähiger, per HDMI angeschlossener TV.
-- **Bildschirmschoner:** **Screensaver installieren** kopiert das Kiosk-/Autostart-Skript für Wayland/Sway. Er wird erst nach der Installation des Grundsystems eingerichtet.
+- **Bildschirmschoner:** Die Wartezeit bis zum Kiosk-Start wird im Adminbereich eingestellt; **Screensaver installieren** kopiert anschließend das Kiosk-/Autostart-Skript für Wayland/Sway.
 
 ---
 
@@ -122,9 +122,18 @@ Im Admin-Panel unter **Addons** werden die optionalen Raspberry-Pi-Erweiterungen
 **`players.json`**
 ```json
 [
-  { "id": 1, "name": "Max Mustermann", "image": "player_1.png" }
+  {
+    "id": 1,
+    "name": "Max Mustermann",
+    "image": "player_1.png",
+    "autodarts_name": "max_handle",
+    "stat_names": ["max_handle", "Max M."]
+  }
 ]
 ```
+
+`name` ist der Anzeigename des Scoreboards. Ein Autodarts-Handle kann mehrere
+Statistiknamen bündeln; sie werden im Adminbereich pro Spieler gepflegt.
 
 **`scores.json`**
 ```json

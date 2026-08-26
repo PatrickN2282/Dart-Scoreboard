@@ -35,6 +35,7 @@ SCREENSAVER_ADDON_DIR = os.path.join(ADDONS_DIR, 'Raspberry-Screensaver')
 CEC_ADDON_DIR = os.path.join(ADDONS_DIR, 'Raspberry-CEC')
 CEC_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'dart-scoreboard')
 CEC_CONFIG_FILE = os.path.join(CEC_CONFIG_DIR, 'cec.conf')
+SCREENSAVER_CONFIG_FILE = os.path.join(CEC_CONFIG_DIR, 'screensaver.conf')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -67,6 +68,7 @@ DEFAULT_CONFIG = {
     "cec_device_name": "Dart Scoreboard",
     "cec_standby_time": "22:00",
     "cec_wake_time": "08:00",
+    "screensaver_idle_time": 300,
 }
 
 # Datei für bereits importierte Match-IDs
@@ -154,6 +156,18 @@ def write_cec_config(config):
     os.chmod(CEC_CONFIG_FILE, 0o600)
 
 
+def write_screensaver_config(config):
+    """Schreibt die vom Screensaver-Addon gelesene Laufzeitkonfiguration."""
+    os.makedirs(CEC_CONFIG_DIR, mode=0o700, exist_ok=True)
+    content = (
+        "# Wird vom Dart Scoreboard Adminbereich verwaltet.\n"
+        f"SCREENSAVER_IDLE_TIME={int(config.get('screensaver_idle_time', 300))}\n"
+    )
+    with open(SCREENSAVER_CONFIG_FILE, 'w', encoding='utf-8') as f:
+        f.write(content)
+    os.chmod(SCREENSAVER_CONFIG_FILE, 0o600)
+
+
 def save_json(filepath, data):
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
@@ -229,6 +243,88 @@ def autodarts_api_login(email: str, password: str):
     return token, None
 
 
+def normalized_player_name(name):
+    return (name or "").strip().casefold()
+
+
+def get_player_stat_names(player):
+    """Liefert alle Namen, unter denen ein Spieler in Statistiken erscheinen kann."""
+    names = []
+    for name in [player.get("autodarts_name"), *(player.get("stat_names") or [])]:
+        normalized = normalized_player_name(name)
+        if normalized and normalized not in {normalized_player_name(value) for value in names}:
+            names.append(name.strip())
+    return names
+
+
+def find_player_by_stat_names(players, names):
+    """Findet einen Spieler anhand eines Autodarts-Handles oder Statistik-Alias."""
+    candidates = {normalized_player_name(name) for name in names}
+    candidates.discard("")
+    if not candidates:
+        return None
+
+    for player in players:
+        if candidates.intersection(
+            normalized_player_name(name) for name in get_player_stat_names(player)
+        ):
+            return player
+    return None
+
+
+def consolidate_duplicate_players(players, scores=None, bot_scores=None):
+    """Migriert alte, doppelte Handle-Einträge zu einer Spieleridentität."""
+    changed = False
+    for player in players:
+        aliases = list(player.get("stat_names") or [])
+        if "stat_names" not in player and player.get("name"):
+            aliases.append(player["name"])
+        aliases.append(player.get("autodarts_name", ""))
+        unique_aliases = []
+        seen_aliases = set()
+        for alias in aliases:
+            normalized = normalized_player_name(alias)
+            if normalized and normalized not in seen_aliases:
+                seen_aliases.add(normalized)
+                unique_aliases.append(alias.strip())
+        if player.get("stat_names") != unique_aliases:
+            player["stat_names"] = unique_aliases
+            changed = True
+
+    players_by_handle = {}
+    retained_players = []
+    id_mapping = {}
+    for player in players:
+        handle = normalized_player_name(player.get("autodarts_name"))
+        primary = players_by_handle.get(handle) if handle else None
+        if primary is None:
+            retained_players.append(player)
+            if handle:
+                players_by_handle[handle] = player
+            continue
+
+        changed = True
+        id_mapping[player["id"]] = primary["id"]
+        for alias in get_player_stat_names(player):
+            if normalized_player_name(alias) not in {
+                normalized_player_name(value) for value in primary["stat_names"]
+            }:
+                primary["stat_names"].append(alias)
+        if primary.get("image", "dummy.png") == "dummy.png" and player.get("image") != "dummy.png":
+            primary["image"] = player["image"]
+
+    if id_mapping:
+        for score_list in (scores, bot_scores):
+            if score_list is None:
+                continue
+            for score in score_list:
+                player_id = score.get("player_id")
+                if player_id in id_mapping:
+                    score["player_id"] = id_mapping[player_id]
+
+    return retained_players, changed or bool(id_mapping)
+
+
 def get_player_id(player_name, players):
     normalized_name = player_name.strip()
     if not normalized_name:
@@ -239,7 +335,13 @@ def get_player_id(player_name, players):
             return p["id"]
 
     new_id = max((p["id"] for p in players), default=0) + 1
-    new_player = {"id": new_id, "name": normalized_name, "image": "dummy.png", "autodarts_name": ""}
+    new_player = {
+        "id": new_id,
+        "name": normalized_name,
+        "image": "dummy.png",
+        "autodarts_name": "",
+        "stat_names": [normalized_name],
+    }
     players.append(new_player)
     save_json(PLAYERS_FILE, players)
     return new_id
@@ -308,7 +410,7 @@ def calculate_win_rate_score(wins: int, total: int) -> float:
 
 
 def get_scoreboard_player_groups(players_list):
-    """Fasst Spieler mit demselben Autodarts-Namen für die Anzeige zusammen."""
+    """Fasst alte doppelte Handle-Einträge für die Anzeige zusammen."""
     player_ids = {}
     players_map = {}
     display_players = []
@@ -319,7 +421,7 @@ def get_scoreboard_player_groups(players_list):
         if player_id is None:
             continue
 
-        autodarts_name = (player.get("autodarts_name") or "").strip().casefold()
+        autodarts_name = normalized_player_name(player.get("autodarts_name"))
         if autodarts_name:
             display_id = autodarts_groups.get(autodarts_name)
             if display_id is None:
@@ -807,6 +909,9 @@ def import_match_result_to_scores(result, games_len=None):
     scores = load_json(SCORES_FILE)
     bot_scores = load_json(BOT_SCORES_FILE)
     players_local = load_json(PLAYERS_FILE)
+    players_local, players_changed = consolidate_duplicate_players(
+        players_local, scores, bot_scores
+    )
 
     imported_count = 0
     bot_imported_count = 0
@@ -852,13 +957,10 @@ def import_match_result_to_scores(result, games_len=None):
             'total_games_in_import': games_len or 1,
         }
 
-        pid = None
-        ad = (entry.get('autodarts_name') or '').strip()
-        if ad:
-            for pl in players_local:
-                if pl.get('autodarts_name', '').strip().lower() == ad.lower():
-                    pid = pl['id']
-                    break
+        player = find_player_by_stat_names(
+            players_local, [p.get('name'), p.get('username')]
+        )
+        pid = player["id"] if player else None
         if not pid:
             pname = entry.get('player_name') or entry.get('autodarts_name')
             pid = get_player_id(pname, players_local)
@@ -920,10 +1022,11 @@ def import_match_result_to_scores(result, games_len=None):
             else:
                 imported_count += 1
 
-    save_json(PLAYERS_FILE, players_local)
-    if imported_count:
+    if players_changed or imported_count:
+        save_json(PLAYERS_FILE, players_local)
+    if players_changed or imported_count:
         save_json(SCORES_FILE, scores)
-    if bot_imported_count:
+    if players_changed or bot_imported_count:
         save_json(BOT_SCORES_FILE, bot_scores)
 
     return imported_count, bot_imported_count
@@ -1207,6 +1310,12 @@ def admin():
     players = load_json(PLAYERS_FILE)
     scores = load_json(SCORES_FILE)
     config = load_json(CONFIG_FILE)
+    bot_scores = load_json(BOT_SCORES_FILE)
+    players, players_consolidated = consolidate_duplicate_players(players, scores, bot_scores)
+    if players_consolidated:
+        save_json(PLAYERS_FILE, players)
+        save_json(SCORES_FILE, scores)
+        save_json(BOT_SCORES_FILE, bot_scores)
 
     if request.method == "POST":
         action = request.form.get("action")
@@ -1328,14 +1437,25 @@ def admin():
             except ValueError:
                 pass
 
-        elif action == "save_autodarts_name":
+        elif action == "save_player_identity":
             try:
-                ad_id = int(request.form.get("autodarts_player_id"))
+                player_id = int(request.form.get("player_id"))
                 ad_name = request.form.get("autodarts_name", "").strip()
+                display_name = request.form.get("display_name", "").strip()
                 for p in players:
-                    if p["id"] == ad_id:
+                    if p["id"] == player_id:
+                        aliases = list(p.get("stat_names") or [])
+                        aliases.extend(request.form.get("stat_names", "").splitlines())
+                        aliases.append(ad_name)
                         p["autodarts_name"] = ad_name
+                        if display_name:
+                            p["name"] = display_name
+                        p["stat_names"] = aliases
                         break
+                players, changed = consolidate_duplicate_players(players, scores, bot_scores)
+                if changed:
+                    save_json(SCORES_FILE, scores)
+                    save_json(BOT_SCORES_FILE, bot_scores)
                 save_json(PLAYERS_FILE, players)
             except ValueError:
                 pass
@@ -1401,11 +1521,19 @@ def admin():
                     ).strip()[:14] or config.get("cec_device_name", "Dart Scoreboard")),
                     "cec_standby_time": _form_time("cec_standby_time", config.get("cec_standby_time", "22:00")),
                     "cec_wake_time": _form_time("cec_wake_time", config.get("cec_wake_time", "08:00")),
+                    "screensaver_idle_time": min(
+                        86400,
+                        max(1, _form_int(
+                            "screensaver_idle_time",
+                            config.get("screensaver_idle_time", 300),
+                        )),
+                    ),
                 }
                 current_config = load_json(CONFIG_FILE)
                 current_config.update(new_config)
                 save_json(CONFIG_FILE, current_config)
                 write_cec_config(current_config)
+                write_screensaver_config(current_config)
                 if "cec_device_name" in request.form:
                     try:
                         subprocess.run(
@@ -1481,11 +1609,7 @@ def admin_import():
         duplicates = 0
         now = datetime.now().strftime("%d.%m.%Y %H:%M")
 
-        autodarts_map = {
-            p.get("autodarts_name", "").strip().lower(): p["id"]
-            for p in players
-            if p.get("autodarts_name", "").strip()
-        }
+        players, players_consolidated = consolidate_duplicate_players(players, scores)
 
         for entry in payload:
             pid = entry.get("player_id")
@@ -1496,7 +1620,8 @@ def admin_import():
                     pid = None
             if not pid:
                 ad_name = (entry.get("autodarts_name") or entry.get("player_name") or "").strip()
-                pid = autodarts_map.get(ad_name.lower())
+                player = find_player_by_stat_names(players, [ad_name])
+                pid = player["id"] if player else None
                 if not pid:
                     name = (entry.get("player_name") or ad_name or "").strip()
                     if not name:
@@ -1573,7 +1698,8 @@ def admin_import():
             scores.append(new_score)
             imported += 1
 
-        save_json(SCORES_FILE, scores)
+        if players_consolidated or imported:
+            save_json(SCORES_FILE, scores)
         save_json(PLAYERS_FILE, players)
         return {"ok": True, "imported": imported, "duplicates": duplicates}
 
@@ -2064,6 +2190,7 @@ def admin_install_screensaver():
 
         os.makedirs(bin_dir, exist_ok=True)
         os.makedirs(autostart_dir, exist_ok=True)
+        write_screensaver_config(load_json(CONFIG_FILE))
 
         shutil.copyfile(script_src, script_dst)
         file_stat = os.stat(script_dst)
