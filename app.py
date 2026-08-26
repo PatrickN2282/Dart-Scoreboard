@@ -727,11 +727,12 @@ def import_match_result_to_scores(result, games_len=None):
     # Match -> eindeutiges Level. Enthält ein Match ausnahmsweise BOTs mit
     # unterschiedlichen Levels, wird das nicht stillschweigend verworfen,
     # sondern als kombinierter Wert (z.B. "3+5") abgelegt.
-    bot_level = (
-        distinct_bot_levels[0] if len(distinct_bot_levels) == 1
-        else '+'.join(str(level) for level in distinct_bot_levels)
-        if distinct_bot_levels else None
-    )
+    if len(distinct_bot_levels) == 1:
+        bot_level = distinct_bot_levels[0]
+    elif distinct_bot_levels:
+        bot_level = '+'.join(str(level) for level in distinct_bot_levels)
+    else:
+        bot_level = None
 
     scores = load_json(SCORES_FILE)
     bot_scores = load_json(BOT_SCORES_FILE)
