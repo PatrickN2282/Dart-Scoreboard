@@ -47,7 +47,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-Das Installationsskript installiert die Python- und optionalen Addon-Abhängigkeiten, erzeugt eine virtuelle Umgebung und richtet `dart-scoreboard.service` als systemd-User-Service ein. Danach ist das Board unter `http://<raspberry-pi-ip>:5000` erreichbar.
+Das Installationsskript kopiert die Anwendung nach `/opt/Dart-Scoreboard`, installiert die Python- und optionalen Addon-Abhängigkeiten, erzeugt dort eine virtuelle Umgebung und richtet `dart-scoreboard.service` als systemd-User-Service ein. Vorhandene Nutzdaten unter `data/` und hochgeladene Dateien unter `static/uploads/` bleiben bei einer erneuten Installation erhalten. Danach ist das Board unter `http://<raspberry-pi-ip>:5000` erreichbar.
 
 Für Systeme, auf denen die erforderlichen APT-Pakete bereits installiert sind, kann `./install.sh --skip-system-packages` verwendet werden. Der Dienststatus ist mit `systemctl --user status dart-scoreboard.service` abrufbar.
 

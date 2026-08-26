@@ -2043,7 +2043,7 @@ def admin_import_match():
 @app.route('/admin/install_screensaver', methods=['POST'])
 def admin_install_screensaver():
     """Installiert den Bildschirmschoner aus /Addons/Raspberry-Screensaver im
-    Home-Verzeichnis des aktuellen Nutzers (Skript + Autostart-Eintrag)."""
+    lokalen Binärverzeichnis des aktuellen Nutzers (Skript + Autostart-Eintrag)."""
     script_src = os.path.join(SCREENSAVER_ADDON_DIR, 'dart_screensaver.sh')
     desktop_src = os.path.join(SCREENSAVER_ADDON_DIR, 'dart-screensaver.desktop')
 
@@ -2057,10 +2057,12 @@ def admin_install_screensaver():
 
     try:
         home_dir = os.path.expanduser('~')
-        script_dst = os.path.join(home_dir, 'screensaver.sh')
+        bin_dir = os.path.join(home_dir, '.local', 'bin')
+        script_dst = os.path.join(bin_dir, 'dart-screensaver')
         autostart_dir = os.path.join(home_dir, '.config', 'autostart')
         desktop_dst = os.path.join(autostart_dir, 'dart-screensaver.desktop')
 
+        os.makedirs(bin_dir, exist_ok=True)
         os.makedirs(autostart_dir, exist_ok=True)
 
         shutil.copyfile(script_src, script_dst)
@@ -2069,11 +2071,10 @@ def admin_install_screensaver():
 
         with open(desktop_src, 'r', encoding='utf-8') as f:
             desktop_content = f.read()
-        # Der mitgelieferte Exec-Pfad ist ein Platzhalter (/home/autodarts/...);
-        # auf das tatsächlich installierte Skript zeigen lassen.
         desktop_content = re.sub(
             r'^Exec=.*$', f'Exec={script_dst}', desktop_content, flags=re.MULTILINE
         )
+        desktop_content = re.sub(r'^Restart=.*\n?', '', desktop_content, flags=re.MULTILINE)
         with open(desktop_dst, 'w', encoding='utf-8') as f:
             f.write(desktop_content)
 
