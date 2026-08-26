@@ -266,16 +266,45 @@ def calculate_win_rate_score(wins: int, total: int) -> float:
     return win_rate * weight
 
 
+def get_scoreboard_player_groups(players_list):
+    """Fasst Spieler mit demselben Autodarts-Namen für die Anzeige zusammen."""
+    player_ids = {}
+    players_map = {}
+    display_players = []
+    autodarts_groups = {}
+
+    for player in players_list:
+        player_id = player.get("id")
+        if player_id is None:
+            continue
+
+        autodarts_name = (player.get("autodarts_name") or "").strip().casefold()
+        if autodarts_name:
+            display_id = autodarts_groups.get(autodarts_name)
+            if display_id is None:
+                display_id = player_id
+                autodarts_groups[autodarts_name] = display_id
+        else:
+            display_id = player_id
+
+        player_ids[player_id] = display_id
+        if display_id not in players_map:
+            players_map[display_id] = player
+            display_players.append(player)
+
+    return player_ids, players_map, display_players
+
+
 def get_cumulative_stats():
     """Berechnet alle kumulativen Statistiken und gibt sie zurück"""
     scores = load_json(SCORES_FILE)
     players_list = load_json(PLAYERS_FILE)
-    players_map = {p["id"]: p for p in players_list}
+    player_ids, players_map, display_players = get_scoreboard_player_groups(players_list)
 
     cumulative = {}
     for s in scores:
-        pid = s.get("player_id")
-        if pid not in players_map:
+        pid = player_ids.get(s.get("player_id"))
+        if pid is None:
             continue
         if pid not in cumulative:
             cumulative[pid] = {
@@ -323,7 +352,7 @@ def get_cumulative_stats():
         if s.get("max180", 0) > 0 or s.get("s180", 0) > 0:
             cumulative[pid]["last180_date"] = s.get("date", "")
 
-    return cumulative, players_map, players_list
+    return cumulative, players_map, display_players, player_ids
 
 
 def get_bot_cumulative_stats():
@@ -931,7 +960,7 @@ def index():
     qr_url = f"http://{local_ip}:5000"
     qr_code = generate_qr_code(qr_url)
 
-    cumulative, players_map, players_list = get_cumulative_stats()
+    cumulative, players_map, players_list, player_ids = get_cumulative_stats()
 
     def player_name(pid):
         return players_map.get(pid, {}).get("name", "Unbekannt")
@@ -1029,8 +1058,8 @@ def index():
     # Höchstes Finish
     finish_best = {}
     for s in scores:
-        pid = s.get("player_id")
-        if pid not in players_map:
+        pid = player_ids.get(s.get("player_id"))
+        if pid is None:
             continue
         val = s.get("finish", 0)
         if val > 0 and val > finish_best.get(pid, {}).get("finish", 0):
@@ -1045,8 +1074,8 @@ def index():
     # Wenigste Darts 301
     darts301_best = {}
     for s in scores:
-        pid = s.get("player_id")
-        if pid not in players_map:
+        pid = player_ids.get(s.get("player_id"))
+        if pid is None:
             continue
         val = s.get("darts301", 0)
         if val > 0 and val < darts301_best.get(pid, {}).get("darts301", 9999):
@@ -1087,7 +1116,7 @@ def index():
 @app.route("/api/h2h")
 def api_h2h():
     """Liefert frische zufällige H2H-Daten für die Rotation"""
-    cumulative, players_map, players_list = get_cumulative_stats()
+    cumulative, players_map, players_list, _ = get_cumulative_stats()
     h2h_data = generate_head_to_head_data(cumulative, players_map, players_list)
     return jsonify(h2h_data)
 
@@ -1095,7 +1124,7 @@ def api_h2h():
 @app.route("/api/player_card")
 def api_player_card():
     """Return a random player's detailed stats for rotation player card."""
-    cumulative, players_map, players_list = get_cumulative_stats()
+    cumulative, players_map, players_list, _ = get_cumulative_stats()
     import random
     # choose only players with some games
     candidates = [p for p in players_list if cumulative.get(p['id'], {}).get('games_played', 0) > 0]
