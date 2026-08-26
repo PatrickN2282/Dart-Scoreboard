@@ -2,7 +2,7 @@
 
 Ein schlankes, lokales Dart-Scoreboard für den Raspberry Pi – gebaut für Büros, Vereinsräume oder jede andere Location mit einer Dartscheibe und ein bisschen Ehrgeiz.
 
-![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python) ![Flask](https://img.shields.io/badge/Flask-3.x-black?logo=flask) ![License](https://img.shields.io/badge/License-MIT-green)
+![Version](https://img.shields.io/badge/version-1.0.0-blue) ![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python) ![Flask](https://img.shields.io/badge/Flask-3.x-black?logo=flask) ![License](https://img.shields.io/badge/License-MIT-green)
 
 ---
 
@@ -17,6 +17,7 @@ Ein schlankes, lokales Dart-Scoreboard für den Raspberry Pi – gebaut für Bü
 - **QR-Code** – zeigt die lokale IP zur schnellen Verbindung vom Handy
 - **Admin-Panel** – Score eintragen, Spieler verwalten, Bilder hochladen, Design konfigurieren
 - **Konfigurierbar** – Schriftarten, Schriftgrößen und Limits direkt im Browser einstellbar
+- **Raspberry-Pi-Addons** – Bildschirmschoner sowie HDMI-CEC-Manager im Adminbereich installierbar
 - **Kein Datenbank-Overhead** – alle Daten liegen in schlanken JSON-Dateien
 
 ---
@@ -31,60 +32,26 @@ Ein schlankes, lokales Dart-Scoreboard für den Raspberry Pi – gebaut für Bü
 
 ## 🛠️ Installation
 
-### Voraussetzungen
+### Raspberry Pi: ZIP auf USB installieren
 
-- Raspberry Pi (oder beliebiger Linux-Rechner)
-- Python 3.9+
-- pip
-
-### Setup
+Auf dem Entwicklungsrechner wird ein sauberes Archiv ohne lokale Daten, Caches oder Zugangsdaten erstellt:
 
 ```bash
-# Repository klonen
-git clone https://github.com/dein-name/dart-highscore.git
-cd dart-highscore
-
-# Abhängigkeiten installieren
-pip install flask qrcode[pil]
-
-# Dateistruktur anlegen
-mkdir -p data static/uploads
-
-# Platzhalter-Bild für Spieler ohne Foto ablegen
-# (dummy.png in static/uploads/ kopieren)
-
-# Server starten
-python app.py
+./scripts/create-release-zip.sh
 ```
 
-Die App ist dann unter `http://<raspberry-pi-ip>:5000` erreichbar.
-
-### Als Dienst einrichten (autostart)
+Kopiere `dist/dart-scoreboard-<version>.zip` auf den USB-Stick, entpacke es auf dem Raspberry Pi und führe im entpackten Ordner aus:
 
 ```bash
-# Systemd-Service anlegen
-sudo nano /etc/systemd/system/dartboard.service
+chmod +x install.sh
+./install.sh
 ```
 
-```ini
-[Unit]
-Description=Dart Highscore Board
-After=network.target
+Das Installationsskript installiert die Python- und optionalen Addon-Abhängigkeiten, erzeugt eine virtuelle Umgebung und richtet `dart-scoreboard.service` als systemd-User-Service ein. Danach ist das Board unter `http://<raspberry-pi-ip>:5000` erreichbar.
 
-[Service]
-User=pi
-WorkingDirectory=/home/pi/dart-highscore
-ExecStart=/usr/bin/python3 app.py
-Restart=always
+Für Systeme, auf denen die erforderlichen APT-Pakete bereits installiert sind, kann `./install.sh --skip-system-packages` verwendet werden. Der Dienststatus ist mit `systemctl --user status dart-scoreboard.service` abrufbar.
 
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl enable dartboard
-sudo systemctl start dartboard
-```
+> Das Script benötigt für die APT-Installation und das dauerhafte Starten nach dem Login `sudo`.
 
 ---
 
@@ -93,6 +60,12 @@ sudo systemctl start dartboard
 ```
 dart-highscore/
 ├── app.py                  # Flask-Backend, Routen & Aggregationslogik
+├── VERSION                 # Anwendungsversion nach SemVer
+├── install.sh              # Raspberry-Pi-Installationsroutine
+├── requirements.txt        # Python-Abhängigkeiten
+├── Addons/
+│   ├── Raspberry-CEC/      # HDMI-CEC-Manager
+│   └── Raspberry-Screensaver/
 ├── data/
 │   ├── players.json        # Spielerdaten (ID, Name, Bild)
 │   ├── scores.json         # Alle Score-Einträge
@@ -120,6 +93,13 @@ Alle Design-Einstellungen sind im Admin-Panel unter **Design & Limits** erreichb
 | `rotation_h2_size` | Überschriftgröße Rotation | 3.5em |
 | `static_td_size` | Tabellenschrift statisch | 2.0em |
 | `font_family` | Schriftart | Segoe UI |
+
+### Addons
+
+Im Admin-Panel unter **Addons** werden die optionalen Raspberry-Pi-Erweiterungen eingerichtet:
+
+- **CEC-Manager:** Den Gerätenamen (maximal 14 Zeichen), die Standby-Zeit und die Aufweckzeit speichern und anschließend **CEC-Manager installieren**. Innerhalb des Zeitfensters von Aufwecken bis Standby hält der Manager den TV per CEC aktiv; außerhalb schickt er ihn einmalig in Standby. Gleiche Aufweck- und Standby-Zeiten bedeuten Dauerbetrieb. Voraussetzung ist ein CEC-fähiger, per HDMI angeschlossener TV.
+- **Bildschirmschoner:** **Screensaver installieren** kopiert das Kiosk-/Autostart-Skript für Wayland/Sway. Er wird erst nach der Installation des Grundsystems eingerichtet.
 
 ---
 
@@ -168,16 +148,15 @@ Ergebnisse aus Matches gegen einen BOT-Gegner mit dem Namen `BOT LEVEL 1` bis `B
 
 ---
 
-## 🚀 Als Bildschirmschoner einrichten
+## 🔖 Versionierung
 
-Um das Scoreboard automatisch auf einem angeschlossenen Monitor zu starten, kann ein einfaches Skript genutzt werden das den Browser im Kiosk-Modus öffnet:
+Die Anwendung verwendet [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 
-```bash
-# Beispiel für Chromium auf Raspberry Pi OS
-chromium-browser --kiosk --noerrdialogs --disable-infobars http://localhost:5000
-```
+- **MAJOR:** inkompatible Änderungen
+- **MINOR:** rückwärtskompatible Funktionen
+- **PATCH:** rückwärtskompatible Fehlerkorrekturen
 
-Alternativ enthält `/Addons/Raspberry-Screensaver` ein fertiges Skript (inkl. Autostart-Eintrag) für Wayland/Sway-Umgebungen. Über den Button **🖥️ Screensaver installieren** im Admin-Panel (Tab „Addons“) wird es automatisch ins Home-Verzeichnis kopiert und eingerichtet.
+Die aktuelle Version steht in [`VERSION`](VERSION). Für ein Release wird sie dort erhöht und anschließend mit `scripts/create-release-zip.sh` ein neues ZIP erstellt.
 
 ---
 

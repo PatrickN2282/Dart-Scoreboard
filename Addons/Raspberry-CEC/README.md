@@ -1,27 +1,33 @@
-# HDMI Audio & CEC Manager – Installation
+# HDMI Audio & CEC Manager
 
-## Voraussetzungen
+Der Manager hält einen CEC-fähigen Fernseher im eingestellten Zeitfenster aktiv, schickt ihn außerhalb des Fensters gezielt in Standby und stellt HDMI-Audio wieder her.
+
+## Einrichtung über den Adminbereich
+
+1. Die Grundanwendung mit `./install.sh` installieren. Dabei wird `cec-utils` mit installiert.
+2. Im Adminbereich **Addons → CEC-Manager** einen Namen sowie Standby- und Aufweckzeit eintragen und den Zeitplan aktivieren.
+3. **CEC-Manager installieren** auswählen.
+
+Die Konfiguration wird sicher in `~/.config/dart-scoreboard/cec.conf` gespeichert. Der Dienst prüft sie in jedem Zyklus; geänderte Zeiten werden daher ohne Neuinstallation übernommen.
+
+## Zeitfenster
+
+- Bei **Aufwecken 08:00** und **Standby 22:00** bleibt der Fernseher zwischen 08:00 und 22:00 aktiv.
+- Zeitfenster über Mitternacht werden unterstützt, beispielsweise Aufwecken 18:00 und Standby 06:00.
+- Gleiche Zeiten bedeuten Dauerbetrieb.
+- Ein deaktivierter Zeitplan sendet keine Keep-Alive-Signale und keine Schaltbefehle.
+
+## Manuelle Installation
+
+Falls der Adminbereich nicht erreichbar ist:
 
 ```bash
-sudo apt install cec-utils
-```
-
-## Installation
-
-```bash
-# 1. Script installieren
-mkdir -p ~/.local/bin ~/.local/log
+mkdir -p ~/.local/bin ~/.config/systemd/user
 cp hdmi-audio-cec.sh ~/.local/bin/hdmi-audio-cec.sh
-chmod +x ~/.local/bin/hdmi-audio-cec.sh
-
-# 2. Service installieren
-mkdir -p ~/.config/systemd/user/
 cp hdmi-audio-cec.service ~/.config/systemd/user/
-
-# 3. Service aktivieren
+chmod +x ~/.local/bin/hdmi-audio-cec.sh
 systemctl --user daemon-reload
-systemctl --user enable hdmi-audio-cec.service
-systemctl --user start hdmi-audio-cec.service
+systemctl --user enable --now hdmi-audio-cec.service
 ```
 
 ## Überprüfung
@@ -63,5 +69,5 @@ echo "scan" | cec-client -s -d 4
 **Service startet nicht:**
 ```bash
 # Linger aktivieren (damit User-Services ohne Login laufen)
-loginctl enable-linger $USER
+sudo loginctl enable-linger "$USER"
 ```

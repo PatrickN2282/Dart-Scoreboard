@@ -2,10 +2,8 @@
 Description=HDMI Audio & CEC Manager (Autodarts Pi 5)
 Documentation=https://github.com/your-repo
 # Startet nach PipeWire und WirePlumber (User-Services)
-After=pipewire.service wireplumber.service graphical-session.target
+After=pipewire.service wireplumber.service
 Wants=pipewire.service wireplumber.service
-# Nur wenn graphische Session existiert
-PartOf=graphical-session.target
 
 [Service]
 Type=simple
@@ -23,4 +21,4 @@ Environment=XDG_RUNTIME_DIR=/run/user/%U
 Environment=PULSE_RUNTIME_PATH=/run/user/%U/pulse
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=default.target

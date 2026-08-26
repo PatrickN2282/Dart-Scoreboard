@@ -1,1 +1,4 @@
-playwright
+Flask>=3.0,<4
+playwright>=1.40,<2
+qrcode[pil]>=7.4,<9
+requests>=2.31,<3

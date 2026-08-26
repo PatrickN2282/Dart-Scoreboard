@@ -3,16 +3,14 @@
 # HDMI Audio & CEC Manager für Raspberry Pi 5 / PiOS
 # Läuft als User-Service (nicht root!)
 # Ziele:
-#   1. TV aus Standby wecken via CEC
-#   2. CEC-Gerätename setzen ("Pi 5 - Autodarts")
-#   3. Audio-Ausgang auf HDMI setzen
-#   4. TV dauerhaft wach halten (CEC Keep-Alive)
+#   1. TV im konfigurierten Zeitfenster via CEC wecken und wach halten
+#   2. TV außerhalb des Zeitfensters gezielt in Standby schicken
+#   3. CEC-Gerätename setzen und HDMI-Audio wiederherstellen
 # ============================================================
 
-# --- Konfiguration ---
-readonly CEC_NAME="Pi 5 - Autodarts"
 readonly LOGFILE="${HOME}/.local/log/hdmi-audio-cec.log"
 readonly LOCKFILE="/tmp/hdmi-audio-cec-${UID}.lock"
+readonly CEC_CONFIG_FILE="${XDG_CONFIG_HOME:-${HOME}/.config}/dart-scoreboard/cec.conf"
 readonly VOLUME=0.80          # 80% Lautstärke
 readonly KEEPALIVE_SEC=50     # Keep-Alive alle 50s (TV-Timeout meist 60s)
 readonly MAX_BOOT_WAIT=180    # Max. Wartezeit auf TV beim Boot (Sekunden)
@@ -28,6 +26,19 @@ log() {
     local msg="$(date '+%Y-%m-%d %H:%M:%S'): $1"
     echo "$msg" >> "$LOGFILE"
     echo "$msg" >&2
+}
+
+load_runtime_config() {
+    CEC_ENABLED=1
+    CEC_NAME="Dart Scoreboard"
+    CEC_STANDBY_TIME="22:00"
+    CEC_WAKE_TIME="08:00"
+
+    if [ -r "$CEC_CONFIG_FILE" ]; then
+        # Die Datei wird ausschließlich vom lokalen Adminbereich mit sicheren Werten geschrieben.
+        # shellcheck disable=SC1090
+        . "$CEC_CONFIG_FILE"
+    fi
 }
 
 # --- PipeWire/PulseAudio Umgebung sicherstellen ---
@@ -106,6 +117,15 @@ cec_wake_tv() {
         "as" \
         >/dev/null || true
     log "CEC: Wake-Kommando gesendet"
+}
+
+cec_standby_tv() {
+    if ! cec_available; then
+        return 1
+    fi
+
+    log "CEC: Schicke TV in Standby..."
+    cec_send 8 "standby 0" >/dev/null || true
 }
 
 # Keep-Alive: Verhindert TV-Standby durch CEC
@@ -252,79 +272,102 @@ setup_audio_with_retry() {
 }
 
 # ============================================================
+# Zeitplan
+# ============================================================
+
+time_to_minutes() {
+    local value="$1"
+    [[ "$value" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]] || return 1
+    local hours="${value%%:*}"
+    local minutes="${value##*:}"
+    echo $((10#$hours * 60 + 10#$minutes))
+}
+
+schedule_is_active() {
+    local standby wake now
+    standby=$(time_to_minutes "$CEC_STANDBY_TIME") || return 1
+    wake=$(time_to_minutes "$CEC_WAKE_TIME") || return 1
+    now=$((10#$(date +%H) * 60 + 10#$(date +%M)))
+
+    # Gleiche Zeiten bedeuten absichtlich einen durchgehend aktiven TV.
+    if [ "$wake" -eq "$standby" ]; then
+        return 0
+    elif [ "$wake" -lt "$standby" ]; then
+        [ "$now" -ge "$wake" ] && [ "$now" -lt "$standby" ]
+    else
+        [ "$now" -ge "$wake" ] || [ "$now" -lt "$standby" ]
+    fi
+}
+
+desired_mode() {
+    if [ "$CEC_ENABLED" != "1" ]; then
+        echo "disabled"
+    elif schedule_is_active; then
+        echo "active"
+    else
+        echo "standby"
+    fi
+}
+
+activate_tv() {
+    log "CEC: Aktives Zeitfenster (${CEC_WAKE_TIME}–${CEC_STANDBY_TIME}), aktiviere TV"
+    cec_wake_tv || true
+    cec_set_name || true
+    wait_for_pipewire || return 1
+    wait_for_hdmi_sink || true
+    setup_audio_with_retry || true
+}
+
+# ============================================================
 # Hauptprogramm
 # ============================================================
 main() {
+    load_runtime_config
     log "=============================="
     log "START HDMI-Audio-CEC Manager"
     log "User: $(whoami), PID: $$"
-    log "CEC-Name: $CEC_NAME"
+    log "Konfiguration: Name '$CEC_NAME', Standby ${CEC_STANDBY_TIME}, Wecken ${CEC_WAKE_TIME}"
     log "=============================="
 
-    # 1. Auf PipeWire warten (systemd --user Services brauchen Zeit beim Boot)
-    wait_for_pipewire || {
-        log "KRITISCH: PipeWire nicht verfügbar, beende"
-        exit 1
-    }
-
-    # 2. Auf HDMI-Kabel warten (kurz, meist sofort verbunden)
-    log "Prüfe HDMI-Kabel..."
-    local cable_wait=0
-    while ! hdmi_cable_connected && [ $cable_wait -lt 30 ]; do
-        sleep 2
-        cable_wait=$((cable_wait + 2))
-    done
-    if hdmi_cable_connected; then
-        log "HDMI-Kabel verbunden"
-    else
-        log "WARNUNG: HDMI-Kabel nicht erkannt (fahre trotzdem fort)"
-    fi
-
-    # 3. CEC: TV wecken + Name setzen
-    cec_wake_tv
-    cec_set_name
-
-    # 4. Warte auf TV (EDID) → HDMI-Sink erscheint in wpctl
-    if wait_for_hdmi_sink; then
-        # 5. Audio auf HDMI setzen
-        setup_audio_with_retry
-    else
-        log "Fallback: Versuche Audio-Setup ohne bestätigten Sink..."
-        setup_audio_with_retry || true
-    fi
-
-    # 6. Nochmaliger Check nach 20s (manche TVs brauchen extra Zeit)
-    log "Warte 20s für finalen Check..."
-    sleep 20
-
-    if ! hdmi_sink_is_default; then
-        log "Finaler Check: HDMI nicht default, letzter Versuch..."
-        set_audio_hdmi || true
-    else
-        log "Finaler Check: Audio OK"
-    fi
-
-    # 7. Keep-Alive-Loop
-    log "Starte Keep-Alive-Loop (alle ${KEEPALIVE_SEC}s)"
+    log "Starte Zeitplan- und Keep-Alive-Loop (alle ${KEEPALIVE_SEC}s)"
+    local last_mode=""
     local audio_check_counter=0
     local audio_check_interval=6  # Alle 6 × KEEPALIVE_SEC = ~5 Min Audio prüfen
 
     while true; do
-        sleep "$KEEPALIVE_SEC"
+        load_runtime_config
+        local mode
+        mode=$(desired_mode)
 
-        # CEC Keep-Alive (verhindert TV-Standby)
-        cec_keepalive
-
-        # Periodisch Audio prüfen und ggf. reparieren
-        audio_check_counter=$((audio_check_counter + 1))
-        if [ $audio_check_counter -ge $audio_check_interval ]; then
+        if [ "$mode" != "$last_mode" ]; then
+            case "$mode" in
+                active)
+                    activate_tv || log "WARNUNG: Aktivierung unvollständig; versuche es im nächsten Zyklus erneut."
+                    ;;
+                standby)
+                    log "CEC: Standby-Zeitfenster (${CEC_STANDBY_TIME}–${CEC_WAKE_TIME})"
+                    cec_standby_tv || true
+                    ;;
+                disabled)
+                    log "CEC: Zeitplan deaktiviert; sende keine Keep-Alive-Signale."
+                    ;;
+            esac
+            last_mode="$mode"
             audio_check_counter=0
-            setup_env
-            if ! hdmi_sink_is_default; then
-                log "Keep-Alive: HDMI nicht default, repariere..."
-                set_audio_hdmi || true
+        elif [ "$mode" = "active" ]; then
+            cec_keepalive
+            audio_check_counter=$((audio_check_counter + 1))
+            if [ "$audio_check_counter" -ge "$audio_check_interval" ]; then
+                audio_check_counter=0
+                setup_env
+                if ! hdmi_sink_is_default; then
+                    log "Keep-Alive: HDMI nicht default, repariere..."
+                    set_audio_hdmi || true
+                fi
             fi
         fi
+
+        sleep "$KEEPALIVE_SEC"
     done
 }
 
