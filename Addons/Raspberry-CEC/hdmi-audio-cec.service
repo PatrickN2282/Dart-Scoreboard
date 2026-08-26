@@ -1,0 +1,26 @@
+[Unit]
+Description=HDMI Audio & CEC Manager (Autodarts Pi 5)
+Documentation=https://github.com/your-repo
+# Startet nach PipeWire und WirePlumber (User-Services)
+After=pipewire.service wireplumber.service graphical-session.target
+Wants=pipewire.service wireplumber.service
+# Nur wenn graphische Session existiert
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/hdmi-audio-cec.sh
+Restart=on-failure
+RestartSec=10s
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hdmi-audio-cec
+
+# Umgebung für PipeWire/Wayland
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=PULSE_RUNTIME_PATH=/run/user/%U/pulse
+
+[Install]
+WantedBy=graphical-session.target
