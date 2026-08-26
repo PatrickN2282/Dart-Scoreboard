@@ -213,12 +213,13 @@ def get_player_by_id(player_id):
 
 
 # --- BOT-Erkennung ---
-# Autodarts-Bot-Gegner (z.B. über das verbreitete "autodartsbot"-Addon) werden über
-# den Spielernamen ("autodartsbotX"/"Bot ...") oder über das API-Feld "cpuPPR"
-# (nur bei Bots gesetzt) erkannt. Bekannte Bot-Level und ihre durchschnittlichen
-# Points-per-Round (PPR) laut Bot-Konfiguration, genutzt um aus einem cpuPPR-Wert
-# das wahrscheinlichste Level abzuleiten, falls der Name kein Level verrät.
-BOT_NAME_RE = re.compile(r'^autodartsbot(\d*)$')
+# Autodarts-Bot-Gegner werden über den Spielernamen ("BOT Level X",
+# "autodartsbotX") oder über das API-Feld "cpuPPR" (nur bei Bots gesetzt)
+# erkannt. Bekannte Bot-Level und ihre durchschnittlichen Points-per-Round
+# (PPR) laut Bot-Konfiguration, genutzt um aus einem cpuPPR-Wert das
+# wahrscheinlichste Level abzuleiten, falls der Name kein Level verrät.
+BOT_NAME_RE = re.compile(r'^autodarts[\s_-]*bot(?:\s+level)?\s*(\d+)?$', re.IGNORECASE)
+BOT_LEVEL_NAME_RE = re.compile(r'^bot\s+level\s*(\d+)?$', re.IGNORECASE)
 BOT_PPR_LEVELS = {95: 1, 78: 2, 68: 3, 56: 4, 49: 5, 36: 6, 30: 7}
 
 
@@ -229,18 +230,17 @@ def detect_bot_level(name, cpu_ppr=None):
     zurück, wenn es sich um einen BOT-Spieler handelt, sonst None (= echter
     menschlicher Spieler)."""
     name = (name or '').strip()
-    # Whitespace/Trennzeichen entfernen (linearer, nicht rückverfolgender
-    # Ersatz) statt sie über mehrere sich überlappende Regex-Quantoren zu
-    # matchen, um ein ReDoS über lange Ketten wiederholter Trennzeichen in
-    # vom Client gelieferten Spielernamen auszuschließen.
-    normalized = re.sub(r'[\s_-]+', '', name).lower()[:64]
+    # Trennzeichen normalisieren und vor dem Match auf eine kleine Länge begrenzen,
+    # damit die Bot-Erkennung nicht auf unbounded clientseitige Namen angewiesen ist.
+    normalized = re.sub(r'[\s_-]+', ' ', name).strip()[:64]
     m = BOT_NAME_RE.match(normalized)
     if m:
         lvl = m.group(1)
         return int(lvl) if lvl else 0
-    if name.lower().startswith('bot'):
-        digits = re.findall(r'\d+', name)
-        return int(digits[0]) if digits else 0
+    m = BOT_LEVEL_NAME_RE.match(normalized)
+    if m:
+        lvl = m.group(1)
+        return int(lvl) if lvl else 0
     if cpu_ppr is not None:
         try:
             cpu_ppr_val = float(cpu_ppr)
