@@ -32,7 +32,15 @@ DEFAULT_CONFIG = {
     "rotation_h2_size": "3.5em",
     "static_td_size": "2.0em",
     "rotation_td_size": "1.5em",
-    "font_family": "'Segoe UI', Roboto, sans-serif"
+    "font_family": "'Segoe UI', Roboto, sans-serif",
+    # Wartezeiten (in Sekunden) für die einzelnen Ansichten der Rotation
+    "rotation_duration_grid1": 300,
+    "rotation_duration_grid2": 60,
+    "rotation_duration_winrate": 60,
+    "rotation_duration_player": 60,
+    "rotation_duration_h2h": 60,
+    # Minuten bis die Seite automatisch neu geladen wird
+    "rotation_refresh_minutes": 10,
 }
 
 # Datei für bereits importierte Match-IDs
@@ -527,6 +535,35 @@ def extract_stats_from_result(res):
                         if prev is None or darts < prev:
                             st['min_darts_to_checkout'] = darts
 
+    # Fewest darts thrown for a finish (checkout): the Autodarts "stats" endpoint
+    # provides a 'legStats' list with one entry per leg, each holding per-player
+    # stats (including 'dartsThrown') plus the index of the winning player. The leg
+    # winner's 'dartsThrown' is the number of darts they needed to check out that
+    # leg, so track the smallest value seen per player. This is independent of
+    # whether match-level aggregated stats are available and therefore always runs.
+    for leg in (res.get('legStats') or []):
+        leg_stats_list = leg.get('stats') or []
+        winner_idx = leg.get('winner')
+        if not isinstance(winner_idx, int) or not (0 <= winner_idx < len(leg_stats_list)):
+            continue
+        winner_stat = leg_stats_list[winner_idx]
+        pid = winner_stat.get('playerId')
+        if not pid:
+            continue
+        checkout_pts = winner_stat.get('checkoutPoints')
+        if not checkout_pts:
+            continue
+        try:
+            darts = int(winner_stat.get('dartsThrown') or 0)
+        except Exception:
+            darts = 0
+        if not darts:
+            continue
+        st = stats.setdefault(pid, {})
+        prev = st.get('min_darts_to_checkout')
+        if prev is None or darts < prev:
+            st['min_darts_to_checkout'] = darts
+
     # finalize: compute averages and ratios. Prefer an average already supplied directly
     # by the API (set above from match-level stats); only derive it from points_sum/
     # darts_thrown as a fallback, since that recomputation loses precision due to the
@@ -956,20 +993,50 @@ def admin():
 
         elif action == "save_config":
             try:
+                # Mehrere getrennte Formulare im Admin-Bereich senden alle "save_config",
+                # aber jeweils nur ihre eigenen Felder. Fehlende Felder dürfen daher nicht
+                # auf einen Festwert zurückfallen, sondern müssen den zuvor gespeicherten
+                # Wert behalten - sonst überschreibt z.B. das Speichern der Wartezeiten
+                # die Autodarts-Zugangsdaten (oder umgekehrt).
+                def _form_int(name, fallback):
+                    raw = request.form.get(name)
+                    if raw is None or raw == "":
+                        return fallback
+                    return int(raw)
+
+                def _form_str(name, fallback):
+                    raw = request.form.get(name)
+                    return raw if raw not in (None, "") else fallback
+
+                # Der Autodarts-Zeitplan hat eine eigene Checkbox; nur übernehmen, wenn
+                # das Autodarts-Formular tatsächlich abgeschickt wurde (erkennbar am
+                # Intervall-Feld, das nur dort vorkommt), sonst bisherigen Wert behalten.
+                if "autodarts_interval_minutes" in request.form:
+                    autodarts_enabled = request.form.get("autodarts_enabled") == 'on'
+                else:
+                    autodarts_enabled = config.get("autodarts_enabled", False)
+
                 new_config = {
-                    "static_limit": int(request.form.get("static_limit") or 5),
-                    "rotation_limit": int(request.form.get("rotation_limit") or 10),
-                    "static_h2_size": request.form.get("static_h2_size") or "2.5em",
-                    "rotation_h2_size": request.form.get("rotation_h2_size") or "3.5em",
-                    "static_td_size": request.form.get("static_td_size") or "2.0em",
-                    "rotation_td_size": request.form.get("rotation_td_size") or "1.5em",
-                    "font_family": request.form.get("font_family") or "'Segoe UI', Roboto, sans-serif",
+                    "static_limit": _form_int("static_limit", config.get("static_limit", 5)),
+                    "rotation_limit": _form_int("rotation_limit", config.get("rotation_limit", 10)),
+                    "static_h2_size": _form_str("static_h2_size", config.get("static_h2_size", "2.5em")),
+                    "rotation_h2_size": _form_str("rotation_h2_size", config.get("rotation_h2_size", "3.5em")),
+                    "static_td_size": _form_str("static_td_size", config.get("static_td_size", "2.0em")),
+                    "rotation_td_size": _form_str("rotation_td_size", config.get("rotation_td_size", "1.5em")),
+                    "font_family": _form_str("font_family", config.get("font_family", "'Segoe UI', Roboto, sans-serif")),
+                    # Wartezeiten (Sekunden) der einzelnen Rotations-Ansichten
+                    "rotation_duration_grid1": _form_int("rotation_duration_grid1", config.get("rotation_duration_grid1", 300)),
+                    "rotation_duration_grid2": _form_int("rotation_duration_grid2", config.get("rotation_duration_grid2", 60)),
+                    "rotation_duration_winrate": _form_int("rotation_duration_winrate", config.get("rotation_duration_winrate", 60)),
+                    "rotation_duration_player": _form_int("rotation_duration_player", config.get("rotation_duration_player", 60)),
+                    "rotation_duration_h2h": _form_int("rotation_duration_h2h", config.get("rotation_duration_h2h", 60)),
+                    "rotation_refresh_minutes": _form_int("rotation_refresh_minutes", config.get("rotation_refresh_minutes", 10)),
                     # Autodarts credentials & scheduling
-                    "autodarts_email": request.form.get("autodarts_email") or "",
-                    "autodarts_password": request.form.get("autodarts_password") or "",
-                    "autodarts_enabled": True if request.form.get("autodarts_enabled") == 'on' else False,
-                    "autodarts_interval_minutes": int(request.form.get("autodarts_interval_minutes") or 60),
-                    "autodarts_user_data_dir": request.form.get("autodarts_user_data_dir") or "",
+                    "autodarts_email": _form_str("autodarts_email", config.get("autodarts_email", "")),
+                    "autodarts_password": _form_str("autodarts_password", config.get("autodarts_password", "")),
+                    "autodarts_enabled": autodarts_enabled,
+                    "autodarts_interval_minutes": _form_int("autodarts_interval_minutes", config.get("autodarts_interval_minutes", 60)),
+                    "autodarts_user_data_dir": _form_str("autodarts_user_data_dir", config.get("autodarts_user_data_dir", "")),
                 }
                 current_config = load_json(CONFIG_FILE)
                 current_config.update(new_config)
@@ -1391,7 +1458,7 @@ def autodarts_collect_and_import(max_pages=2):
                     'legs': int(st.get('legs', 0) or 0),
                     'finish': int(st.get('bestCheckout', 0) or 0),
                     'max180': int(st.get('max180', 0) or 0),
-                    'darts301': 0,
+                    'darts301': int(st.get('min_darts_to_checkout') or 0),
                     's60': int(st.get('s60', 0) or 0),
                     's100': int(st.get('s100', 0) or 0),
                     's140': int(st.get('s140', 0) or 0),
@@ -1688,7 +1755,7 @@ def admin_import_match():
                 'legs': int(st.get('legs', 0) or 0),
                 'finish': int(st.get('bestCheckout', 0) or 0),
                 'max180': int(st.get('max180', 0) or 0),
-                'darts301': 0,
+                'darts301': int(st.get('min_darts_to_checkout') or 0),
                 's60': int(st.get('s60', 0) or 0),
                 's100': int(st.get('s100', 0) or 0),
                 's140': int(st.get('s140', 0) or 0),
