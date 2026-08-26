@@ -179,11 +179,18 @@
                         </div>
                     </form>
 
-                    <form method="POST" action="{{ url_for('admin_run_autodarts') }}" style="margin-top:12px;">
+                    <form id="autodarts-run-form" style="margin-top:12px;">
                         <label for="autodarts_pages">Max. Seiten</label>
                         <input type="number" id="autodarts_pages" name="autodarts_pages" value="2" min="1" style="width:84px; margin-left:8px;">
-                        <button type="submit" class="btn btn-ghost" style="margin-left:8px;">▶ Jetzt ausführen</button>
+                        <button type="submit" id="autodarts-run-btn" class="btn btn-ghost" style="margin-left:8px;">▶ Jetzt ausführen</button>
+                        <button type="button" id="autodarts-manual-login-btn" class="btn btn-ghost" style="margin-left:8px;"
+                                title="Öffnet einen sichtbaren Browser zur manuellen Anmeldung (nur auf Geräten mit Bildschirm, z.B. beim lokalen Debuggen). Erfordert einen gespeicherten Chromium Profile-Ordner.">
+                            🔑 Manuell anmelden
+                        </button>
                         <span style="margin-left:12px; color:var(--clr-text-muted);">Letzter Lauf: {{ config.autodarts_last_run or 'nie' }}</span>
+                        <div id="autodarts-status" style="margin-top:10px; font-size:0.88em;" data-state="{{ autodarts_status.state or 'idle' }}">
+                            {{ autodarts_status.message or 'Noch kein Lauf gestartet.' }}
+                        </div>
                     </form>
                 </div>
 
@@ -1015,6 +1022,111 @@
                 btn.textContent = '⬆ In Scoreboard übertragen';
             }
         }
+
+        // -- Autodarts: AJAX-Trigger + Live-Statusanzeige (statt "nichts passiert") --
+        (function () {
+            const form = document.getElementById('autodarts-run-form');
+            const runBtn = document.getElementById('autodarts-run-btn');
+            const manualBtn = document.getElementById('autodarts-manual-login-btn');
+            const statusEl = document.getElementById('autodarts-status');
+            if (!form || !statusEl) return;
+
+            let pollTimer = null;
+
+            function renderStatus(state, message) {
+                statusEl.dataset.state = state || 'idle';
+                statusEl.textContent = message || '';
+                const colors = {
+                    running: 'var(--clr-text-muted)',
+                    manual_login_pending: 'var(--clr-text-muted)',
+                    success: 'var(--clr-accent)',
+                    manual_login_success: 'var(--clr-accent)',
+                    error: '#e05252',
+                    manual_login_error: '#e05252',
+                    manual_login_timeout: '#e05252',
+                };
+                statusEl.style.color = colors[state] || 'inherit';
+            }
+
+            function stopPolling() {
+                if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+                runBtn.disabled = false;
+                manualBtn.disabled = false;
+            }
+
+            function startPolling() {
+                if (pollTimer) return;
+                pollTimer = setInterval(async () => {
+                    try {
+                        const res = await fetch("{{ url_for('admin_autodarts_status') }}");
+                        const data = await res.json();
+                        const state = (data.status && data.status.state) || 'idle';
+                        renderStatus(state, data.status && data.status.message);
+                        if (!['running', 'manual_login_pending'].includes(state)) {
+                            stopPolling();
+                        }
+                    } catch (e) {
+                        renderStatus('error', 'Status konnte nicht abgerufen werden: ' + e.message);
+                        stopPolling();
+                    }
+                }, 2000);
+            }
+
+            form.addEventListener('submit', async (ev) => {
+                ev.preventDefault();
+                runBtn.disabled = true;
+                renderStatus('running', 'Autodarts-Abruf wird gestartet...');
+                try {
+                    const res = await fetch("{{ url_for('admin_run_autodarts') }}", {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: new URLSearchParams(new FormData(form)),
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                        renderStatus('running', 'Autodarts-Abruf laeuft...');
+                        startPolling();
+                    } else {
+                        renderStatus('error', data.error || 'Start fehlgeschlagen.');
+                        runBtn.disabled = false;
+                    }
+                } catch (e) {
+                    renderStatus('error', 'Netzwerkfehler: ' + e.message);
+                    runBtn.disabled = false;
+                }
+            });
+
+            if (manualBtn) {
+                manualBtn.addEventListener('click', async () => {
+                    manualBtn.disabled = true;
+                    renderStatus('manual_login_pending', 'Oeffne Browser-Fenster fuer die manuelle Anmeldung...');
+                    try {
+                        const res = await fetch("{{ url_for('admin_autodarts_manual_login') }}", {
+                            method: 'POST',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        });
+                        const data = await res.json();
+                        if (data.ok) {
+                            startPolling();
+                        } else {
+                            renderStatus('manual_login_error', data.error || 'Manuelle Anmeldung konnte nicht gestartet werden.');
+                            manualBtn.disabled = false;
+                        }
+                    } catch (e) {
+                        renderStatus('manual_login_error', 'Netzwerkfehler: ' + e.message);
+                        manualBtn.disabled = false;
+                    }
+                });
+            }
+
+            // Falls beim Laden der Seite bereits ein Lauf aktiv ist, weiter pollen
+            const initialState = statusEl.dataset.state;
+            if (['running', 'manual_login_pending'].includes(initialState)) {
+                runBtn.disabled = true;
+                if (manualBtn) manualBtn.disabled = true;
+                startPolling();
+            }
+        })();
     </script>
 </body>
 </html>
