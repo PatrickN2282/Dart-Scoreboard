@@ -535,6 +535,57 @@
                     </form>
                 </div>
 
+                <!-- Wartezeiten der Ansichten -->
+                <div class="panel">
+                    <h2 class="panel-title">⏱️ Wartezeiten der Ansichten</h2>
+                    <p style="font-size:0.88em; color:var(--clr-text-muted); margin: 0 0 16px; line-height:1.6;">
+                        Legt fest, wie lange (in Sekunden) jede Ansicht der Rotation angezeigt wird, bevor
+                        zur nächsten gewechselt wird. Die Rotation zeigt der Reihe nach: die beiden
+                        4-Karten-Ansichten, die Rangliste, eine zufällige Spieler-Detailstatistik und ein
+                        zufälliges Head-to-Head-Duell.
+                    </p>
+                    <form method="POST" action="{{ url_for('admin') }}">
+                        <input type="hidden" name="action" value="save_config">
+
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="rotation_duration_grid1">4-Karten-Ansicht #1 (Legs/180er/Finish/Darts)</label>
+                                <input type="number" name="rotation_duration_grid1" id="rotation_duration_grid1"
+                                       value="{{ config.rotation_duration_grid1 }}" min="1" max="3600" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="rotation_duration_grid2">4-Karten-Ansicht #2 (T20/Checkout/First3/Avg)</label>
+                                <input type="number" name="rotation_duration_grid2" id="rotation_duration_grid2"
+                                       value="{{ config.rotation_duration_grid2 }}" min="1" max="3600" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="rotation_duration_winrate">Rangliste (Gewinnrate)</label>
+                                <input type="number" name="rotation_duration_winrate" id="rotation_duration_winrate"
+                                       value="{{ config.rotation_duration_winrate }}" min="1" max="3600" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="rotation_duration_player">Detaillierte Spieler-Statistik</label>
+                                <input type="number" name="rotation_duration_player" id="rotation_duration_player"
+                                       value="{{ config.rotation_duration_player }}" min="1" max="3600" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="rotation_duration_h2h">Head-to-Head</label>
+                                <input type="number" name="rotation_duration_h2h" id="rotation_duration_h2h"
+                                       value="{{ config.rotation_duration_h2h }}" min="1" max="3600" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="rotation_refresh_minutes">Seiten-Neuladen (Minuten)</label>
+                                <input type="number" name="rotation_refresh_minutes" id="rotation_refresh_minutes"
+                                       value="{{ config.rotation_refresh_minutes }}" min="1" max="1440" required>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">💾 Wartezeiten speichern</button>
+                        </div>
+                    </form>
+                </div>
+
             </div><!-- /tab-config -->
 
 
