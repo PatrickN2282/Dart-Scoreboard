@@ -840,7 +840,8 @@ def api_player_card():
         'average': round(float(stats.get('points_sum',0))/float(stats.get('darts_thrown',1))*3.0,2) if stats.get('darts_thrown') else None,
         'first3_average': None,
         'checkout_ratio': None,
-        't20_hits': stats.get('segment_hits',{}).get('T20',0)
+        't20_hits': stats.get('segment_hits',{}).get('T20',0),
+        'darts_thrown': stats.get('darts_thrown', 0),
     }
     # first3
     f9_darts = stats.get('first9_darts',0)
@@ -1466,13 +1467,19 @@ def autodarts_collect_and_import(max_pages=2):
                     's180': int(st.get('s180', 0) or 0),
                     'min_darts_to_checkout': st.get('min_darts_to_checkout'),
                     'checkout_ratio': st.get('checkout_ratio'),
+                    'checkout_success': int(st.get('checkout_success', 0) or 0),
+                    'checkout_attempts': int(st.get('checkout_attempts', 0) or 0),
                     'segment_hits': st.get('segment_hits', {}),
                     'average': st.get('average'),
                     'first9_average': st.get('first9_average'),
+                    'first9_points_sum': int(st.get('first9_points_sum', 0) or 0),
+                    'first9_darts': int(st.get('first9_darts', 0) or 0),
                     'darts_thrown': st.get('darts_thrown'),
                     'points_sum': st.get('points_sum'),
-                    # record that this import represents one match (not each leg as a separate game)
-                    'total_games_in_import': 1,
+                    # record the number of legs played in this match, so cumulative stats
+                    # aggregate "legs played" instead of "matches played" (one match can
+                    # contain several legs).
+                    'total_games_in_import': games_len or 1,
                 }
                 payload.append(entry)
 
@@ -1508,10 +1515,14 @@ def autodarts_collect_and_import(max_pages=2):
                     'segment_hits': entry.get('segment_hits', {}),
                     'average': entry.get('average'),
                     'first9_average': entry.get('first9_average'),
+                    'first9_points_sum': entry.get('first9_points_sum', 0),
+                    'first9_darts': entry.get('first9_darts', 0),
                     'darts_thrown': entry.get('darts_thrown'),
                     'points_sum': entry.get('points_sum'),
                     'min_darts_to_checkout': entry.get('min_darts_to_checkout'),
                     'checkout_ratio': entry.get('checkout_ratio'),
+                    'checkout_success': entry.get('checkout_success', 0),
+                    'checkout_attempts': entry.get('checkout_attempts', 0),
                 }
                 # compute hash and check duplicates
                 try:
@@ -1763,13 +1774,18 @@ def admin_import_match():
                 's180': int(st.get('s180', 0) or 0),
                 'min_darts_to_checkout': st.get('min_darts_to_checkout'),
                 'checkout_ratio': st.get('checkout_ratio'),
+                'checkout_success': int(st.get('checkout_success', 0) or 0),
+                'checkout_attempts': int(st.get('checkout_attempts', 0) or 0),
                 'segment_hits': st.get('segment_hits', {}),
                 'average': st.get('average'),
                 'first9_average': st.get('first9_average'),
+                'first9_points_sum': int(st.get('first9_points_sum', 0) or 0),
+                'first9_darts': int(st.get('first9_darts', 0) or 0),
                 'darts_thrown': st.get('darts_thrown'),
                 'points_sum': st.get('points_sum'),
-                # record that this import represents one match (not each leg as a separate game)
-                'total_games_in_import': 1,
+                # record the number of legs played in this match, so cumulative stats
+                # aggregate "legs played" instead of "matches played".
+                'total_games_in_import': games_len or 1,
             }
             payload.append(entry)
 
@@ -1805,10 +1821,14 @@ def admin_import_match():
                 'segment_hits': entry.get('segment_hits', {}),
                 'average': entry.get('average'),
                 'first9_average': entry.get('first9_average'),
+                'first9_points_sum': entry.get('first9_points_sum', 0),
+                'first9_darts': entry.get('first9_darts', 0),
                 'darts_thrown': entry.get('darts_thrown'),
                 'points_sum': entry.get('points_sum'),
                 'min_darts_to_checkout': entry.get('min_darts_to_checkout'),
                 'checkout_ratio': entry.get('checkout_ratio'),
+                'checkout_success': entry.get('checkout_success', 0),
+                'checkout_attempts': entry.get('checkout_attempts', 0),
             }
             try:
                 new_hash = compute_score_hash(new_score)

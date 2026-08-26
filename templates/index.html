@@ -125,6 +125,22 @@
             color: #44AAFF; 
             text-shadow: 0 0 15px rgba(68, 170, 255, 0.6);
         }
+        [data-section="t20"] .card h2 { 
+            color: #FFDD44; 
+            text-shadow: 0 0 15px rgba(255, 221, 68, 0.6);
+        }
+        [data-section="checkout"] .card h2 { 
+            color: #44FF44; 
+            text-shadow: 0 0 15px rgba(68, 255, 68, 0.6);
+        }
+        [data-section="first3"] .card h2 { 
+            color: #DD44FF; 
+            text-shadow: 0 0 15px rgba(221, 68, 255, 0.6);
+        }
+        [data-section="average"] .card h2 { 
+            color: #44DDFF; 
+            text-shadow: 0 0 15px rgba(68, 221, 255, 0.6);
+        }
 
         /* Win Rate Bar - KORRIGIERT: Kleinere Schrift */
         .win-rate-bar {
@@ -565,73 +581,156 @@
 
     <!-- 4-Karten-Ansicht #2: T20 / Checkout / First3 / Average -->
     <div class="container" id="grid2-stage" style="margin-top:18px;">
+
         <div class="top">
-            <section class="section-block" data-section="new4">
+
+            <!-- Meiste T20 Treffer -->
+            <section class="section-block" data-section="t20">
                 <div class="card" data-view="static">
-                    <h2>📋 Neue Top‑Statistiken</h2>
+                    <h2>🎯 Meiste T20 Treffer</h2>
+                    {% if most_t20 %}
                     <div class="card-content">
-                        <div class="card-right" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
-                            <div>
-                                <h3 style="margin:0 0 8px;">🎯 Meiste T20 Treffer</h3>
-                                <table>
-                                    <tr><th>Platz</th><th>Name</th><th>T20</th></tr>
-                                    {% for s in most_t20[:config.static_limit] %}
-                                    <tr class="podium-row {{ s.podium_class }}">
-                                        <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
-                                        <td>{{ s.name }}</td>
-                                        <td>{{ s.t20 }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </table>
-                            </div>
-
-                            <div>
-                                <h3 style="margin:0 0 8px;">✅ Beste Checkout‑Quote</h3>
-                                <table>
-                                    <tr><th>Platz</th><th>Name</th><th>Quote</th></tr>
-                                    {% for s in most_checkout[:config.static_limit] %}
-                                    <tr class="podium-row {{ s.podium_class }}">
-                                        <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
-                                        <td>{{ s.name }}</td>
-                                        <td>{{ s.checkout_ratio }}%</td>
-                                    </tr>
-                                    {% endfor %}
-                                </table>
-                            </div>
-
-                            <div>
-                                <h3 style="margin:0 0 8px;">First 3 Darts (Avg)</h3>
-                                <table>
-                                    <tr><th>Platz</th><th>Name</th><th>First3</th></tr>
-                                    {% for s in most_first3[:config.static_limit] %}
-                                    <tr class="podium-row {{ s.podium_class }}">
-                                        <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
-                                        <td>{{ s.name }}</td>
-                                        <td>{{ s.first3_average }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </table>
-                            </div>
-
-                            <div>
-                                <h3 style="margin:0 0 8px;">Durchschnitt (Avg)</h3>
-                                <table>
-                                    <tr><th>Platz</th><th>Name</th><th>Avg</th></tr>
-                                    {% for s in most_average[:config.static_limit] %}
-                                    <tr class="podium-row {{ s.podium_class }}">
-                                        <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
-                                        <td>{{ s.name }}</td>
-                                        <td>{{ s.average }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </table>
-                            </div>
+                        <div class="card-left static-only">
+                            <img src="{{ url_for('static', filename='uploads/' ~ (most_t20[0].image or 'dummy.png')) }}"
+                                 alt="Top Spieler" class="player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                        </div>
+                        <div class="card-right">
+                            <table>
+                                <tr><th>Platz</th><th>Name</th><th>T20</th></tr>
+                                {% for s in most_t20[:config.rotation_limit] %}
+                                <tr class="podium-row {{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                    <td>
+                                        {% if s.rank == 1 %}🥇
+                                        {% elif s.rank == 2 %}🥈
+                                        {% elif s.rank == 3 %}🥉
+                                        {% else %}{{ s.rank }}{% endif %}
+                                    </td>
+                                    <td>{{ s.name }}</td>
+                                    <td>{{ s.t20 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
                         </div>
                     </div>
+                    {% else %}
+                        <p>Keine Einträge vorhanden.</p>
+                    {% endif %}
                 </div>
             </section>
-        </div>
-    </div>
+
+            <!-- Beste Checkout-Quote -->
+            <section class="section-block" data-section="checkout">
+                <div class="card" data-view="static">
+                    <h2>✅ Beste Checkout‑Quote</h2>
+                    {% if most_checkout %}
+                    <div class="card-content">
+                        <div class="card-left static-only">
+                            <img src="{{ url_for('static', filename='uploads/' ~ (most_checkout[0].image or 'dummy.png')) }}"
+                                 alt="Top Spieler" class="player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                        </div>
+                        <div class="card-right">
+                            <table>
+                                <tr><th>Platz</th><th>Name</th><th>Quote</th></tr>
+                                {% for s in most_checkout[:config.rotation_limit] %}
+                                <tr class="podium-row {{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                    <td>
+                                        {% if s.rank == 1 %}🥇
+                                        {% elif s.rank == 2 %}🥈
+                                        {% elif s.rank == 3 %}🥉
+                                        {% else %}{{ s.rank }}{% endif %}
+                                    </td>
+                                    <td>{{ s.name }}</td>
+                                    <td>{{ s.checkout_ratio }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                    {% else %}
+                        <p>Keine Einträge vorhanden.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+        </div><!-- /.top -->
+
+        <div class="bottom">
+
+            <!-- First 3 Darts Average -->
+            <section class="section-block" data-section="first3">
+                <div class="card" data-view="static">
+                    <h2>🎯 First 3 Darts (Avg)</h2>
+                    {% if most_first3 %}
+                    <div class="card-content">
+                        <div class="card-left static-only">
+                            <img src="{{ url_for('static', filename='uploads/' ~ (most_first3[0].image or 'dummy.png')) }}"
+                                 alt="Top Spieler" class="player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                        </div>
+                        <div class="card-right">
+                            <table>
+                                <tr><th>Platz</th><th>Name</th><th>First3</th></tr>
+                                {% for s in most_first3[:config.rotation_limit] %}
+                                <tr class="podium-row {{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                    <td>
+                                        {% if s.rank == 1 %}🥇
+                                        {% elif s.rank == 2 %}🥈
+                                        {% elif s.rank == 3 %}🥉
+                                        {% else %}{{ s.rank }}{% endif %}
+                                    </td>
+                                    <td>{{ s.name }}</td>
+                                    <td>{{ s.first3_average }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                    {% else %}
+                        <p>Keine Einträge vorhanden.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Durchschnitt (Average) -->
+            <section class="section-block" data-section="average">
+                <div class="card" data-view="static">
+                    <h2>📈 Durchschnitt (Avg)</h2>
+                    {% if most_average %}
+                    <div class="card-content">
+                        <div class="card-left static-only">
+                            <img src="{{ url_for('static', filename='uploads/' ~ (most_average[0].image or 'dummy.png')) }}"
+                                 alt="Top Spieler" class="player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                        </div>
+                        <div class="card-right">
+                            <table>
+                                <tr><th>Platz</th><th>Name</th><th>Avg</th></tr>
+                                {% for s in most_average[:config.rotation_limit] %}
+                                <tr class="podium-row {{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                    <td>
+                                        {% if s.rank == 1 %}🥇
+                                        {% elif s.rank == 2 %}🥈
+                                        {% elif s.rank == 3 %}🥉
+                                        {% else %}{{ s.rank }}{% endif %}
+                                    </td>
+                                    <td>{{ s.name }}</td>
+                                    <td>{{ s.average }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                    {% else %}
+                        <p>Keine Einträge vorhanden.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+        </div><!-- /.bottom -->
+    </div><!-- /.container -->
+
 
     <!-- Bucket-Karten -->
     <div id="bucket-stage">
@@ -758,7 +857,7 @@
                     </div>
                     <div class="card-right">
                         <table>
-                            <tr><th>Platz</th><th>Name</th><th>Gewonnen</th><th>Gespielt</th><th>Rate</th></tr>
+                            <tr><th>Platz</th><th>Name</th><th>Gewonnen</th><th>Legs gespielt</th><th>Rate</th></tr>
                             {% for s in win_rate_stats[:config.rotation_limit] %}
                             <tr class="podium-row {{ s.podium_class }}">
                                 <td>
@@ -936,7 +1035,7 @@
                                  alt="${escapeHtml(p1.name)}" class="h2h-player-img"
                                  onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
                             <div class="h2h-player-name">${escapeHtml(p1.name)}</div>
-                            <div class="h2h-player-sub">${p1.total_games} Spiele</div>
+                            <div class="h2h-player-sub">${p1.total_games} Legs</div>
                         </div>
                         
                         <!-- Stats Spieler 1 -->
@@ -1006,7 +1105,7 @@
                                  alt="${escapeHtml(p2.name)}" class="h2h-player-img"
                                  onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
                             <div class="h2h-player-name">${escapeHtml(p2.name)}</div>
-                            <div class="h2h-player-sub">${p2.total_games} Spiele</div>
+                            <div class="h2h-player-sub">${p2.total_games} Legs</div>
                         </div>
                     </div>
                 `;
@@ -1059,7 +1158,11 @@
                                 </div>
                                 <div class="h2h-stat-box">
                                     <div class="h2h-stat-value">${p.games_played || 0}</div>
-                                    <div class="h2h-stat-label">🎮 Spiele</div>
+                                    <div class="h2h-stat-label">🎮 Legs gespielt</div>
+                                </div>
+                                <div class="h2h-stat-box">
+                                    <div class="h2h-stat-value">${p.darts_thrown || 0}</div>
+                                    <div class="h2h-stat-label">🎯 Darts geworfen</div>
                                 </div>
                             </div>
                         </div>
