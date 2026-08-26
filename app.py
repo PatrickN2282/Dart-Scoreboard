@@ -218,7 +218,7 @@ def get_player_by_id(player_id):
 # (nur bei Bots gesetzt) erkannt. Bekannte Bot-Level und ihre durchschnittlichen
 # Points-per-Round (PPR) laut Bot-Konfiguration, genutzt um aus einem cpuPPR-Wert
 # das wahrscheinlichste Level abzuleiten, falls der Name kein Level verrät.
-BOT_NAME_RE = re.compile(r'^\s*autodarts[\s_-]*bot\s*(\d+)?\s*$', re.IGNORECASE)
+BOT_NAME_RE = re.compile(r'^autodartsbot(\d*)$')
 BOT_PPR_LEVELS = {95: 1, 78: 2, 68: 3, 56: 4, 49: 5, 36: 6, 30: 7}
 
 
@@ -229,7 +229,12 @@ def detect_bot_level(name, cpu_ppr=None):
     zurück, wenn es sich um einen BOT-Spieler handelt, sonst None (= echter
     menschlicher Spieler)."""
     name = (name or '').strip()
-    m = BOT_NAME_RE.match(name)
+    # Whitespace/Trennzeichen entfernen (linearer, nicht rückverfolgender
+    # Ersatz) statt sie über mehrere sich überlappende Regex-Quantoren zu
+    # matchen, um ein ReDoS über lange Ketten wiederholter Trennzeichen in
+    # vom Client gelieferten Spielernamen auszuschließen.
+    normalized = re.sub(r'[\s_-]+', '', name).lower()[:64]
+    m = BOT_NAME_RE.match(normalized)
     if m:
         lvl = m.group(1)
         return int(lvl) if lvl else 0
@@ -384,7 +389,7 @@ def get_bot_cumulative_stats():
             "games_played": vals["games_played"],
             "average": round(float(pts) / float(darts) * 3.0, 2) if darts else None,
         })
-    result.sort(key=lambda x: (x["name"], x["bot_level"] if x["bot_level"] is not None else -1))
+    result.sort(key=lambda x: (x["name"], str(x["bot_level"]) if x["bot_level"] is not None else ""))
     return result
 
 
@@ -736,7 +741,12 @@ def import_match_result_to_scores(result, games_len=None):
     ]
     bot_levels = [lvl for lvl in bot_levels if lvl is not None]
     is_bot_match = len(bot_levels) > 0
-    bot_level = bot_levels[0] if bot_levels else None
+    distinct_bot_levels = sorted(set(bot_levels))
+    # Normalfall: genau ein BOT-Gegner (bzw. mehrere BOTs desselben Levels) im
+    # Match -> eindeutiges Level. Enthält ein Match ausnahmsweise BOTs mit
+    # unterschiedlichen Levels, wird das nicht stillschweigend verworfen,
+    # sondern als kombinierter Wert (z.B. "3+5") abgelegt.
+    bot_level = distinct_bot_levels[0] if len(distinct_bot_levels) <= 1 else '+'.join(str(l) for l in distinct_bot_levels)
 
     scores = load_json(SCORES_FILE)
     bot_scores = load_json(BOT_SCORES_FILE)
@@ -1973,8 +1983,8 @@ def admin_install_screensaver():
         os.makedirs(autostart_dir, exist_ok=True)
 
         shutil.copyfile(script_src, script_dst)
-        st = os.stat(script_dst)
-        os.chmod(script_dst, st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+        file_stat = os.stat(script_dst)
+        os.chmod(script_dst, file_stat.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
 
         with open(desktop_src, 'r', encoding='utf-8') as f:
             desktop_content = f.read()
@@ -1991,7 +2001,8 @@ def admin_install_screensaver():
             return jsonify({"ok": True, "message": msg})
         return redirect(url_for('admin'))
     except Exception as e:
-        msg = f'Installation fehlgeschlagen: {e}'
+        app.logger.exception('Screensaver-Installation fehlgeschlagen')
+        msg = 'Installation fehlgeschlagen. Details siehe Server-Log.'
         if is_ajax:
             return jsonify({"ok": False, "error": msg}), 500
         return redirect(url_for('admin'))
