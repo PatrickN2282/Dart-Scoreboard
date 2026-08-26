@@ -467,22 +467,19 @@ def extract_stats_from_result(res):
                         if prev is None or darts < prev:
                             st['min_darts_to_checkout'] = darts
 
-    # finalize: compute averages and ratios. Only derive these from points_sum/darts_thrown
-    # when we actually have darts to divide by; otherwise keep whatever value the API
-    # already provided above (do not clobber it with None/0).
+    # finalize: compute averages and ratios. Prefer an average already supplied directly
+    # by the API (set above from match-level stats); only derive it from points_sum/
+    # darts_thrown as a fallback, since that recomputation loses precision due to the
+    # int(round(...)) applied to points_sum.
     for k, v in stats.items():
         darts = v.get('darts_thrown', 0) or 0
         pts_sum = v.get('points_sum', 0) or 0
-        if darts:
-            v['average'] = float(pts_sum) / float(darts) * 3.0
-        elif v.get('average') is None:
-            v['average'] = None
+        if v.get('average') is None:
+            v['average'] = float(pts_sum) / float(darts) * 3.0 if darts else None
         f9_darts = v.get('first9_darts', 0) or 0
         f9_pts = v.get('first9_points_sum', 0) or 0
-        if f9_darts:
-            v['first9_average'] = float(f9_pts) / float(f9_darts) * 3.0
-        elif v.get('first9_average') is None:
-            v['first9_average'] = None
+        if v.get('first9_average') is None:
+            v['first9_average'] = float(f9_pts) / float(f9_darts) * 3.0 if f9_darts else None
         atts = v.get('checkout_attempts', 0) or 0
         succ = v.get('checkout_success', 0) or 0
         v['checkout_ratio'] = float(succ) / float(atts) if atts else None
