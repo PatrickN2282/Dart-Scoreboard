@@ -1444,8 +1444,7 @@ def admin():
                 display_name = request.form.get("display_name", "").strip()
                 for p in players:
                     if p["id"] == player_id:
-                        aliases = list(p.get("stat_names") or [])
-                        aliases.extend(request.form.get("stat_names", "").splitlines())
+                        aliases = request.form.get("stat_names", "").splitlines()
                         aliases.append(ad_name)
                         p["autodarts_name"] = ad_name
                         if display_name:
