@@ -41,11 +41,13 @@ Das Installationsskript erzeugt `~/.config/autostart/dart-screensaver.desktop` u
 
 ## Konfiguration
 
-In `dart_screensaver.sh` können vor der Installation folgende Werte angepasst werden:
+Die Wartezeit wird im Adminbereich unter **Addons → Bildschirmschoner** eingestellt.
+Sie wird in `~/.config/dart-scoreboard/screensaver.conf` gespeichert und beim nächsten
+Start des Screensavers übernommen. Die übrigen Werte können vor der Installation im
+Skript angepasst werden:
 
 | Variable | Standard | Beschreibung |
 |---|---|---|
-| `IDLE_TIME` | `300` | Sekunden bis Chromium startet |
 | `URL` | `http://localhost:5000` | Webseite die angezeigt wird |
 | `WAYLAND_DISPLAY` | `wayland-0` | Wayland-Socket |
 | `XDG_RUNTIME_DIR` | `/run/user/<UID>` | Wayland Runtime-Verzeichnis |

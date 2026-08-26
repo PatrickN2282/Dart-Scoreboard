@@ -303,11 +303,9 @@
                                  onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
                             <span class="player-row-name">{{ player.name }}</span>
                             <div class="player-row-actions">
-                                <!-- Umbenennen (Inline-Toggle) -->
                                 <button class="btn btn-ghost btn-icon"
                                         onclick="toggleRename({{ player.id }})"
-                                        title="Umbenennen">✏️</button>
-                                <!-- Löschen -->
+                                        title="Spieleridentität bearbeiten">✏️</button>
                                 <form method="POST" action="{{ url_for('admin') }}" style="margin:0;">
                                     <input type="hidden" name="action" value="delete_player">
                                     <input type="hidden" name="player_id_to_delete" value="{{ player.id }}">
@@ -319,38 +317,33 @@
                                 </form>
                             </div>
                         </div>
-                        <!-- Umbenennen-Formular (versteckt, per JS einblendbar) -->
                         <div id="rename-{{ player.id }}" style="display:none; padding: 0 0 4px 50px;">
                             <form method="POST" action="{{ url_for('admin') }}"
-                                  style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                                <input type="hidden" name="action" value="rename_player">
-                                <input type="hidden" name="rename_player_id" value="{{ player.id }}">
-                                <div class="input-group" style="flex:1; min-width:160px;">
-                                    <input type="text" name="rename_player_name"
-                                           placeholder="Neuer Name für {{ player.name }}"
-                                           required style="margin:0;">
+                                  style="display:grid; gap:8px; max-width:680px;">
+                                <input type="hidden" name="action" value="save_player_identity">
+                                <input type="hidden" name="player_id" value="{{ player.id }}">
+                                <div class="input-group">
+                                    <label for="display-name-{{ player.id }}">Anzeigename fürs Scoreboard</label>
+                                    <input type="text" id="display-name-{{ player.id }}" name="display_name"
+                                           value="{{ player.name }}" required style="margin:0;">
                                 </div>
-                                <button type="submit" class="btn btn-primary" style="height:38px;">✔ Speichern</button>
-                                <button type="button" class="btn btn-ghost" style="height:38px;"
-                                        onclick="toggleRename({{ player.id }})">Abbrechen</button>
-                            </form>
-                        </div>
-                        <!-- Autodarts-Name -->
-                        <div style="padding: 0 0 10px 50px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <form method="POST" action="{{ url_for('admin') }}"
-                                  style="display:flex; gap:8px; align-items:center; flex:1; min-width:260px;">
-                                <input type="hidden" name="action" value="save_autodarts_name">
-                                <input type="hidden" name="autodarts_player_id" value="{{ player.id }}">
-                                <span style="font-size:0.78em; color:var(--clr-text-muted); white-space:nowrap;">🔗 Autodarts:</span>
-                                <input type="text" name="autodarts_name"
-                                       value="{{ player.autodarts_name or '' }}"
-                                       placeholder="Spielername auf Autodarts"
-                                       style="flex:1; font-size:0.82em; padding:5px 8px;
-                                              background:var(--clr-bg); border:1px solid var(--clr-border);
-                                              border-radius:5px; color:var(--clr-text);">
-                                <button type="submit" class="btn btn-ghost" style="height:30px; font-size:0.78em; padding:0 10px;">
-                                    💾
-                                </button>
+                                <div class="input-group">
+                                    <label for="autodarts-name-{{ player.id }}">Autodarts-Handle</label>
+                                    <input type="text" id="autodarts-name-{{ player.id }}" name="autodarts_name"
+                                           value="{{ player.autodarts_name or '' }}"
+                                           placeholder="z. B. pixelstarfish" style="margin:0;">
+                                </div>
+                                <div class="input-group">
+                                    <label for="stat-names-{{ player.id }}">Namen aus der Statistik</label>
+                                    <textarea id="stat-names-{{ player.id }}" name="stat_names" rows="3"
+                                              placeholder="Ein Name pro Zeile" style="margin:0;">{{ (player.stat_names or []) | join('\n') }}</textarea>
+                                    <span class="info-text">Ein Name pro Zeile; der Handle wird automatisch ebenfalls zugeordnet.</span>
+                                </div>
+                                <div style="display:flex; gap:8px;">
+                                    <button type="submit" class="btn btn-primary" style="height:38px;">✔ Speichern</button>
+                                    <button type="button" class="btn btn-ghost" style="height:38px;"
+                                            onclick="toggleRename({{ player.id }})">Abbrechen</button>
+                                </div>
                             </form>
                         </div>
                         {% endfor %}
@@ -735,12 +728,27 @@
                 </div>
 
                 <div class="panel">
-                    <h2 class="panel-title">🖥️ Bildschirmschoner installieren</h2>
+                    <h2 class="panel-title">🖥️ Bildschirmschoner</h2>
                     <p style="font-size:0.88em; color:var(--clr-text-muted); margin: 0 0 16px; line-height:1.6;">
                         Installiert den Bildschirmschoner aus <code>/Addons/Raspberry-Screensaver</code> im
                         Home-Verzeichnis dieses Rechners (Skript + Autostart-Eintrag), damit das Scoreboard
                         nach Inaktivität automatisch im Kiosk-Modus angezeigt wird.
                     </p>
+                    <form method="POST" action="{{ url_for('admin') }}">
+                        <input type="hidden" name="action" value="save_config">
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="screensaver_idle_time">Start nach Inaktivität (Sekunden)</label>
+                                <input type="number" name="screensaver_idle_time" id="screensaver_idle_time"
+                                       value="{{ config.screensaver_idle_time or 300 }}" min="1" max="86400" required>
+                                <span class="info-text">Die neue Zeit gilt beim nächsten Start des Screensavers.</span>
+                            </div>
+                        </div>
+                        <div class="form-actions" style="margin-top:16px;">
+                            <button type="submit" class="btn btn-primary">💾 Screensaver-Zeit speichern</button>
+                        </div>
+                    </form>
+                    <hr class="form-divider" style="margin:18px 0;">
                     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                         <button type="button" id="install-screensaver-btn" class="btn btn-primary">
                             🖥️ Screensaver installieren
@@ -795,7 +803,12 @@
         
         const SCOREBOARD_PLAYERS = [
             {% for player in players %}
-            { id: {{ player.id }}, name: {{ player.name | tojson }}, autodarts: {{ (player.autodarts_name or '') | tojson }} },
+            {
+                id: {{ player.id }},
+                name: {{ player.name | tojson }},
+                autodarts: {{ (player.autodarts_name or '') | tojson }},
+                statNames: {{ (player.stat_names or []) | tojson }}
+            },
             {% endfor %}
         ];
 
@@ -1051,8 +1064,10 @@
             ).join('');
 
             tbody.innerHTML = players.map((p, idx) => {
-                const match = SCOREBOARD_PLAYERS.find(sp => 
-                    sp.autodarts && sp.autodarts.toLowerCase() === p.name.toLowerCase()
+                const match = SCOREBOARD_PLAYERS.find(sp =>
+                    [sp.autodarts, ...sp.statNames].some(name =>
+                        name && name.toLowerCase() === p.name.toLowerCase()
+                    )
                 );
 
                 const matchBadge = match
@@ -1093,8 +1108,10 @@
 
             // Vorauswahl setzen
             players.forEach((p, idx) => {
-                const match = SCOREBOARD_PLAYERS.find(sp => 
-                    sp.autodarts && sp.autodarts.toLowerCase() === p.name.toLowerCase()
+                const match = SCOREBOARD_PLAYERS.find(sp =>
+                    [sp.autodarts, ...sp.statNames].some(name =>
+                        name && name.toLowerCase() === p.name.toLowerCase()
+                    )
                 );
                 if (match) {
                     const sel = tbody.querySelector(`select[data-idx="${idx}"]`);
