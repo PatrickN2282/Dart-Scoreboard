@@ -8,7 +8,7 @@ Der Manager hält einen CEC-fähigen Fernseher im eingestellten Zeitfenster akti
 2. Im Adminbereich **Addons → CEC-Manager** einen Namen sowie Standby- und Aufweckzeit eintragen und den Zeitplan aktivieren.
 3. **CEC-Manager installieren** auswählen.
 
-Die Konfiguration wird sicher in `~/.config/dart-scoreboard/cec.conf` gespeichert. Der Dienst prüft sie in jedem Zyklus; geänderte Zeiten werden daher ohne Neuinstallation übernommen.
+Die Konfiguration wird sicher in `~/.config/dart-scoreboard/cec.conf` gespeichert. Der Dienst prüft sie in jedem Zyklus; geänderte Zeiten und Gerätenamen werden daher ohne Neuinstallation übernommen.
 
 ## Zeitfenster
 

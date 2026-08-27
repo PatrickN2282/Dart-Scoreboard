@@ -3,6 +3,7 @@
 IDLE_TIME=300
 URL="http://localhost:5000"
 readonly SCREENSAVER_CONFIG_FILE="${XDG_CONFIG_HOME:-${HOME}/.config}/dart-scoreboard/screensaver.conf"
+readonly SCREENSAVER_PID_FILE="${XDG_CONFIG_HOME:-${HOME}/.config}/dart-scoreboard/screensaver.pid"
 
 if [ -r "$SCREENSAVER_CONFIG_FILE" ]; then
   # shellcheck disable=SC1090
@@ -20,6 +21,21 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 printf -v chromium_command \
   'chromium --ozone-platform=wayland --start-fullscreen --password-store=basic --no-first-run --disable-sync --noerrdialogs --disable-infobars %q &' \
   "$URL"
-exec swayidle -w \
+
+mkdir -p "$(dirname "$SCREENSAVER_PID_FILE")"
+printf '%s\n' "$$" > "$SCREENSAVER_PID_FILE"
+
+swayidle_pid=""
+cleanup() {
+  [ -z "$swayidle_pid" ] || kill "$swayidle_pid" 2>/dev/null || true
+  rm -f "$SCREENSAVER_PID_FILE"
+}
+trap 'cleanup; exit 0' HUP INT TERM
+
+swayidle -w \
   timeout "$IDLE_TIME" "$chromium_command" \
-  resume 'pkill -f chromium'
+  resume 'pkill -f chromium' &
+swayidle_pid=$!
+
+wait "$swayidle_pid" || true
+rm -f "$SCREENSAVER_PID_FILE"

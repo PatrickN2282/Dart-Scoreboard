@@ -7,6 +7,8 @@ import stat
 import subprocess
 import time
 import shlex
+import signal
+import threading
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import socket
@@ -36,6 +38,7 @@ CEC_ADDON_DIR = os.path.join(ADDONS_DIR, 'Raspberry-CEC')
 CEC_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'dart-scoreboard')
 CEC_CONFIG_FILE = os.path.join(CEC_CONFIG_DIR, 'cec.conf')
 SCREENSAVER_CONFIG_FILE = os.path.join(CEC_CONFIG_DIR, 'screensaver.conf')
+SCREENSAVER_PID_FILE = os.path.join(CEC_CONFIG_DIR, 'screensaver.pid')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -77,6 +80,9 @@ IMPORTED_MATCHES_FILE = os.path.join(DATA_DIR, 'imported_matches.json')
 # Status-Datei für laufende/letzte Autodarts-Läufe (für Live-Feedback im Admin-Bereich)
 AUTODARTS_STATUS_FILE = os.path.join(DATA_DIR, 'autodarts_status.json')
 AUTODARTS_DEBUG_SCREENSHOT = os.path.join(DATA_DIR, 'autodarts_debug.png')
+AUTODARTS_RUN_LOCK = threading.Lock()
+AUTODARTS_SCHEDULER_LOCK = threading.Lock()
+AUTODARTS_SCHEDULER_STARTED = False
 
 try:
     from playwright.sync_api import sync_playwright
@@ -166,6 +172,55 @@ def write_screensaver_config(config):
     with open(SCREENSAVER_CONFIG_FILE, 'w', encoding='utf-8') as f:
         f.write(content)
     os.chmod(SCREENSAVER_CONFIG_FILE, 0o600)
+
+
+def restart_screensaver():
+    """Startet den installierten Screensaver mit der aktuellen Konfiguration neu."""
+    script_path = os.path.join(os.path.expanduser('~'), '.local', 'bin', 'dart-screensaver')
+    if not os.path.isfile(script_path):
+        return
+
+    pid = None
+    try:
+        with open(SCREENSAVER_PID_FILE, 'r', encoding='utf-8') as f:
+            pid = int(f.read().strip())
+        with open(f'/proc/{pid}/cmdline', 'rb') as f:
+            if b'dart-screensaver' not in f.read():
+                raise OSError('Screensaver PID gehört nicht zum Dart Screensaver.')
+        os.kill(pid, signal.SIGTERM)
+    except (OSError, ValueError):
+        # Installationen vor der PID-Datei-Version laufen direkt als swayidle.
+        pid = None
+        subprocess.run(
+            ['pkill', '-f', r'^swayidle -w timeout [0-9]+ .*http://localhost:5000'],
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+
+    deadline = time.monotonic() + 5
+    if pid is not None:
+        while os.path.exists(SCREENSAVER_PID_FILE) and time.monotonic() < deadline:
+            time.sleep(0.05)
+        if os.path.exists(SCREENSAVER_PID_FILE):
+            raise RuntimeError('Screensaver wurde nicht beendet.')
+    else:
+        while time.monotonic() < deadline:
+            result = subprocess.run(
+                ['pgrep', '-f', r'^swayidle -w timeout [0-9]+ .*http://localhost:5000'],
+                capture_output=True, text=True, timeout=5, check=False,
+            )
+            if result.returncode != 0:
+                break
+            time.sleep(0.05)
+        else:
+            raise RuntimeError('Screensaver wurde nicht beendet.')
+
+    subprocess.Popen(
+        [script_path],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
 
 
 def save_json(filepath, data):
@@ -1541,6 +1596,11 @@ def admin():
                         )
                     except (OSError, subprocess.SubprocessError):
                         pass
+                if "screensaver_idle_time" in request.form:
+                    try:
+                        restart_screensaver()
+                    except (OSError, RuntimeError, subprocess.SubprocessError):
+                        app.logger.exception('Screensaver-Neustart fehlgeschlagen')
             except ValueError:
                 pass
 
@@ -1961,42 +2021,94 @@ def autodarts_collect_and_import(max_pages=2):
     return {"ok": True, "imported_matches": new_imported, "errors": errors, "collected_match_ids": match_ids, "page_htmls": page_htmls}
 
 
+def start_autodarts_import(max_pages=2):
+    """Startet denselben Hintergrundimport wie der Button im Adminbereich."""
+    if not AUTODARTS_RUN_LOCK.acquire(blocking=False):
+        return False
+
+    def worker(pages):
+        try:
+            save_autodarts_status('running', 'Autodarts-Abruf läuft…')
+            try:
+                res = autodarts_collect_and_import(max_pages=pages)
+            except Exception as e:
+                res = {"ok": False, "error": str(e)}
+            # update last run in config
+            cfg = load_json(CONFIG_FILE)
+            cfg['autodarts_last_run'] = datetime.now().strftime('%d.%m.%Y %H:%M')
+            save_json(CONFIG_FILE, cfg)
+            # optionally log results to file
+            with open(os.path.join(DATA_DIR, 'autodarts_last_result.json'), 'w', encoding='utf-8') as f:
+                json.dump(res, f, indent=2, ensure_ascii=False)
+
+            if res.get('ok'):
+                errors = res.get('errors') or []
+                if errors:
+                    save_autodarts_status('success', f"Lauf beendet mit {len(errors)} Hinweis(en). Importiert: {len(res.get('imported_matches') or [])}.", errors=errors)
+                else:
+                    save_autodarts_status('success', f"Erfolgreich. Importiert: {len(res.get('imported_matches') or [])} Match(es).")
+            else:
+                save_autodarts_status('error', res.get('error') or 'Unbekannter Fehler.', errors=res.get('errors') or [])
+        except Exception as e:
+            app.logger.exception('Autodarts-Hintergrundimport fehlgeschlagen')
+            save_autodarts_status('error', str(e))
+        finally:
+            AUTODARTS_RUN_LOCK.release()
+
+    t = threading.Thread(target=worker, args=(max_pages,))
+    t.daemon = True
+    t.start()
+    return True
+
+
+def autodarts_scheduler():
+    """Löst den vorhandenen Hintergrundimport im konfigurierten Abstand aus."""
+    previous_enabled = False
+    previous_interval = None
+    next_run_at = None
+
+    while True:
+        config = load_json(CONFIG_FILE)
+        enabled = bool(config.get('autodarts_enabled'))
+        try:
+            interval = max(1, int(config.get('autodarts_interval_minutes', 60)))
+        except (TypeError, ValueError):
+            interval = 60
+
+        now = time.monotonic()
+        if not enabled:
+            next_run_at = None
+        elif not previous_enabled or interval != previous_interval:
+            next_run_at = now + interval * 60
+        elif next_run_at is not None and now >= next_run_at:
+            start_autodarts_import()
+            next_run_at = now + interval * 60
+
+        previous_enabled = enabled
+        previous_interval = interval
+        time.sleep(5)
+
+
+def start_autodarts_scheduler():
+    """Stellt sicher, dass der Scheduler nur einmal pro Serverprozess läuft."""
+    global AUTODARTS_SCHEDULER_STARTED
+    with AUTODARTS_SCHEDULER_LOCK:
+        if AUTODARTS_SCHEDULER_STARTED:
+            return
+        AUTODARTS_SCHEDULER_STARTED = True
+        thread = threading.Thread(target=autodarts_scheduler, daemon=True)
+        thread.start()
+
+
 @app.route('/admin/run_autodarts', methods=['POST'])
 def admin_run_autodarts():
     # Run in background thread to avoid long blocking request
     max_pages = int(request.form.get('autodarts_pages') or 2)
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.best == 'application/json'
-
-    def worker(pages):
-        save_autodarts_status('running', 'Autodarts-Abruf läuft…')
-        try:
-            res = autodarts_collect_and_import(max_pages=pages)
-        except Exception as e:
-            res = {"ok": False, "error": str(e)}
-        # update last run in config
-        cfg = load_json(CONFIG_FILE)
-        cfg['autodarts_last_run'] = datetime.now().strftime('%d.%m.%Y %H:%M')
-        save_json(CONFIG_FILE, cfg)
-        # optionally log results to file
-        with open(os.path.join(DATA_DIR, 'autodarts_last_result.json'), 'w', encoding='utf-8') as f:
-            json.dump(res, f, indent=2, ensure_ascii=False)
-
-        if res.get('ok'):
-            errors = res.get('errors') or []
-            if errors:
-                save_autodarts_status('success', f"Lauf beendet mit {len(errors)} Hinweis(en). Importiert: {len(res.get('imported_matches') or [])}.", errors=errors)
-            else:
-                save_autodarts_status('success', f"Erfolgreich. Importiert: {len(res.get('imported_matches') or [])} Match(es).")
-        else:
-            save_autodarts_status('error', res.get('error') or 'Unbekannter Fehler.', errors=res.get('errors') or [])
-
-    import threading
-    t = threading.Thread(target=worker, args=(max_pages,))
-    t.daemon = True
-    t.start()
+    started = start_autodarts_import(max_pages)
 
     if is_ajax:
-        return jsonify({"ok": True, "started": True})
+        return jsonify({"ok": started, "started": started, "error": None if started else "Autodarts-Abruf läuft bereits."}), 202 if started else 409
     return redirect(url_for('admin'))
 
 
@@ -2204,6 +2316,10 @@ def admin_install_screensaver():
         with open(desktop_dst, 'w', encoding='utf-8') as f:
             f.write(desktop_content)
 
+        try:
+            restart_screensaver()
+        except (OSError, RuntimeError, subprocess.SubprocessError):
+            app.logger.exception('Screensaver-Neustart nach Installation fehlgeschlagen')
         msg = f'Screensaver installiert: {script_dst} (Autostart: {desktop_dst}).'
         if is_ajax:
             return jsonify({"ok": True, "message": msg})
@@ -2246,11 +2362,17 @@ def admin_install_cec():
         if result.returncode != 0:
             raise RuntimeError(result.stderr.strip() or 'systemctl --user ist nicht verfügbar.')
         result = subprocess.run(
-            ['systemctl', '--user', 'enable', '--now', 'hdmi-audio-cec.service'],
+            ['systemctl', '--user', 'enable', 'hdmi-audio-cec.service'],
             capture_output=True, text=True, timeout=30, check=False,
         )
         if result.returncode != 0:
             raise RuntimeError(result.stderr.strip() or 'CEC-Service konnte nicht aktiviert werden.')
+        result = subprocess.run(
+            ['systemctl', '--user', 'restart', 'hdmi-audio-cec.service'],
+            capture_output=True, text=True, timeout=30, check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr.strip() or 'CEC-Service konnte nicht gestartet werden.')
 
         return jsonify({
             "ok": True,
@@ -2265,4 +2387,7 @@ def admin_install_cec():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    debug = os.environ.get('DART_SCOREBOARD_DEBUG') == '1'
+    if not debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        start_autodarts_scheduler()
+    app.run(debug=debug, host='0.0.0.0', port=5000)

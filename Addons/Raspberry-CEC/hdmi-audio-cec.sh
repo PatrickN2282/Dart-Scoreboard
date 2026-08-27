@@ -312,7 +312,6 @@ desired_mode() {
 activate_tv() {
     log "CEC: Aktives Zeitfenster (${CEC_WAKE_TIME}–${CEC_STANDBY_TIME}), aktiviere TV"
     cec_wake_tv || true
-    cec_set_name || true
     wait_for_pipewire || return 1
     wait_for_hdmi_sink || true
     setup_audio_with_retry || true
@@ -331,6 +330,7 @@ main() {
 
     log "Starte Zeitplan- und Keep-Alive-Loop (alle ${KEEPALIVE_SEC}s)"
     local last_mode=""
+    local last_name=""
     local audio_check_counter=0
     local audio_check_interval=6  # Alle 6 × KEEPALIVE_SEC = ~5 Min Audio prüfen
 
@@ -365,6 +365,11 @@ main() {
                     set_audio_hdmi || true
                 fi
             fi
+        fi
+
+        if [ "$mode" = "active" ] && [ "$CEC_NAME" != "$last_name" ]; then
+            cec_set_name || true
+            last_name="$CEC_NAME"
         fi
 
         sleep "$KEEPALIVE_SEC"
