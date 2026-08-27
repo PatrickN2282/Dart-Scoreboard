@@ -2316,7 +2316,10 @@ def admin_install_screensaver():
         with open(desktop_dst, 'w', encoding='utf-8') as f:
             f.write(desktop_content)
 
-        restart_screensaver()
+        try:
+            restart_screensaver()
+        except (OSError, RuntimeError, subprocess.SubprocessError):
+            app.logger.exception('Screensaver-Neustart nach Installation fehlgeschlagen')
         msg = f'Screensaver installiert: {script_dst} (Autostart: {desktop_dst}).'
         if is_ajax:
             return jsonify({"ok": True, "message": msg})
