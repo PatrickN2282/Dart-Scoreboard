@@ -180,6 +180,7 @@ def restart_screensaver():
     if not os.path.isfile(script_path):
         return
 
+    pid = None
     try:
         with open(SCREENSAVER_PID_FILE, 'r', encoding='utf-8') as f:
             pid = int(f.read().strip())
@@ -189,12 +190,30 @@ def restart_screensaver():
         os.kill(pid, signal.SIGTERM)
     except (OSError, ValueError):
         # Installationen vor der PID-Datei-Version laufen direkt als swayidle.
+        pid = None
         subprocess.run(
             ['pkill', '-f', r'^swayidle -w timeout [0-9]+ .*http://localhost:5000'],
             capture_output=True, text=True, timeout=5, check=False,
         )
 
-    time.sleep(0.2)
+    deadline = time.monotonic() + 5
+    if pid is not None:
+        while os.path.exists(SCREENSAVER_PID_FILE) and time.monotonic() < deadline:
+            time.sleep(0.05)
+        if os.path.exists(SCREENSAVER_PID_FILE):
+            raise RuntimeError('Screensaver wurde nicht beendet.')
+    else:
+        while time.monotonic() < deadline:
+            result = subprocess.run(
+                ['pgrep', '-f', r'^swayidle -w timeout [0-9]+ .*http://localhost:5000'],
+                capture_output=True, text=True, timeout=5, check=False,
+            )
+            if result.returncode != 0:
+                break
+            time.sleep(0.05)
+        else:
+            raise RuntimeError('Screensaver wurde nicht beendet.')
+
     subprocess.Popen(
         [script_path],
         stdin=subprocess.DEVNULL,
@@ -1580,7 +1599,7 @@ def admin():
                 if "screensaver_idle_time" in request.form:
                     try:
                         restart_screensaver()
-                    except (OSError, subprocess.SubprocessError):
+                    except (OSError, RuntimeError, subprocess.SubprocessError):
                         app.logger.exception('Screensaver-Neustart fehlgeschlagen')
             except ValueError:
                 pass
