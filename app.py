@@ -81,6 +81,7 @@ IMPORTED_MATCHES_FILE = os.path.join(DATA_DIR, 'imported_matches.json')
 AUTODARTS_STATUS_FILE = os.path.join(DATA_DIR, 'autodarts_status.json')
 AUTODARTS_DEBUG_SCREENSHOT = os.path.join(DATA_DIR, 'autodarts_debug.png')
 AUTODARTS_RUN_LOCK = threading.Lock()
+AUTODARTS_SCHEDULER_LOCK = threading.Lock()
 AUTODARTS_SCHEDULER_STARTED = False
 
 try:
@@ -2072,11 +2073,12 @@ def autodarts_scheduler():
 def start_autodarts_scheduler():
     """Stellt sicher, dass der Scheduler nur einmal pro Serverprozess läuft."""
     global AUTODARTS_SCHEDULER_STARTED
-    if AUTODARTS_SCHEDULER_STARTED:
-        return
-    AUTODARTS_SCHEDULER_STARTED = True
-    thread = threading.Thread(target=autodarts_scheduler, daemon=True)
-    thread.start()
+    with AUTODARTS_SCHEDULER_LOCK:
+        if AUTODARTS_SCHEDULER_STARTED:
+            return
+        AUTODARTS_SCHEDULER_STARTED = True
+        thread = threading.Thread(target=autodarts_scheduler, daemon=True)
+        thread.start()
 
 
 @app.route('/admin/run_autodarts', methods=['POST'])
@@ -2363,6 +2365,7 @@ def admin_install_cec():
 
 
 if __name__ == '__main__':
-    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+    debug = os.environ.get('DART_SCOREBOARD_DEBUG') == '1'
+    if not debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         start_autodarts_scheduler()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=debug, host='0.0.0.0', port=5000)
