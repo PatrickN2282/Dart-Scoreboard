@@ -42,8 +42,8 @@ Das Installationsskript erzeugt `~/.config/autostart/dart-screensaver.desktop` u
 ## Konfiguration
 
 Die Wartezeit wird im Adminbereich unter **Addons → Bildschirmschoner** eingestellt.
-Sie wird in `~/.config/dart-scoreboard/screensaver.conf` gespeichert und beim nächsten
-Start des Screensavers übernommen. Die übrigen Werte können vor der Installation im
+Sie wird in `~/.config/dart-scoreboard/screensaver.conf` gespeichert; ein bereits
+installierter Screensaver wird beim Speichern automatisch neu gestartet. Die übrigen Werte können vor der Installation im
 Skript angepasst werden:
 
 | Variable | Standard | Beschreibung |
