@@ -21,19 +21,21 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 printf -v chromium_command \
   'chromium --ozone-platform=wayland --start-fullscreen --password-store=basic --no-first-run --disable-sync --noerrdialogs --disable-infobars %q &' \
   "$URL"
-swayidle -w \
-  timeout "$IDLE_TIME" "$chromium_command" \
-  resume 'pkill -f chromium' &
-swayidle_pid=$!
 
 mkdir -p "$(dirname "$SCREENSAVER_PID_FILE")"
 printf '%s\n' "$$" > "$SCREENSAVER_PID_FILE"
 
+swayidle_pid=""
 cleanup() {
-  kill "$swayidle_pid" 2>/dev/null || true
+  [ -z "$swayidle_pid" ] || kill "$swayidle_pid" 2>/dev/null || true
   rm -f "$SCREENSAVER_PID_FILE"
 }
 trap 'cleanup; exit 0' HUP INT TERM
+
+swayidle -w \
+  timeout "$IDLE_TIME" "$chromium_command" \
+  resume 'pkill -f chromium' &
+swayidle_pid=$!
 
 wait "$swayidle_pid" || true
 rm -f "$SCREENSAVER_PID_FILE"

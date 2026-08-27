@@ -2062,8 +2062,8 @@ def autodarts_scheduler():
         elif not previous_enabled or interval != previous_interval:
             next_run_at = now + interval * 60
         elif next_run_at is not None and now >= next_run_at:
-            if start_autodarts_import():
-                next_run_at = now + interval * 60
+            start_autodarts_import()
+            next_run_at = now + interval * 60
 
         previous_enabled = enabled
         previous_interval = interval
