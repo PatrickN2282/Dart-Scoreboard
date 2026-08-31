@@ -1,0 +1,60 @@
+{
+    "schema_version": 1,
+    "initial_import_completed": true,
+    "backfill_next_page": 0,
+    "pending_matches": {
+        "019cdda7-a61d-723e-bc43-3fa3b3e1d967": {
+            "status": "failed",
+            "attempts": 3,
+            "first_seen_at": "2026-08-28T11:52:32.647293Z",
+            "last_attempt_at": "2026-08-31T11:48:03.949985Z",
+            "last_error": "Stats für Match 019cdda7-a61d-723e-bc43-3fa3b3e1d967 konnten nicht geladen werden (Status 400).",
+            "played_at": "2026-03-11T16:10:06.514342Z"
+        },
+        "019ce1bf-8c9e-7280-a01e-7dbaa511a2ae": {
+            "status": "failed",
+            "attempts": 3,
+            "first_seen_at": "2026-08-28T11:52:38.268193Z",
+            "last_attempt_at": "2026-08-31T11:48:08.936799Z",
+            "last_error": "Stats für Match 019ce1bf-8c9e-7280-a01e-7dbaa511a2ae konnten nicht geladen werden (Status 400).",
+            "played_at": "2026-03-12T11:16:10.070648Z"
+        },
+        "019d1a78-ec1d-7404-aff5-f3fc4558f0dd": {
+            "status": "failed",
+            "attempts": 3,
+            "first_seen_at": "2026-08-28T11:53:35.550428Z",
+            "last_attempt_at": "2026-08-31T11:48:57.785947Z",
+            "last_error": "Stats für Match 019d1a78-ec1d-7404-aff5-f3fc4558f0dd konnten nicht geladen werden (Status 400).",
+            "played_at": "2026-03-23T12:15:01.640984Z"
+        },
+        "019d29dc-3fd7-75ff-9688-8167bccff3e2": {
+            "status": "failed",
+            "attempts": 3,
+            "first_seen_at": "2026-08-28T11:53:43.495715Z",
+            "last_attempt_at": "2026-08-31T11:49:04.343289Z",
+            "last_error": "Stats für Match 019d29dc-3fd7-75ff-9688-8167bccff3e2 konnten nicht geladen werden (Status 400).",
+            "played_at": "2026-03-26T11:19:02.725709Z"
+        },
+        "019d9b0a-9d34-7a71-add9-b016978f8640": {
+            "status": "failed",
+            "attempts": 3,
+            "first_seen_at": "2026-08-28T11:55:32.718031Z",
+            "last_attempt_at": "2026-08-31T11:50:36.949182Z",
+            "last_error": "Stats für Match 019d9b0a-9d34-7a71-add9-b016978f8640 konnten nicht geladen werden (Status 400).",
+            "played_at": "2026-04-17T10:48:56.471781Z"
+        },
+        "019f895d-7350-7d95-977b-c76a7870d977": {
+            "status": "failed",
+            "attempts": 3,
+            "first_seen_at": "2026-08-28T12:00:39.340906Z",
+            "last_attempt_at": "2026-08-31T11:54:58.272825Z",
+            "last_error": "Stats für Match 019f895d-7350-7d95-977b-c76a7870d977 konnten nicht geladen werden (Status 400).",
+            "played_at": "2026-07-22T10:35:08.503661Z"
+        }
+    },
+    "last_check_at": "2026-08-31T11:56:36.894668Z",
+    "last_success_at": "2026-08-31T11:56:36.894668Z",
+    "next_check_at": null,
+    "interval_minutes": 5,
+    "newest_finished_at": "2026-08-31T10:33:35.169801Z"
+}

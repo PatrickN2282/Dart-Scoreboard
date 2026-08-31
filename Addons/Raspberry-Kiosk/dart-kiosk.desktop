@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Dart Scoreboard Kiosk Session Bridge
+Comment=Übergibt die grafische Desktop-Session an den systemd-Kiosk-Dienst
+Exec=sh -c 'systemctl --user import-environment DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE; systemctl --user restart dart-kiosk.service'
+OnlyShowIn=LXDE;LXQt;labwc;Wayfire;
+X-GNOME-Autostart-enabled=true
+NoDisplay=true

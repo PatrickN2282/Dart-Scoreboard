@@ -1,0 +1,22 @@
+{
+  "id": "cec",
+  "name": "HDMI-CEC-Manager",
+  "version": "1.1.0",
+  "description": "Hält den Fernseher im konfigurierten Zeitfenster aktiv und verwaltet HDMI-Audio.",
+  "kind": "systemd-user",
+  "service": "hdmi-audio-cec.service",
+  "config": ".config/dart-scoreboard/cec.conf",
+  "requires_commands": ["cec-client", "wpctl", "timeout", "flock"],
+  "files": [
+    {
+      "source": "hdmi-audio-cec.sh",
+      "destination": ".local/bin/hdmi-audio-cec.sh",
+      "mode": "0755"
+    },
+    {
+      "source": "hdmi-audio-cec.service",
+      "destination": ".config/systemd/user/hdmi-audio-cec.service",
+      "mode": "0644"
+    }
+  ]
+}

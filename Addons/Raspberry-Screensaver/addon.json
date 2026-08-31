@@ -1,0 +1,28 @@
+{
+  "id": "screensaver",
+  "name": "Scoreboard-Bildschirmschoner",
+  "version": "1.2.0",
+  "description": "Zeigt bei Spielpause das Scoreboard und schließt nur dieses Fenster bei neuer Aktivität.",
+  "kind": "systemd-user",
+  "service": "dart-screensaver.service",
+  "config": ".config/dart-scoreboard/screensaver.conf",
+  "requires_commands": ["swayidle"],
+  "requires_any_command": ["chromium", "chromium-browser"],
+  "files": [
+    {
+      "source": "dart_screensaver.sh",
+      "destination": ".local/bin/dart-screensaver",
+      "mode": "0755"
+    },
+    {
+      "source": "dart-screensaver.service",
+      "destination": ".config/systemd/user/dart-screensaver.service",
+      "mode": "0644"
+    },
+    {
+      "source": "dart-screensaver.desktop",
+      "destination": ".config/autostart/dart-screensaver.desktop",
+      "mode": "0644"
+    }
+  ]
+}

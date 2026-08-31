@@ -16,13 +16,10 @@
     "rotation_duration_player": 60,
     "rotation_duration_h2h": 60,
     "rotation_refresh_minutes": 10,
-    "autodarts_email": "",
-    "autodarts_password": "",
+    "autodarts_last_run": "26.08.2026 14:40",
+    "autodarts_email": "support@smartps.de",
+    "autodarts_password": "Smart2026!",
     "autodarts_enabled": false,
     "autodarts_interval_minutes": 60,
-    "autodarts_user_data_dir": "",
-    "cec_enabled": false,
-    "cec_device_name": "Dart Scoreboard",
-    "cec_standby_time": "22:00",
-    "cec_wake_time": "08:00"
+    "autodarts_user_data_dir": "/home/patrickn/.config/chromium/"
 }

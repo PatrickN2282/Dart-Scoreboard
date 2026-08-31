@@ -2,5 +2,6 @@
 Type=Application
 Name=Dart Screensaver
 Comment=Startet Chromium-Kiosk nach Inaktivität
-Exec=@DART_SCREENSAVER_EXEC@
+Exec=sh -c 'systemctl --user import-environment DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE; systemctl --user restart dart-screensaver.service'
 X-GNOME-Autostart-enabled=true
+NoDisplay=true

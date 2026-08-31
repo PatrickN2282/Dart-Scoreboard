@@ -2,12 +2,15 @@ import os
 import re
 import json
 import random
-import shutil
-import stat
 import subprocess
 import time
 import shlex
-from datetime import datetime
+import signal
+import threading
+import tempfile
+from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import socket
 import requests
@@ -15,6 +18,15 @@ import qrcode
 import io
 import base64
 import hashlib
+
+from addon_system import (
+    ALLOWED_ACTIONS,
+    AddonError,
+    addon_status,
+    all_addon_statuses,
+    discover_addons,
+    manage_addon,
+)
 
 # --- Konfiguration ---
 app = Flask(__name__)
@@ -31,11 +43,11 @@ BOT_SCORES_FILE = os.path.join(DATA_DIR, 'bot_scores.json')
 
 # Verzeichnis mit optionalen Zusatzfunktionen (z.B. Bildschirmschoner-Skripte)
 ADDONS_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Addons')
-SCREENSAVER_ADDON_DIR = os.path.join(ADDONS_DIR, 'Raspberry-Screensaver')
-CEC_ADDON_DIR = os.path.join(ADDONS_DIR, 'Raspberry-CEC')
 CEC_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'dart-scoreboard')
 CEC_CONFIG_FILE = os.path.join(CEC_CONFIG_DIR, 'cec.conf')
 SCREENSAVER_CONFIG_FILE = os.path.join(CEC_CONFIG_DIR, 'screensaver.conf')
+SCREENSAVER_PID_FILE = os.path.join(CEC_CONFIG_DIR, 'screensaver.pid')
+KIOSK_CONFIG_FILE = os.path.join(CEC_CONFIG_DIR, 'kiosk.conf')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -46,6 +58,7 @@ DEFAULT_CONFIG = {
     "background_url": None,
     "static_limit": 5,
     "rotation_limit": 10,
+    "leaderboard_limit": 10,
     "static_h2_size": "2.5em",
     "rotation_h2_size": "3.5em",
     "static_td_size": "2.0em",
@@ -54,6 +67,8 @@ DEFAULT_CONFIG = {
     # Wartezeiten (in Sekunden) für die einzelnen Ansichten der Rotation
     "rotation_duration_grid1": 300,
     "rotation_duration_grid2": 60,
+    "rotation_duration_grid3": 60,
+    "rotation_duration_rankings": 30,
     "rotation_duration_winrate": 60,
     "rotation_duration_player": 60,
     "rotation_duration_h2h": 60,
@@ -68,15 +83,37 @@ DEFAULT_CONFIG = {
     "cec_device_name": "Dart Scoreboard",
     "cec_standby_time": "22:00",
     "cec_wake_time": "08:00",
+    "cec_adapter": "",
+    "cec_check_interval": 50,
     "screensaver_idle_time": 300,
+    "kiosk_url": "http://127.0.0.1:5000/",
+    "kiosk_display_mode": "auto",
+    "kiosk_hide_cursor": True,
 }
 
 # Datei für bereits importierte Match-IDs
 IMPORTED_MATCHES_FILE = os.path.join(DATA_DIR, 'imported_matches.json')
+AUTODARTS_SYNC_STATE_FILE = os.path.join(DATA_DIR, 'autodarts_sync_state.json')
 
 # Status-Datei für laufende/letzte Autodarts-Läufe (für Live-Feedback im Admin-Bereich)
 AUTODARTS_STATUS_FILE = os.path.join(DATA_DIR, 'autodarts_status.json')
+AUTODARTS_LAST_RESULT_FILE = os.path.join(DATA_DIR, 'autodarts_last_result.json')
 AUTODARTS_DEBUG_SCREENSHOT = os.path.join(DATA_DIR, 'autodarts_debug.png')
+AUTODARTS_RUN_LOCK = threading.Lock()
+AUTODARTS_SCHEDULER_LOCK = threading.Lock()
+AUTODARTS_SYNC_STATE_LOCK = threading.RLock()
+AUTODARTS_SCHEDULER_STARTED = False
+JSON_WRITE_LOCK = threading.RLock()
+AUTODARTS_PAGE_SIZE = 50
+AUTODARTS_INCREMENTAL_MAX_PAGES = 10
+AUTODARTS_BACKFILL_MAX_PAGES = 1000
+try:
+    AUTODARTS_LOCAL_TIMEZONE = ZoneInfo('Europe/Berlin')
+except Exception:
+    # Windows-Python enthält die IANA-Daten nicht immer systemweit. Das
+    # requirements-Paket `tzdata` liefert sie bei Neuinstallationen; der lokale
+    # Offset hält bestehende Entwicklungsumgebungen trotzdem startfähig.
+    AUTODARTS_LOCAL_TIMEZONE = datetime.now().astimezone().tzinfo or timezone.utc
 
 try:
     from playwright.sync_api import sync_playwright
@@ -144,12 +181,20 @@ def get_app_version():
 def write_cec_config(config):
     """Schreibt die vom CEC-Addon gelesene Laufzeitkonfiguration."""
     os.makedirs(CEC_CONFIG_DIR, mode=0o700, exist_ok=True)
+    adapter = str(config.get('cec_adapter', '')).strip()
+    if adapter and not re.fullmatch(r'/dev/cec[0-9]+', adapter):
+        adapter = ''
+    device_name = str(config.get('cec_device_name', 'Dart Scoreboard')).strip()
+    if not re.fullmatch(r'[ -~]{1,14}', device_name):
+        device_name = 'Dart Scoreboard'
     content = (
         "# Wird vom Dart Scoreboard Adminbereich verwaltet.\n"
         f"CEC_ENABLED={'1' if config.get('cec_enabled') else '0'}\n"
-        f"CEC_NAME={shlex.quote(config.get('cec_device_name', 'Dart Scoreboard'))}\n"
+        f"CEC_NAME={shlex.quote(device_name)}\n"
         f"CEC_STANDBY_TIME={shlex.quote(config.get('cec_standby_time', '22:00'))}\n"
         f"CEC_WAKE_TIME={shlex.quote(config.get('cec_wake_time', '08:00'))}\n"
+        f"CEC_ADAPTER={shlex.quote(adapter)}\n"
+        f"CEC_CHECK_INTERVAL={min(3600, max(10, int(config.get('cec_check_interval', 50))))}\n"
     )
     with open(CEC_CONFIG_FILE, 'w', encoding='utf-8') as f:
         f.write(content)
@@ -168,9 +213,106 @@ def write_screensaver_config(config):
     os.chmod(SCREENSAVER_CONFIG_FILE, 0o600)
 
 
+def write_kiosk_config(config):
+    """Write the validated runtime settings consumed by the kiosk launcher."""
+    os.makedirs(CEC_CONFIG_DIR, mode=0o700, exist_ok=True)
+    url = str(config.get('kiosk_url') or DEFAULT_CONFIG['kiosk_url']).strip()
+    parsed = urlparse(url)
+    if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
+        url = DEFAULT_CONFIG['kiosk_url']
+    display_mode = config.get('kiosk_display_mode', 'auto')
+    if display_mode not in {'auto', 'wayland', 'x11'}:
+        display_mode = 'auto'
+    content = (
+        "# Wird vom Dart Scoreboard Adminbereich verwaltet.\n"
+        f"KIOSK_URL={shlex.quote(url)}\n"
+        "KIOSK_BROWSER=''\n"
+        f"KIOSK_DISPLAY_MODE={shlex.quote(display_mode)}\n"
+        f"KIOSK_HIDE_CURSOR={'1' if config.get('kiosk_hide_cursor', True) else '0'}\n"
+    )
+    with open(KIOSK_CONFIG_FILE, 'w', encoding='utf-8') as f:
+        f.write(content)
+    os.chmod(KIOSK_CONFIG_FILE, 0o600)
+
+
+def restart_screensaver():
+    """Startet den installierten Screensaver mit der aktuellen Konfiguration neu."""
+    script_path = os.path.join(os.path.expanduser('~'), '.local', 'bin', 'dart-screensaver')
+    if not os.path.isfile(script_path):
+        return
+
+    # Current installations are managed by systemd. Keep the PID based branch
+    # below as a migration path for older desktop-autostart installations.
+    service_path = os.path.join(
+        os.path.expanduser('~'), '.config', 'systemd', 'user', 'dart-screensaver.service'
+    )
+    if os.path.isfile(service_path):
+        result = subprocess.run(
+            ['systemctl', '--user', 'try-restart', 'dart-screensaver.service'],
+            capture_output=True, text=True, timeout=15, check=False,
+        )
+        if result.returncode == 0:
+            return
+
+    pid = None
+    try:
+        with open(SCREENSAVER_PID_FILE, 'r', encoding='utf-8') as f:
+            pid = int(f.read().strip())
+        with open(f'/proc/{pid}/cmdline', 'rb') as f:
+            if b'dart-screensaver' not in f.read():
+                raise OSError('Screensaver PID gehört nicht zum Dart Screensaver.')
+        os.kill(pid, signal.SIGTERM)
+    except (OSError, ValueError):
+        # Installationen vor der PID-Datei-Version laufen direkt als swayidle.
+        pid = None
+        subprocess.run(
+            ['pkill', '-f', r'^swayidle -w timeout [0-9]+ .*http://localhost:5000'],
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+
+    deadline = time.monotonic() + 5
+    if pid is not None:
+        while os.path.exists(SCREENSAVER_PID_FILE) and time.monotonic() < deadline:
+            time.sleep(0.05)
+        if os.path.exists(SCREENSAVER_PID_FILE):
+            raise RuntimeError('Screensaver wurde nicht beendet.')
+    else:
+        while time.monotonic() < deadline:
+            result = subprocess.run(
+                ['pgrep', '-f', r'^swayidle -w timeout [0-9]+ .*http://localhost:5000'],
+                capture_output=True, text=True, timeout=5, check=False,
+            )
+            if result.returncode != 0:
+                break
+            time.sleep(0.05)
+        else:
+            raise RuntimeError('Screensaver wurde nicht beendet.')
+
+    subprocess.Popen(
+        [script_path],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+
+
 def save_json(filepath, data):
-    with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
+    """Atomically replace JSON files so readers never observe partial writes."""
+    directory = os.path.dirname(os.path.abspath(filepath))
+    os.makedirs(directory, exist_ok=True)
+    with JSON_WRITE_LOCK:
+        fd, temporary_path = tempfile.mkstemp(prefix='.dart-scoreboard-', suffix='.json', dir=directory)
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+                f.write('\n')
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(temporary_path, filepath)
+        finally:
+            if os.path.exists(temporary_path):
+                os.unlink(temporary_path)
 
 
 def load_imported_matches():
@@ -184,8 +326,196 @@ def load_imported_matches():
 
 
 def save_imported_matches(lst):
-    with open(IMPORTED_MATCHES_FILE, 'w', encoding='utf-8') as f:
-        json.dump(lst, f, indent=4, ensure_ascii=False)
+    save_json(IMPORTED_MATCHES_FILE, lst)
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
+
+
+def datetime_to_iso(value):
+    """Normalisiert einen Zeitpunkt als UTC-ISO-String."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return None
+        try:
+            value = datetime.fromisoformat(raw.replace('Z', '+00:00'))
+        except ValueError:
+            try:
+                value = datetime.strptime(raw, '%d.%m.%Y %H:%M')
+                value = value.replace(tzinfo=AUTODARTS_LOCAL_TIMEZONE)
+            except ValueError:
+                return None
+    if not isinstance(value, datetime):
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+
+
+def parse_datetime(value):
+    normalized = datetime_to_iso(value)
+    if not normalized:
+        return None
+    return datetime.fromisoformat(normalized.replace('Z', '+00:00'))
+
+
+def format_local_datetime(value):
+    parsed = parse_datetime(value)
+    if not parsed:
+        return ''
+    return parsed.astimezone(AUTODARTS_LOCAL_TIMEZONE).strftime('%d.%m.%Y %H:%M')
+
+
+def newest_timestamp(*values):
+    parsed = [(parse_datetime(value), value) for value in values if value]
+    parsed = [(stamp, original) for stamp, original in parsed if stamp is not None]
+    if not parsed:
+        return None
+    return datetime_to_iso(max(parsed, key=lambda item: item[0])[0])
+
+
+def uuid7_timestamp(match_id):
+    """Liest den Zeitanteil einer UUIDv7 als letzten, rein lokalen Fallback."""
+    try:
+        compact = str(match_id).replace('-', '')
+        if len(compact) != 32 or compact[12] != '7':
+            return None
+        milliseconds = int(compact[:12], 16)
+        return datetime_to_iso(datetime.fromtimestamp(milliseconds / 1000, tz=timezone.utc))
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def match_played_at(result, match_id=None):
+    """Ermittelt den tatsächlichen Spielzeitpunkt mit abgestuften Fallbacks."""
+    for key in ('finishedAt', 'finished_at', 'played_at'):
+        value = datetime_to_iso((result or {}).get(key))
+        if value:
+            return value
+
+    game_times = []
+    for game in (result or {}).get('games', []) or []:
+        for key in ('finishedAt', 'finished_at'):
+            value = datetime_to_iso(game.get(key))
+            if value:
+                game_times.append(value)
+                break
+    if game_times:
+        return newest_timestamp(*game_times)
+
+    for key in ('createdAt', 'created_at'):
+        value = datetime_to_iso((result or {}).get(key))
+        if value:
+            return value
+
+    game_times = []
+    for game in (result or {}).get('games', []) or []:
+        for key in ('createdAt', 'created_at'):
+            value = datetime_to_iso(game.get(key))
+            if value:
+                game_times.append(value)
+                break
+    if game_times:
+        return newest_timestamp(*game_times)
+    return uuid7_timestamp(match_id or (result or {}).get('id'))
+
+
+def turn_finished_at(turn, fallback=None):
+    for key in ('finishedAt', 'finished_at'):
+        value = datetime_to_iso((turn or {}).get(key))
+        if value:
+            return value
+    throw_times = []
+    for throw in (turn or {}).get('throws', []) or []:
+        for key in ('finishedAt', 'finished_at', 'createdAt', 'created_at'):
+            value = datetime_to_iso(throw.get(key))
+            if value:
+                throw_times.append(value)
+                break
+    if throw_times:
+        return newest_timestamp(*throw_times)
+    for key in ('createdAt', 'created_at'):
+        value = datetime_to_iso((turn or {}).get(key))
+        if value:
+            return value
+    return datetime_to_iso(fallback)
+
+
+def is_double_bull_throw(throw):
+    """Erkennt das innere Bullseye unabhängig von kleinen API-Varianten."""
+    throw = throw or {}
+    segment = throw.get('segment') or {}
+    name = str(segment.get('name') or throw.get('segmentName') or '').strip().upper()
+    number = segment.get('number', throw.get('number'))
+    multiplier = throw.get('multiplier')
+    if multiplier is None:
+        multiplier = segment.get('multiplier')
+    try:
+        number = int(number)
+    except (TypeError, ValueError):
+        number = None
+    try:
+        multiplier = int(multiplier)
+    except (TypeError, ValueError):
+        multiplier = None
+    return name in {'D25', 'DB', 'DBULL', 'DOUBLEBULL', 'INNERBULL', 'BULLSEYE'} or (
+        number == 25 and multiplier == 2
+    )
+
+
+def last_scoring_throw(turn):
+    """Liefert den letzten wertenden Dart eines Turns (ohne aufgefüllte Misses)."""
+    throws = (turn or {}).get('throws') or []
+    scoring = []
+    for throw in throws:
+        segment = throw.get('segment') or {}
+        number = segment.get('number', throw.get('number'))
+        multiplier = throw.get('multiplier')
+        if multiplier is None:
+            multiplier = segment.get('multiplier')
+        try:
+            value = int(number or 0) * int(multiplier or 0)
+        except (TypeError, ValueError):
+            value = 0
+        if value <= 0 and is_double_bull_throw(throw):
+            value = 50
+        if value > 0:
+            scoring.append(throw)
+    return scoring[-1] if scoring else (throws[-1] if throws else None)
+
+
+def default_autodarts_sync_state():
+    return {
+        'schema_version': 1,
+        'initial_import_completed': False,
+        'backfill_next_page': 0,
+        'pending_matches': {},
+        'last_check_at': None,
+        'last_success_at': None,
+        'next_check_at': None,
+        'interval_minutes': None,
+        'newest_finished_at': None,
+    }
+
+
+def load_autodarts_sync_state():
+    with AUTODARTS_SYNC_STATE_LOCK:
+        raw = load_json(AUTODARTS_SYNC_STATE_FILE)
+        if not isinstance(raw, dict):
+            raw = {}
+        state = {**default_autodarts_sync_state(), **raw}
+        if not isinstance(state.get('pending_matches'), dict):
+            state['pending_matches'] = {}
+        return state
+
+
+def save_autodarts_sync_state(state):
+    with AUTODARTS_SYNC_STATE_LOCK:
+        save_json(AUTODARTS_SYNC_STATE_FILE, state)
 
 
 def load_autodarts_status():
@@ -208,8 +538,7 @@ def save_autodarts_status(state: str, message: str = "", **extra):
     }
     status.update(extra)
     try:
-        with open(AUTODARTS_STATUS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(status, f, indent=4, ensure_ascii=False)
+        save_json(AUTODARTS_STATUS_FILE, status)
     except Exception:
         pass
 
@@ -451,7 +780,8 @@ def get_cumulative_stats():
             continue
         if pid not in cumulative:
             cumulative[pid] = {
-                "legs": 0, "max180": 0, "last180_date": "",
+                "legs": 0, "max180": 0, "last180_date": "", "last180_at": None,
+                "bull_finishes": 0, "last_bull_finish_date": "", "last_bull_finish_at": None,
                 "s60": 0, "s100": 0, "s140": 0, "s170": 0, "s180": 0,
                 "games_played": 0,
                 "best_finish": 0,
@@ -465,6 +795,8 @@ def get_cumulative_stats():
                 "checkout_success": 0,
                 "checkout_attempts": 0,
                 "segment_hits": {},
+                "classic_26": 0,
+                "checkout_finishes": {},
             }
         cumulative[pid]["legs"]   += s.get("legs",   0)
         cumulative[pid]["max180"] += s.get("max180", 0)
@@ -474,6 +806,7 @@ def get_cumulative_stats():
         cumulative[pid]["s170"]   += s.get("s170",   0)
         cumulative[pid]["s180"]   += s.get("s180",   0)
         cumulative[pid]["games_played"] += s.get("games_played", 0)
+        cumulative[pid]["bull_finishes"] += s.get("bull_finishes", 0) or 0
         # extended sums
         cumulative[pid]["points_sum"] += s.get("points_sum", 0) or 0
         cumulative[pid]["darts_thrown"] += s.get("darts_thrown", 0) or 0
@@ -483,17 +816,42 @@ def get_cumulative_stats():
         cumulative[pid]["first3_darts"] += s.get("first3_darts", 0) or 0
         cumulative[pid]["checkout_success"] += s.get("checkout_success", 0) or 0
         cumulative[pid]["checkout_attempts"] += s.get("checkout_attempts", 0) or 0
+        cumulative[pid]["classic_26"] += s.get("classic_26", 0) or 0
         # merge segment_hits dict
         segs = s.get("segment_hits") or {}
         for k,v in segs.items():
             cumulative[pid]["segment_hits"][k] = cumulative[pid]["segment_hits"].get(k, 0) + (v or 0)
+        finishes = s.get("checkout_finishes") or {}
+        for checkout, count in finishes.items():
+            checkout_key = str(checkout)
+            cumulative[pid]["checkout_finishes"][checkout_key] = (
+                cumulative[pid]["checkout_finishes"].get(checkout_key, 0) + (count or 0)
+            )
         
         finish_val = s.get("finish", 0)
         if finish_val > cumulative[pid].get("best_finish", 0):
             cumulative[pid]["best_finish"] = finish_val
             
         if s.get("max180", 0) > 0 or s.get("s180", 0) > 0:
-            cumulative[pid]["last180_date"] = s.get("date", "")
+            candidate_raw = s.get('last_180_at') or s.get('played_at') or s.get('date')
+            candidate = parse_datetime(candidate_raw)
+            current = parse_datetime(cumulative[pid].get('last180_at'))
+            if candidate and (current is None or candidate > current):
+                cumulative[pid]['last180_at'] = datetime_to_iso(candidate)
+                cumulative[pid]['last180_date'] = format_local_datetime(candidate)
+            elif current is None and not cumulative[pid].get('last180_date'):
+                # Alte, nicht parsebare manuelle Datumswerte bleiben sichtbar.
+                cumulative[pid]['last180_date'] = s.get('date', '')
+
+        if s.get('bull_finishes', 0) > 0:
+            candidate_raw = s.get('last_bull_finish_at') or s.get('played_at') or s.get('date')
+            candidate = parse_datetime(candidate_raw)
+            current = parse_datetime(cumulative[pid].get('last_bull_finish_at'))
+            if candidate and (current is None or candidate > current):
+                cumulative[pid]['last_bull_finish_at'] = datetime_to_iso(candidate)
+                cumulative[pid]['last_bull_finish_date'] = format_local_datetime(candidate)
+            elif current is None and not cumulative[pid].get('last_bull_finish_date'):
+                cumulative[pid]['last_bull_finish_date'] = s.get('date', '')
 
     return cumulative, players_map, display_players, player_ids
 
@@ -553,6 +911,11 @@ def compute_score_hash(score_obj: dict) -> str:
         "s60", "s100", "s140", "s170", "s180", "games_played"
     ]
     normalized = {k: int(score_obj.get(k, 0) or 0) if k != "player_id" else int(score_obj.get(k) or 0) for k in keys}
+    # Zwei unterschiedliche Matches können zufällig exakt dieselben Statistiken
+    # erzeugen. Für Autodarts-Einträge gehört deshalb die Match-ID zur Signatur;
+    # manuelle und ältere Einträge behalten ihre bisherige Hash-Berechnung.
+    if score_obj.get('autodarts_match_id'):
+        normalized['autodarts_match_id'] = str(score_obj['autodarts_match_id'])
     # stable serialization
     payload = json.dumps(normalized, sort_keys=True, separators=(',', ':'))
     return hashlib.sha1(payload.encode('utf-8')).hexdigest()
@@ -593,6 +956,7 @@ def extract_stats_from_result(res):
             's180': 0,
             'max180': 0,
             'bestCheckout': 0,
+            'best_checkout_at': None,
             'min_darts_to_checkout': None,
             'checkout_success': 0,
             'checkout_attempts': 0,
@@ -603,6 +967,11 @@ def extract_stats_from_result(res):
             'first3_points_sum': 0,
             'first3_darts': 0,
             'segment_hits': {},
+            'classic_26': 0,
+            'checkout_finishes': {},
+            'last_180_at': None,
+            'bull_finishes': 0,
+            'last_bull_finish_at': None,
         }
 
     # fill legs from scores summary
@@ -673,15 +1042,25 @@ def extract_stats_from_result(res):
             # average will be recomputed below from points_sum/darts_thrown only when the
             # API didn't already provide it (see finalize step)
 
-    # Always collect segment hits from per-leg throws (do not use them to recompute the main aggregates
-    # when match-level stats are available)
+    # Always collect segment hits and the exact timestamp of the latest 180 from
+    # per-leg turns. Main aggregates are not recomputed when match-level stats
+    # are available.
+    played_at_fallback = match_played_at(res, res.get('id'))
     for game in res.get('games', []):
         for turn in game.get('turns', []) or []:
             pid = turn.get('playerId')
             if not pid:
                 continue
             st = stats.setdefault(pid, {})
+            try:
+                turn_points = int(turn.get('points', 0) or 0)
+            except (TypeError, ValueError):
+                turn_points = 0
+            if turn_points == 180 and not turn.get('busted'):
+                candidate = turn_finished_at(turn, played_at_fallback)
+                st['last_180_at'] = newest_timestamp(st.get('last_180_at'), candidate)
             throws = turn.get('throws') or []
+            turn_segment_keys = []
             for th in throws:
                 seg = th.get('segment') or {}
                 num = seg.get('number') or seg.get('name')
@@ -702,8 +1081,88 @@ def extract_stats_from_result(res):
                 elif mult == 3:
                     prefix = 'T'
                 key = f"{prefix}{num_s}"
+                turn_segment_keys.append(key.upper())
                 seg_hits = st.setdefault('segment_hits', {})
                 seg_hits[key] = seg_hits.get(key, 0) + 1
+            if (
+                not turn.get('busted')
+                and turn_points == 26
+                and len(throws) == 3
+                and sorted(turn_segment_keys) == ['S1', 'S20', 'S5']
+            ):
+                st['classic_26'] = int(st.get('classic_26', 0) or 0) + 1
+
+    # Zeitpunkt des höchsten Checkouts: bevorzugt wird der letzte Zug des
+    # jeweiligen Leg-Gewinners. `legStats` liefert den Checkout-Wert, die
+    # zugehörige Spiel-/Turn-Struktur den echten Zeitpunkt.
+    leg_stats_entries = res.get('legStats') or []
+    for game_index, game in enumerate(res.get('games', []) or []):
+        winner_pid = game.get('winnerPlayerId')
+        winner_index = game.get('winner')
+        if not winner_pid and isinstance(winner_index, int) and 0 <= winner_index < len(players):
+            winner = players[winner_index]
+            winner_pid = winner.get('id') or winner.get('userId') or winner.get('name')
+        if not winner_pid:
+            continue
+
+        winner_turns = [
+            turn for turn in game.get('turns', []) or []
+            if turn.get('playerId') == winner_pid and not turn.get('busted')
+        ]
+        checkout_turns = [
+            turn for turn in winner_turns
+            if str(turn.get('score')).strip() == '0'
+        ]
+        winning_turn = (checkout_turns or winner_turns)[-1] if winner_turns else None
+        try:
+            checkout_points = int((winning_turn or {}).get('points', 0) or 0)
+        except (TypeError, ValueError):
+            checkout_points = 0
+
+        if game_index < len(leg_stats_entries):
+            leg = leg_stats_entries[game_index] or {}
+            leg_values = leg.get('stats') or []
+            leg_winner = leg.get('winner')
+            if isinstance(leg_winner, int) and 0 <= leg_winner < len(leg_values):
+                try:
+                    checkout_points = int(
+                        leg_values[leg_winner].get('checkoutPoints') or checkout_points
+                    )
+                except (TypeError, ValueError):
+                    pass
+
+        if checkout_points <= 0:
+            continue
+        st = stats.setdefault(winner_pid, {})
+        checkout_finishes = st.setdefault('checkout_finishes', {})
+        checkout_key = str(checkout_points)
+        checkout_finishes[checkout_key] = checkout_finishes.get(checkout_key, 0) + 1
+        current_best = int(st.get('bestCheckout', 0) or 0)
+        checkout_at = turn_finished_at(
+            winning_turn or {},
+            game.get('finishedAt') or game.get('finished_at') or played_at_fallback,
+        )
+        if checkout_points > current_best:
+            st['bestCheckout'] = checkout_points
+            st['best_checkout_at'] = checkout_at
+        elif checkout_points == current_best:
+            st['best_checkout_at'] = newest_timestamp(st.get('best_checkout_at'), checkout_at)
+
+        # Ein Bull-Finish liegt nur vor, wenn der letzte wertende Dart des
+        # erfolgreichen Sieger-Turns das innere Bullseye (D25) getroffen hat.
+        # Normale Bull-Treffer in früheren Turns werden dadurch nicht mitgezählt.
+        finishing_throw = last_scoring_throw(winning_turn)
+        if finishing_throw and is_double_bull_throw(finishing_throw):
+            st['bull_finishes'] = int(st.get('bull_finishes', 0) or 0) + 1
+            throw_at = None
+            for timestamp_key in ('finishedAt', 'finished_at', 'createdAt', 'created_at'):
+                throw_at = datetime_to_iso(finishing_throw.get(timestamp_key))
+                if throw_at:
+                    break
+            st['last_bull_finish_at'] = newest_timestamp(
+                st.get('last_bull_finish_at'),
+                throw_at or checkout_at,
+            )
 
     # "First 3 Average" (Punkte-Schnitt des allerersten Aufnahme/Visits jedes Legs,
     # d.h. der ersten 3 geworfenen Darts). Autodarts liefert dafür (anders als für
@@ -760,10 +1219,16 @@ def extract_stats_from_result(res):
                     'autodarts_name': '', 'legs': 0, 's60': 0, 's100': 0,
                     's140': 0, 's170': 0, 's180': 0, 'max180': 0,
                     'bestCheckout': 0, 'min_darts_to_checkout': None,
+                    'best_checkout_at': None,
                     'checkout_success': 0, 'checkout_attempts': 0,
                     'points_sum': 0, 'darts_thrown': 0,
                     'first9_points_sum': 0, 'first9_darts': 0,
                     'segment_hits': {},
+                    'classic_26': 0,
+                    'checkout_finishes': {},
+                    'last_180_at': None,
+                    'bull_finishes': 0,
+                    'last_bull_finish_at': None,
                 })
                 if turn.get('busted'):
                     continue
@@ -869,11 +1334,13 @@ def extract_stats_from_result(res):
         atts = v.get('checkout_attempts', 0) or 0
         succ = v.get('checkout_success', 0) or 0
         v['checkout_ratio'] = float(succ) / float(atts) if atts else None
+        if int(v.get('bestCheckout', 0) or 0) > 0 and not v.get('best_checkout_at'):
+            v['best_checkout_at'] = played_at_fallback
 
     return stats
 
 
-def import_match_result_to_scores(result, games_len=None):
+def import_match_result_to_scores(result, games_len=None, match_id=None, imported_at=None):
     """Wandelt ein einzelnes Autodarts-Match-Ergebnis in Score-Einträge um und
     speichert sie. BOT-Gegner (siehe detect_bot_level) werden dabei nicht als
     eigenständige Spieler angelegt; stattdessen werden die Ergebnisse der
@@ -884,6 +1351,11 @@ def import_match_result_to_scores(result, games_len=None):
     Gibt (imported_count, bot_imported_count) zurück."""
     if games_len is None:
         games_len = len(result.get('games', []) or [])
+
+    match_id = match_id or result.get('id') or result.get('matchId') or result.get('_id')
+    imported_at = datetime_to_iso(imported_at) or datetime_to_iso(utc_now())
+    played_at = match_played_at(result, match_id) or imported_at
+    display_date = format_local_datetime(played_at) or datetime.now().strftime('%d.%m.%Y %H:%M')
 
     stats = extract_stats_from_result(result)
     players = result.get('players', [])
@@ -915,6 +1387,8 @@ def import_match_result_to_scores(result, games_len=None):
 
     imported_count = 0
     bot_imported_count = 0
+    regular_updated_count = 0
+    bot_updated_count = 0
 
     for p in players:
         name = p.get('name') or p.get('username') or ''
@@ -942,6 +1416,8 @@ def import_match_result_to_scores(result, games_len=None):
             'checkout_success': int(st.get('checkout_success', 0) or 0),
             'checkout_attempts': int(st.get('checkout_attempts', 0) or 0),
             'segment_hits': st.get('segment_hits', {}),
+            'classic_26': int(st.get('classic_26', 0) or 0),
+            'checkout_finishes': st.get('checkout_finishes', {}),
             'average': st.get('average'),
             'first9_average': st.get('first9_average'),
             'first9_points_sum': int(st.get('first9_points_sum', 0) or 0),
@@ -951,6 +1427,14 @@ def import_match_result_to_scores(result, games_len=None):
             'first3_darts': int(st.get('first3_darts', 0) or 0),
             'darts_thrown': st.get('darts_thrown'),
             'points_sum': st.get('points_sum'),
+            'last_180_at': st.get('last_180_at') or (
+                played_at if int(st.get('s180', 0) or 0) > 0 or int(st.get('max180', 0) or 0) > 0 else None
+            ),
+            'best_checkout_at': st.get('best_checkout_at') or (
+                played_at if int(st.get('bestCheckout', 0) or 0) > 0 else None
+            ),
+            'bull_finishes': int(st.get('bull_finishes', 0) or 0),
+            'last_bull_finish_at': st.get('last_bull_finish_at'),
             # record the number of legs played in this match, so cumulative stats
             # aggregate "legs played" instead of "matches played" (one match can
             # contain several legs).
@@ -977,9 +1461,17 @@ def import_match_result_to_scores(result, games_len=None):
             's170': entry.get('s170', 0),
             's180': entry.get('s180', 0),
             'games_played': int(entry.get('total_games_in_import') or entry.get('games_played') or 1),
-            'date': datetime.now().strftime('%d.%m.%Y %H:%M'),
+            # `date` bleibt für alte Ansichten kompatibel, enthält bei
+            # Autodarts-Daten aber das tatsächliche Spieldatum.
+            'date': display_date,
+            'played_at': played_at,
+            'imported_at': imported_at,
+            'autodarts_match_id': match_id,
+            'source': 'autodarts',
             # extended fields
             'segment_hits': entry.get('segment_hits', {}),
+            'classic_26': entry.get('classic_26', 0),
+            'checkout_finishes': entry.get('checkout_finishes', {}),
             'average': entry.get('average'),
             'first9_average': entry.get('first9_average'),
             'first9_points_sum': entry.get('first9_points_sum', 0),
@@ -993,6 +1485,10 @@ def import_match_result_to_scores(result, games_len=None):
             'checkout_ratio': entry.get('checkout_ratio'),
             'checkout_success': entry.get('checkout_success', 0),
             'checkout_attempts': entry.get('checkout_attempts', 0),
+            'last_180_at': entry.get('last_180_at'),
+            'best_checkout_at': entry.get('best_checkout_at'),
+            'bull_finishes': entry.get('bull_finishes', 0),
+            'last_bull_finish_at': entry.get('last_bull_finish_at'),
         }
         if is_bot_match:
             new_score['bot_level'] = bot_level
@@ -1000,12 +1496,35 @@ def import_match_result_to_scores(result, games_len=None):
         try:
             new_hash = compute_score_hash(new_score)
             new_score['score_hash'] = new_hash
+            legacy_score = dict(new_score)
+            legacy_score.pop('autodarts_match_id', None)
+            legacy_hash = compute_score_hash(legacy_score)
         except Exception:
             new_hash = None
+            legacy_hash = None
 
         target_list = bot_scores if is_bot_match else scores
         dup = False
         for ex in target_list:
+            # Ein Match besitzt je Teilnehmer einen eigenen Statistikdatensatz.
+            # Die Match-ID allein ist deshalb kein eindeutiger Schlüssel: Beim
+            # Import eines Mehrspieler-Matches würde sonst jeder weitere Spieler
+            # den zuvor verarbeiteten Spieler desselben Matches überschreiben.
+            if (
+                match_id
+                and ex.get('autodarts_match_id') == match_id
+                and ex.get('player_id') == pid
+            ):
+                original_imported_at = ex.get('imported_at')
+                ex.update(new_score)
+                if original_imported_at:
+                    ex['imported_at'] = original_imported_at
+                dup = True
+                if is_bot_match:
+                    bot_updated_count += 1
+                else:
+                    regular_updated_count += 1
+                break
             if ex.get('score_hash') and new_hash and ex.get('score_hash') == new_hash:
                 dup = True
                 break
@@ -1014,7 +1533,31 @@ def import_match_result_to_scores(result, games_len=None):
                     dup = True
                     break
             except Exception:
-                continue
+                pass
+            # Migration für Einträge aus Versionen vor 1.2.0: Diese besaßen
+            # bereits einen Statistik-Hash, aber noch keine Match-ID. Der erste
+            # passende historische Datensatz wird angereichert; weitere echte
+            # Matches mit identischen Werten erhalten dank Match-ID eigene Zeilen.
+            try:
+                legacy_matches = (
+                    not ex.get('autodarts_match_id')
+                    and bool(ex.get('score_hash'))
+                    and legacy_hash
+                    and (
+                        ex.get('score_hash') == legacy_hash
+                        or compute_score_hash(ex) == legacy_hash
+                    )
+                )
+            except Exception:
+                legacy_matches = False
+            if legacy_matches:
+                ex.update(new_score)
+                dup = True
+                if is_bot_match:
+                    bot_updated_count += 1
+                else:
+                    regular_updated_count += 1
+                break
         if not dup:
             target_list.append(new_score)
             if is_bot_match:
@@ -1022,14 +1565,14 @@ def import_match_result_to_scores(result, games_len=None):
             else:
                 imported_count += 1
 
-    if players_changed or imported_count:
+    if players_changed or imported_count or bot_imported_count:
         save_json(PLAYERS_FILE, players_local)
-    if players_changed or imported_count:
+    if players_changed or imported_count or regular_updated_count:
         save_json(SCORES_FILE, scores)
-    if players_changed or bot_imported_count:
+    if players_changed or bot_imported_count or bot_updated_count:
         save_json(BOT_SCORES_FILE, bot_scores)
 
-    return imported_count, bot_imported_count
+    return imported_count, bot_imported_count, regular_updated_count + bot_updated_count
 
 
 def generate_head_to_head_data(cumulative, players_map, players_list):
@@ -1199,6 +1742,76 @@ def index():
     most_first3 = add_podium_rank(sorted(most_first3, key=lambda x: x['first3_average'], reverse=True), 'first3_average')
     most_average = add_podium_rank(sorted(most_average, key=lambda x: x['average'], reverse=True), 'average')
 
+    # Spaß- und Mengenstatistiken aus den detaillierten Autodarts-Aufnahmen.
+    most_classic_26 = []
+    favorite_checkouts = []
+    most_hit_segments = []
+    most_darts_thrown = []
+    valid_segment = re.compile(r'^[SDT](?:[1-9]|1[0-9]|20|25)$')
+    for pid, vals in cumulative.items():
+        base = {"name": player_name(pid), "image": player_image(pid)}
+
+        classic_26 = int(vals.get('classic_26', 0) or 0)
+        if classic_26 > 0:
+            most_classic_26.append({**base, 'classic_26': classic_26})
+
+        checkout_counts = vals.get('checkout_finishes') or {}
+        usable_checkouts = []
+        for checkout, count in checkout_counts.items():
+            try:
+                checkout_value = int(checkout)
+                checkout_count = int(count or 0)
+            except (TypeError, ValueError):
+                continue
+            if checkout_value > 0 and checkout_count > 0:
+                usable_checkouts.append((checkout_value, checkout_count))
+        if usable_checkouts:
+            favorite_checkout, favorite_count = max(
+                usable_checkouts, key=lambda item: (item[1], item[0])
+            )
+            favorite_checkouts.append({
+                **base,
+                'favorite_checkout': favorite_checkout,
+                'favorite_checkout_count': favorite_count,
+            })
+
+        segment_counts = vals.get('segment_hits') or {}
+        usable_segments = [
+            (str(segment).upper(), int(count or 0))
+            for segment, count in segment_counts.items()
+            if valid_segment.fullmatch(str(segment).upper()) and int(count or 0) > 0
+        ]
+        if usable_segments:
+            most_hit_segment, most_hit_count = max(
+                usable_segments, key=lambda item: (item[1], item[0])
+            )
+            most_hit_segments.append({
+                **base,
+                'most_hit_segment': most_hit_segment,
+                'most_hit_count': most_hit_count,
+            })
+
+        darts_thrown = int(vals.get('darts_thrown', 0) or 0)
+        if darts_thrown > 0:
+            most_darts_thrown.append({**base, 'darts_thrown': darts_thrown})
+
+    most_classic_26 = add_podium_rank(
+        sorted(most_classic_26, key=lambda x: x['classic_26'], reverse=True),
+        'classic_26',
+    )
+    favorite_checkouts = add_podium_rank(
+        sorted(favorite_checkouts, key=lambda x: x['favorite_checkout_count'], reverse=True),
+        'favorite_checkout_count',
+    )
+    most_hit_segments = add_podium_rank(
+        sorted(most_hit_segments, key=lambda x: x['most_hit_count'], reverse=True),
+        'most_hit_count',
+    )
+    most_darts_thrown = add_podium_rank(
+        sorted(most_darts_thrown, key=lambda x: x['darts_thrown'], reverse=True),
+        'darts_thrown',
+    )
+
     # Höchstes Finish
     finish_best = {}
     for s in scores:
@@ -1206,12 +1819,23 @@ def index():
         if pid is None:
             continue
         val = s.get("finish", 0)
-        if val > 0 and val > finish_best.get(pid, {}).get("finish", 0):
+        checkout_at = s.get('best_checkout_at') or s.get('played_at') or s.get('date')
+        previous = finish_best.get(pid, {})
+        previous_at = parse_datetime(previous.get('finish_at'))
+        checkout_time = parse_datetime(checkout_at)
+        is_better = val > previous.get('finish', 0)
+        is_newer_tie = (
+            val > 0 and val == previous.get('finish', 0)
+            and checkout_time is not None
+            and (previous_at is None or checkout_time > previous_at)
+        )
+        if val > 0 and (is_better or is_newer_tie):
             finish_best[pid] = {
                 "name": player_name(pid),
                 "image": player_image(pid),
                 "finish": val,
-                "finish_date": s.get("date", ""),
+                "finish_at": datetime_to_iso(checkout_time) if checkout_time else None,
+                "finish_date": format_local_datetime(checkout_time) or s.get("date", ""),
             }
     highest_finish = add_podium_rank(sorted(finish_best.values(), key=lambda x: x["finish"], reverse=True), "finish")
 
@@ -1229,6 +1853,61 @@ def index():
                 "darts301": val,
             }
     lowest_darts301 = add_podium_rank(sorted(darts301_best.values(), key=lambda x: x["darts301"], reverse=False), "darts301")
+
+    # Vollbild-Ranglisten verwenden ein einheitliches, kompaktes Datenformat.
+    # Sie werden clientseitig als einzelne Karten in die Rotation eingereiht.
+    leaderboard_limit = max(1, int(config.get('leaderboard_limit', 10) or 10))
+
+    def leaderboard(title, value_label, entries, value_key, value_formatter=None):
+        rows = []
+        for entry in entries[:leaderboard_limit]:
+            value = entry.get(value_key)
+            if value_formatter:
+                value = value_formatter(entry)
+            rows.append({
+                'rank': entry.get('rank'),
+                'podium_class': entry.get('podium_class', ''),
+                'name': entry.get('name', 'Unbekannt'),
+                'image_url': url_for(
+                    'static', filename='uploads/' + (entry.get('image') or 'dummy.png')
+                ),
+                'value': value,
+            })
+        return {'title': title, 'value_label': value_label, 'rows': rows}
+
+    additional_rankings = [
+        leaderboard('🏆 Meiste Legs gewonnen', 'Legs', most_legs, 'legs'),
+        leaderboard('💥 Meiste 180er', '180er', most_180s, 'max180'),
+        leaderboard('🎯 Höchstes Finish', 'Finish', highest_finish, 'finish'),
+        leaderboard('💨 Wenigste Würfe – 301', 'Darts', lowest_darts301, 'darts301'),
+        leaderboard('🎯 Meiste T20 Treffer', 'T20', most_t20, 't20'),
+        leaderboard(
+            '✅ Beste Checkout-Quote', 'Quote', most_checkout, 'checkout_ratio',
+            lambda entry: f"{entry.get('checkout_ratio', 0)}%",
+        ),
+        leaderboard('🎯 First 3 Darts (Avg)', 'First3', most_first3, 'first3_average'),
+        leaderboard('📈 Durchschnitt (Avg)', 'Avg', most_average, 'average'),
+        leaderboard('🟡 Meiste 60+ Aufnahmen', '60+', most_s60, 's60'),
+        leaderboard('🟠 Meiste 100+ Aufnahmen', '100+', most_s100, 's100'),
+        leaderboard('🔴 Meiste 140+ Aufnahmen', '140+', most_s140, 's140'),
+        leaderboard('💜 Meiste 170+ Aufnahmen', '170+', most_s170, 's170'),
+        leaderboard('⚡ Zack... 26', '26er', most_classic_26, 'classic_26'),
+        leaderboard(
+            '❤️ Lieblings Checkout', 'Finish', favorite_checkouts, 'favorite_checkout',
+            lambda entry: (
+                f"{entry.get('favorite_checkout')} ({entry.get('favorite_checkout_count')}×)"
+            ),
+        ),
+        leaderboard(
+            '📍 Most Hit', 'Feld', most_hit_segments, 'most_hit_segment',
+            lambda entry: f"{entry.get('most_hit_segment')} ({entry.get('most_hit_count')}×)",
+        ),
+        leaderboard(
+            '🎯 Darts thrown', 'Darts', most_darts_thrown, 'darts_thrown',
+            lambda entry: f"{int(entry.get('darts_thrown', 0)):,}".replace(',', '.'),
+        ),
+    ]
+    additional_rankings = [ranking for ranking in additional_rankings if ranking['rows']]
 
     # KEIN H2H hier mehr - wird per AJAX geladen!
     bg_image = f"uploads/{BACKGROUND_FILENAME}" if background_exists() else None
@@ -1248,6 +1927,11 @@ def index():
         most_checkout=most_checkout,
         most_first3=most_first3,
         most_average=most_average,
+        most_classic_26=most_classic_26,
+        favorite_checkouts=favorite_checkouts,
+        most_hit_segments=most_hit_segments,
+        most_darts_thrown=most_darts_thrown,
+        additional_rankings=additional_rankings,
         bg_image=bg_image,
         config=config,
         local_ip=local_ip,
@@ -1290,6 +1974,13 @@ def api_player_card():
         'checkout_ratio': None,
         't20_hits': stats.get('segment_hits',{}).get('T20',0),
         'darts_thrown': stats.get('darts_thrown', 0),
+        'classic_26': int(stats.get('classic_26', 0) or 0),
+        'favorite_checkout': None,
+        'favorite_checkout_count': 0,
+        'most_hit_segment': None,
+        'most_hit_count': 0,
+        'bull_finishes': stats.get('bull_finishes', 0),
+        'last_bull_finish_date': stats.get('last_bull_finish_date', ''),
     }
     # first3
     f3_darts = stats.get('first3_darts',0)
@@ -1301,6 +1992,39 @@ def api_player_card():
     succ = stats.get('checkout_success',0)
     if atts:
         card['checkout_ratio'] = round(float(succ)/atts*100,1)
+
+    checkout_candidates = []
+    for checkout, count in (stats.get('checkout_finishes') or {}).items():
+        try:
+            checkout_value = int(checkout)
+            checkout_count = int(count or 0)
+        except (TypeError, ValueError):
+            continue
+        if checkout_value > 0 and checkout_count > 0:
+            checkout_candidates.append((checkout_value, checkout_count))
+    if checkout_candidates:
+        favorite_checkout, favorite_count = max(
+            checkout_candidates, key=lambda item: (item[1], item[0])
+        )
+        card['favorite_checkout'] = favorite_checkout
+        card['favorite_checkout_count'] = favorite_count
+
+    valid_segment = re.compile(r'^[SDT](?:[1-9]|1[0-9]|20|25)$')
+    segment_candidates = []
+    for segment, count in (stats.get('segment_hits') or {}).items():
+        segment_name = str(segment).upper()
+        try:
+            segment_count = int(count or 0)
+        except (TypeError, ValueError):
+            continue
+        if valid_segment.fullmatch(segment_name) and segment_count > 0:
+            segment_candidates.append((segment_name, segment_count))
+    if segment_candidates:
+        most_hit_segment, most_hit_count = max(
+            segment_candidates, key=lambda item: (item[1], item[0])
+        )
+        card['most_hit_segment'] = most_hit_segment
+        card['most_hit_count'] = most_hit_count
 
     return jsonify({'ok': True, 'player': card})
 
@@ -1489,13 +2213,33 @@ def admin():
                 else:
                     cec_enabled = config.get("cec_enabled", False)
 
+                if "kiosk_url" in request.form:
+                    kiosk_hide_cursor = request.form.get("kiosk_hide_cursor") == 'on'
+                else:
+                    kiosk_hide_cursor = config.get("kiosk_hide_cursor", True)
+
                 def _form_time(name, fallback):
                     value = _form_str(name, fallback)
                     return value if re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d', value) else fallback
 
+                def _form_cec_adapter():
+                    value = _form_str("cec_adapter", config.get("cec_adapter", "")).strip()
+                    return value if not value or re.fullmatch(r'/dev/cec[0-9]+', value) else ""
+
+                def _form_kiosk_url():
+                    fallback = config.get("kiosk_url", DEFAULT_CONFIG["kiosk_url"])
+                    value = _form_str("kiosk_url", fallback).strip()
+                    parsed = urlparse(value)
+                    return value if parsed.scheme in {"http", "https"} and parsed.netloc else fallback
+
                 new_config = {
                     "static_limit": _form_int("static_limit", config.get("static_limit", 5)),
                     "rotation_limit": _form_int("rotation_limit", config.get("rotation_limit", 10)),
+                    "leaderboard_limit": min(
+                        50, max(1, _form_int(
+                            "leaderboard_limit", config.get("leaderboard_limit", 10)
+                        ))
+                    ),
                     "static_h2_size": _form_str("static_h2_size", config.get("static_h2_size", "2.5em")),
                     "rotation_h2_size": _form_str("rotation_h2_size", config.get("rotation_h2_size", "3.5em")),
                     "static_td_size": _form_str("static_td_size", config.get("static_td_size", "2.0em")),
@@ -1504,6 +2248,8 @@ def admin():
                     # Wartezeiten (Sekunden) der einzelnen Rotations-Ansichten
                     "rotation_duration_grid1": _form_int("rotation_duration_grid1", config.get("rotation_duration_grid1", 300)),
                     "rotation_duration_grid2": _form_int("rotation_duration_grid2", config.get("rotation_duration_grid2", 60)),
+                    "rotation_duration_grid3": _form_int("rotation_duration_grid3", config.get("rotation_duration_grid3", 60)),
+                    "rotation_duration_rankings": _form_int("rotation_duration_rankings", config.get("rotation_duration_rankings", 30)),
                     "rotation_duration_winrate": _form_int("rotation_duration_winrate", config.get("rotation_duration_winrate", 60)),
                     "rotation_duration_player": _form_int("rotation_duration_player", config.get("rotation_duration_player", 60)),
                     "rotation_duration_h2h": _form_int("rotation_duration_h2h", config.get("rotation_duration_h2h", 60)),
@@ -1520,6 +2266,10 @@ def admin():
                     ).strip()[:14] or config.get("cec_device_name", "Dart Scoreboard")),
                     "cec_standby_time": _form_time("cec_standby_time", config.get("cec_standby_time", "22:00")),
                     "cec_wake_time": _form_time("cec_wake_time", config.get("cec_wake_time", "08:00")),
+                    "cec_adapter": _form_cec_adapter(),
+                    "cec_check_interval": min(
+                        3600, max(10, _form_int("cec_check_interval", config.get("cec_check_interval", 50)))
+                    ),
                     "screensaver_idle_time": min(
                         86400,
                         max(1, _form_int(
@@ -1527,12 +2277,20 @@ def admin():
                             config.get("screensaver_idle_time", 300),
                         )),
                     ),
+                    "kiosk_url": _form_kiosk_url(),
+                    "kiosk_display_mode": (
+                        request.form.get("kiosk_display_mode")
+                        if request.form.get("kiosk_display_mode") in {"auto", "wayland", "x11"}
+                        else config.get("kiosk_display_mode", "auto")
+                    ),
+                    "kiosk_hide_cursor": kiosk_hide_cursor,
                 }
                 current_config = load_json(CONFIG_FILE)
                 current_config.update(new_config)
                 save_json(CONFIG_FILE, current_config)
                 write_cec_config(current_config)
                 write_screensaver_config(current_config)
+                write_kiosk_config(current_config)
                 if "cec_device_name" in request.form:
                     try:
                         subprocess.run(
@@ -1541,6 +2299,19 @@ def admin():
                         )
                     except (OSError, subprocess.SubprocessError):
                         pass
+                if "screensaver_idle_time" in request.form:
+                    try:
+                        restart_screensaver()
+                    except (OSError, RuntimeError, subprocess.SubprocessError):
+                        app.logger.exception('Screensaver-Neustart fehlgeschlagen')
+                if "kiosk_url" in request.form:
+                    try:
+                        subprocess.run(
+                            ['systemctl', '--user', 'try-restart', 'dart-kiosk.service'],
+                            capture_output=True, text=True, timeout=15, check=False,
+                        )
+                    except (OSError, subprocess.SubprocessError):
+                        app.logger.exception('Kiosk-Neustart fehlgeschlagen')
             except ValueError:
                 pass
 
@@ -1566,12 +2337,25 @@ def admin():
             "games_played": s.get("games_played", 0),
         })
 
+    # Presentation-only grouping for the collapsible admin overview.  For
+    # Autodarts entries, `date` is the actual match date; manual entries retain
+    # their entry date. The stored score order and indices remain unchanged.
+    grouped_scores = {}
+    for score in reversed(admin_scores):
+        raw_date = score.get("date") or "N/A"
+        import_date = raw_date.split(" ", 1)[0] if raw_date != "N/A" else "Ohne Datum"
+        grouped_scores.setdefault(import_date, []).append(score)
+    score_groups = [
+        {"date": import_date, "scores": grouped, "count": len(grouped)}
+        for import_date, grouped in grouped_scores.items()
+    ]
+
     bg_image = f"uploads/{BACKGROUND_FILENAME}" if background_exists() else None
 
     # load last autodarts run result if available
     last_result = {}
     try:
-        lr_path = os.path.join(DATA_DIR, 'autodarts_last_result.json')
+        lr_path = AUTODARTS_LAST_RESULT_FILE
         if os.path.exists(lr_path):
             with open(lr_path, 'r', encoding='utf-8') as f:
                 last_result = json.load(f)
@@ -1579,18 +2363,43 @@ def admin():
         last_result = {}
 
     autodarts_status = load_autodarts_status()
+    autodarts_sync_state = load_autodarts_sync_state()
+    autodarts_sync_state['last_check_display'] = (
+        format_local_datetime(autodarts_sync_state.get('last_check_at')) or 'nie'
+    )
+    autodarts_sync_state['last_success_display'] = (
+        format_local_datetime(autodarts_sync_state.get('last_success_at')) or 'nie'
+    )
+    autodarts_sync_state['next_check_display'] = (
+        format_local_datetime(autodarts_sync_state.get('next_check_at')) or 'nicht geplant'
+    )
+    pending_values = list(autodarts_sync_state.get('pending_matches', {}).values())
+    autodarts_sync_state['pending_count'] = sum(
+        1 for item in pending_values if item.get('status') == 'pending'
+    )
+    autodarts_sync_state['failed_count'] = sum(
+        1 for item in pending_values if item.get('status') == 'failed'
+    )
     bot_stats = get_bot_cumulative_stats()
+    try:
+        addon_statuses = all_addon_statuses(ADDONS_DIR, os.path.expanduser('~'))
+    except AddonError as exc:
+        app.logger.error('Add-on-Erkennung fehlgeschlagen: %s', exc)
+        addon_statuses = {}
 
     return render_template(
         "admin.html",
         players=players,
         scores=admin_scores,
+        score_groups=score_groups,
         background_exists=background_exists(),
         bg_image=bg_image,
         config=config,
         autodarts_last_result=last_result,
         autodarts_status=autodarts_status,
+        autodarts_sync_state=autodarts_sync_state,
         bot_stats=bot_stats,
+        addon_statuses=addon_statuses,
         app_version=get_app_version(),
     )
 
@@ -1761,242 +2570,525 @@ def _save_autodarts_debug_screenshot(page):
         pass
 
 
-def autodarts_collect_and_import(max_pages=2):
-    """Sammelt Autodarts-Match-IDs und importiert deren Statistiken.
+def _autodarts_match_id(item):
+    if not isinstance(item, dict):
+        return None
+    return item.get('id') or item.get('matchId') or item.get('_id')
 
-    Bevorzugt den zuverlässigen API-Token-Login (unabhängig von HTML-Struktur/Selektoren).
-    Nur wenn darüber keine Matches ermittelt werden können, wird Playwright als Fallback
-    genutzt - inklusive echtem Formular-Login (Email/Passwort), analog zu
-    scripts/autodarts_fetch.py. Gibt ein dict mit importierten IDs und Fehlern zurück."""
+
+def _autodarts_list_page(token, page_no, sort):
+    response = requests.get(
+        'https://api.autodarts.com/as/v0/matches/filter',
+        params={'size': AUTODARTS_PAGE_SIZE, 'page': page_no, 'sort': sort},
+        headers={'Authorization': 'Bearer ' + token},
+        timeout=15,
+    )
+    if not response.ok:
+        raise RuntimeError(f'Match-Liste lieferte Status {response.status_code}.')
+    payload = response.json()
+    items = payload.get('items') or []
+    return items, bool(payload.get('last')) or len(items) < AUTODARTS_PAGE_SIZE
+
+
+def _remember_match_problem(state, match_id, message, status='pending', metadata=None):
+    pending = state.setdefault('pending_matches', {})
+    previous = pending.get(match_id) or {}
+    pending[match_id] = {
+        'status': status,
+        'attempts': int(previous.get('attempts', 0) or 0) + 1,
+        'first_seen_at': previous.get('first_seen_at') or datetime_to_iso(utc_now()),
+        'last_attempt_at': datetime_to_iso(utc_now()),
+        'last_error': message,
+        'played_at': match_played_at(metadata or {}, match_id),
+    }
+
+
+def _autodarts_import_one_match(token, match_id, metadata, imported_matches, state, force=False):
+    """Importiert ein Match und liefert (neu_importiert, fehler, verarbeitet)."""
+    was_imported = match_id in imported_matches
+    if was_imported and not force:
+        state.setdefault('pending_matches', {}).pop(match_id, None)
+        return False, None, False
+
+    api_url = f'https://api.autodarts.com/as/v0/matches/{match_id}/stats'
+    try:
+        response = requests.get(
+            api_url,
+            headers={'Authorization': 'Bearer ' + token},
+            timeout=15,
+        )
+    except Exception as exc:
+        message = f'Fetch {match_id} fehlgeschlagen: {exc}'
+        _remember_match_problem(state, match_id, message, 'pending', metadata)
+        return False, message, False
+
+    if not response.ok:
+        message = f'Stats für Match {match_id} konnten nicht geladen werden (Status {response.status_code}).'
+        retryable = response.status_code == 404 or response.status_code >= 500
+        _remember_match_problem(state, match_id, message, 'pending' if retryable else 'failed', metadata)
+        return False, message, False
+
+    try:
+        result = response.json()
+    except Exception as exc:
+        message = f'Stats für Match {match_id} enthalten kein gültiges JSON: {exc}'
+        _remember_match_problem(state, match_id, message, 'pending', metadata)
+        return False, message, False
+
+    # Die Listenansicht enthält häufig den vollständigeren Match-Zeitstempel.
+    for key in ('createdAt', 'created_at', 'finishedAt', 'finished_at'):
+        if not result.get(key) and isinstance(metadata, dict) and metadata.get(key):
+            result[key] = metadata[key]
+    result.setdefault('id', match_id)
+
+    explicitly_finished = any(result.get(key) for key in ('finishedAt', 'finished_at'))
+    if not explicitly_finished:
+        explicitly_finished = any(
+            game.get('finishedAt') or game.get('finished_at')
+            for game in result.get('games', []) or []
+        )
+    if not explicitly_finished:
+        message = f'Match {match_id} ist noch nicht abgeschlossen; erneuter Versuch folgt.'
+        _remember_match_problem(state, match_id, message, 'pending', result)
+        return False, message, False
+
+    games_len = len(result.get('games', []) or [])
+    for leg_idx in range(games_len):
+        try:
+            leg_response = requests.get(
+                f'{api_url}?leg={leg_idx}',
+                headers={'Authorization': 'Bearer ' + token},
+                timeout=15,
+            )
+            if leg_response.ok:
+                leg_result = leg_response.json()
+                if leg_result.get('games'):
+                    result['games'][leg_idx] = leg_result['games'][0]
+        except Exception:
+            # Match-Level-Statistiken bleiben auch ohne Leg-Ergänzung nutzbar.
+            pass
+
+    try:
+        import_match_result_to_scores(result, games_len=games_len, match_id=match_id)
+    except Exception as exc:
+        message = f'Verarbeitung von Match {match_id} fehlgeschlagen: {exc}'
+        _remember_match_problem(state, match_id, message, 'pending', result)
+        return False, message, False
+
+    if not was_imported:
+        imported_matches.append(match_id)
+        save_imported_matches(imported_matches)
+    state.setdefault('pending_matches', {}).pop(match_id, None)
+    played_at = match_played_at(result, match_id)
+    state['newest_finished_at'] = newest_timestamp(state.get('newest_finished_at'), played_at)
+    save_autodarts_sync_state(state)
+    return not was_imported, None, True
+
+
+def _autodarts_browser_ids(cfg, max_pages):
+    """Letzter inkrementeller Fallback; die Web-Historie ist neueste zuerst sortiert."""
+    ids = []
+    errors = []
+    page_htmls = []
+    if sync_playwright is None:
+        return ids, ['Playwright ist nicht installiert; Browser-Fallback nicht möglich.'], page_htmls
+
+    p = browser = context = page = None
+    try:
+        p = sync_playwright().start()
+        profile = cfg.get('autodarts_user_data_dir') or None
+        if profile:
+            context = p.chromium.launch_persistent_context(user_data_dir=profile, headless=True)
+            page = context.new_page()
+        else:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            login_ok, login_error = _autodarts_form_login(
+                page, cfg.get('autodarts_email'), cfg.get('autodarts_password')
+            )
+            if not login_ok:
+                errors.append(login_error or 'Automatischer Formular-Login fehlgeschlagen.')
+
+        for page_no in range(max_pages):
+            url = 'https://play.autodarts.com/history/matches'
+            if page_no:
+                url += f'?page={page_no}'
+            page.goto(url)
+            page.wait_for_load_state('networkidle')
+            try:
+                page_htmls.append({'page': page_no, 'html_snippet': page.content()[:5000]})
+            except Exception:
+                page_htmls.append({'page': page_no, 'html_snippet': ''})
+            try:
+                page.wait_for_selector('a[href*="/history/matches/"]', timeout=5000)
+            except Exception:
+                pass
+            links = page.eval_on_selector_all(
+                'a[href*="/history/matches/"]',
+                'els => els.map(e => e.getAttribute("href"))',
+            )
+            if not links:
+                break
+            for link in links:
+                match_id = link.rstrip('/').split('/')[-1]
+                if match_id and match_id not in ids:
+                    ids.append(match_id)
+    except Exception as exc:
+        errors.append(f'Playwright-Fallback fehlgeschlagen: {exc}')
+        if page is not None:
+            _save_autodarts_debug_screenshot(page)
+    finally:
+        try:
+            if context:
+                context.close()
+            elif browser:
+                browser.close()
+        except Exception:
+            pass
+        try:
+            if p:
+                p.stop()
+        except Exception:
+            pass
+    return ids, errors, page_htmls
+
+
+def autodarts_collect_and_import(mode='incremental', max_pages=None):
+    """Synchronisiert Autodarts vollständig oder inkrementell.
+
+    `backfill` liest explizit älteste zuerst und speichert den Seitenfortschritt.
+    `incremental` liest explizit neueste zuerst und stoppt an einer vollständig
+    bekannten Seite. `auto` wählt anhand des persistenten Sync-Zustands.
+    """
     cfg = load_json(CONFIG_FILE)
     email = cfg.get('autodarts_email')
     password = cfg.get('autodarts_password')
     if not email or not password:
-        return {"ok": False, "error": "Autodarts-Credentials nicht konfiguriert"}
+        return {'ok': False, 'error': 'Autodarts-Credentials nicht konfiguriert'}
+
+    state = load_autodarts_sync_state()
+    if mode == 'auto':
+        mode = 'incremental' if state.get('initial_import_completed') else 'backfill'
+    if mode not in {'backfill', 'incremental'}:
+        return {'ok': False, 'error': 'Unbekannter Autodarts-Importmodus.'}
+
+    # Ein bewusst erneut gestarteter vollständiger Abgleich beginnt wieder auf
+    # Seite 0; ein unterbrochener Erstabgleich wird dagegen fortgesetzt.
+    if mode == 'backfill' and state.get('initial_import_completed'):
+        state['initial_import_completed'] = False
+        state['backfill_next_page'] = 0
+        save_autodarts_sync_state(state)
+
+    token, login_error = autodarts_api_login(email, password)
+    if not token:
+        return {'ok': False, 'error': login_error or 'Autodarts-API-Login fehlgeschlagen.'}
 
     imported_matches = load_imported_matches()
+    if not isinstance(imported_matches, list):
+        imported_matches = []
+    imported_set = set(imported_matches)
     new_imported = []
+    refreshed_matches = []
     errors = []
+    collected_ids = []
     page_htmls = []
-    match_ids = []
+    pages_scanned = 0
 
-    # 1) Zuverlässigster Weg: Login über die Autodarts-API. Kein Browser nötig und
-    #    unabhängig von HTML-Selektoren, die sich jederzeit ändern können.
-    token, login_error = autodarts_api_login(email, password)
-    if login_error:
-        errors.append(login_error)
+    # Noch nicht fertige Matches werden unabhängig von ihrer inzwischen weit
+    # zurückliegenden Verlaufsseite erneut versucht. Permanente Fehler bleiben
+    # sichtbar, werden aber nur bei einem vollständigen Abgleich erneut geprüft.
+    retry_statuses = {'pending', 'failed'} if mode == 'backfill' else {'pending'}
+    retry_items = [
+        (match_id, details)
+        for match_id, details in list(state.get('pending_matches', {}).items())
+        if details.get('status') in retry_statuses and match_id not in imported_set
+    ]
+    for match_id, details in retry_items:
+        imported, error, _processed = _autodarts_import_one_match(
+            token, match_id, details, imported_matches, state
+        )
+        if imported:
+            imported_set.add(match_id)
+            new_imported.append(match_id)
+        elif error:
+            errors.append(error)
 
-    if token:
-        try:
-            page_no = 0
-            size = 50
-            while page_no < max_pages:
-                url = f'https://api.autodarts.com/as/v0/matches/filter?size={size}&page={page_no}'
-                lm = requests.get(url, headers={'Authorization': 'Bearer ' + token}, timeout=15)
-                if not lm.ok:
-                    if lm.status_code == 401:
-                        errors.append('API-Token wurde beim Abrufen der Match-Liste abgelehnt (401).')
-                    break
-                lj = lm.json()
-                items = lj.get('items') or []
-                if not items:
-                    break
-                for item in items:
-                    mid = item.get('id') or item.get('matchId') or item.get('_id')
-                    if mid and mid not in match_ids:
-                        match_ids.append(mid)
-                if lj.get('last'):
-                    break
-                page_no += 1
-        except Exception as e:
-            errors.append(f'Match-Liste über API konnte nicht geladen werden: {e}')
-
-    # 2) Fallback: Playwright-Browser, falls die API-Route keine Matches geliefert hat.
-    user_data_dir = cfg.get('autodarts_user_data_dir') or None
-    if not match_ids:
-        if sync_playwright is None:
-            errors.append('Playwright ist nicht installiert; Browser-Fallback nicht möglich (pip install playwright && playwright install chromium).')
-        else:
-            p = None
-            browser = None
-            context = None
-            page = None
+    if mode == 'backfill':
+        page_no = max(0, int(state.get('backfill_next_page', 0) or 0))
+        page_limit = max_pages or AUTODARTS_BACKFILL_MAX_PAGES
+        while pages_scanned < page_limit:
             try:
-                p = sync_playwright().start()
-                if user_data_dir:
-                    # Wiederverwendung eines bereits (z.B. manuell) eingeloggten Chromium-Profils
-                    try:
-                        context = p.chromium.launch_persistent_context(user_data_dir=user_data_dir, headless=True)
-                        page = context.new_page()
-                    except Exception as e:
-                        errors.append(f'Chromium-Profil konnte nicht geladen werden: {e}')
-                else:
-                    browser = p.chromium.launch(headless=True)
-                    page = browser.new_page()
-                    login_ok, form_login_error = _autodarts_form_login(page, email, password)
-                    if not login_ok:
-                        errors.append(form_login_error or 'Automatischer Formular-Login fehlgeschlagen.')
-                        _save_autodarts_debug_screenshot(page)
+                items, is_last = _autodarts_list_page(token, page_no, 'finished_at')
+            except Exception as exc:
+                errors.append(f'Erstabgleich Seite {page_no + 1} fehlgeschlagen: {exc}')
+                break
 
-                if page is not None:
-                    for page_no in range(max_pages):
-                        url = 'https://play.autodarts.com/history/matches' if page_no == 0 else f'https://play.autodarts.com/history/matches?page={page_no}'
-                        page.goto(url)
-                        page.wait_for_load_state('networkidle')
-                        try:
-                            html = page.content()
-                            page_htmls.append({'page': page_no, 'html_snippet': html[:5000]})
-                        except Exception:
-                            page_htmls.append({'page': page_no, 'html_snippet': ''})
-                        try:
-                            page.wait_for_selector('a[href*="/history/matches/"]', timeout=5000)
-                        except Exception:
-                            pass
-                        links = page.eval_on_selector_all('a[href*="/history/matches/"]', 'els => els.map(e => e.getAttribute("href"))')
-                        for l in links:
-                            if '/history/matches/' in l:
-                                parts = l.rstrip('/').split('/')
-                                mid = parts[-1]
-                                if mid and mid not in match_ids:
-                                    match_ids.append(mid)
-                        if not links:
-                            errors.append('Keine Matches auf der Verlaufsseite gefunden; vermutlich nicht eingeloggt. Nutze "Manuell anmelden" oder prüfe die Zugangsdaten.')
-                            _save_autodarts_debug_screenshot(page)
-                            break
+            pages_scanned += 1
+            save_autodarts_status(
+                'running',
+                f'Erstabgleich: Seite {page_no + 1}, bisher {len(new_imported)} Match(es) importiert …',
+                mode=mode,
+                pages_scanned=pages_scanned,
+            )
+            for item in items:
+                match_id = _autodarts_match_id(item)
+                if not match_id:
+                    continue
+                if match_id not in collected_ids:
+                    collected_ids.append(match_id)
+                was_known = match_id in imported_set
+                imported, error, processed = _autodarts_import_one_match(
+                    token, match_id, item, imported_matches, state, force=was_known
+                )
+                if imported:
+                    imported_set.add(match_id)
+                    new_imported.append(match_id)
+                elif was_known and processed:
+                    refreshed_matches.append(match_id)
+                elif error:
+                    errors.append(error)
 
-                    # Letzter Fallback: API-Aufruf über die Browser-Session (Cookies)
-                    if not match_ids:
-                        try:
-                            api_fetch = page.evaluate(
-                                '(url) => fetch(url).then(r=>r.ok? r.json(): {status:r.status}).catch(e=>({error:e.toString()}))',
-                                'https://api.autodarts.com/as/v0/matches?limit=50',
-                            )
-                            if api_fetch:
-                                candidates = []
-                                if isinstance(api_fetch, list):
-                                    candidates = api_fetch
-                                elif isinstance(api_fetch, dict):
-                                    candidates = api_fetch.get('matches') or api_fetch.get('data') or []
-                                for item in candidates:
-                                    mid = item.get('id') or item.get('matchId') or item.get('_id')
-                                    if mid and mid not in match_ids:
-                                        match_ids.append(mid)
-                        except Exception:
-                            pass
-            except Exception as e:
-                errors.append(f'Playwright-Fallback fehlgeschlagen: {e}')
-            finally:
-                try:
-                    if context:
-                        context.close()
-                    elif browser:
-                        browser.close()
-                except Exception:
-                    pass
-                try:
-                    if p:
-                        p.stop()
-                except Exception:
-                    pass
+            state['backfill_next_page'] = page_no + 1
+            save_autodarts_sync_state(state)
+            if is_last:
+                state['initial_import_completed'] = True
+                state['backfill_next_page'] = 0
+                save_autodarts_sync_state(state)
+                break
+            page_no += 1
+        else:
+            errors.append(
+                f'Erstabgleich erreichte das Sicherheitslimit von {page_limit} Seiten und wird beim nächsten Lauf fortgesetzt.'
+            )
 
-    if not match_ids:
-        save_imported_matches(imported_matches)
-        return {"ok": False, "error": "Keine Matches gefunden", "errors": errors, "collected_match_ids": match_ids, "page_htmls": page_htmls}
+    else:
+        page_limit = max_pages or AUTODARTS_INCREMENTAL_MAX_PAGES
+        api_returned_items = False
+        for page_no in range(page_limit):
+            try:
+                items, is_last = _autodarts_list_page(token, page_no, '-finished_at')
+            except Exception as exc:
+                errors.append(f'Neue Matches, Seite {page_no + 1}, konnten nicht geladen werden: {exc}')
+                break
 
-    # 3) Für jede noch nicht importierte Match-ID die Stats-API abrufen (Token bevorzugt).
-    #    Der Login wurde bereits in Schritt 1 versucht; ein erneuter Versuch mit denselben
-    #    Zugangsdaten würde nur denselben Fehler wiederholen.
-    for mid in match_ids:
-        if mid in imported_matches:
-            continue
-        if not token:
-            errors.append(f'Kein gültiges API-Token vorhanden; Stats für Match {mid} übersprungen.')
-            continue
+            pages_scanned += 1
+            if items:
+                api_returned_items = True
+            page_ids = [_autodarts_match_id(item) for item in items]
+            page_ids = [match_id for match_id in page_ids if match_id]
+            for match_id in page_ids:
+                if match_id not in collected_ids:
+                    collected_ids.append(match_id)
 
-        api_url = f'https://api.autodarts.com/as/v0/matches/{mid}/stats'
-        try:
-            r = requests.get(api_url, headers={'Authorization': 'Bearer ' + token}, timeout=15)
-            if r.status_code == 401:
-                errors.append(f'Nicht autorisiert (401) für Match {mid}.')
-                continue
-            if not r.ok:
-                errors.append(f'Stats für Match {mid} konnten nicht geladen werden (Status {r.status_code}).')
-                continue
-            result = r.json()
-        except Exception as e:
-            errors.append(f'Fetch {mid} fehlgeschlagen: {e}')
-            continue
+            known_before_page = imported_set | set(state.get('pending_matches', {}))
+            completely_known = bool(page_ids) and all(
+                match_id in known_before_page for match_id in page_ids
+            )
+            if not completely_known:
+                items_by_id = {_autodarts_match_id(item): item for item in items}
+                for match_id in page_ids:
+                    if match_id in imported_set or match_id in state.get('pending_matches', {}):
+                        continue
+                    imported, error, _processed = _autodarts_import_one_match(
+                        token, match_id, items_by_id.get(match_id) or {}, imported_matches, state
+                    )
+                    if imported:
+                        imported_set.add(match_id)
+                        new_imported.append(match_id)
+                    elif error:
+                        errors.append(error)
 
-        # Per-Leg-Ergänzung, damit einzelne Legs möglichst detailliert sind
-        try:
-            games_len = len(result.get('games', []) or [])
-            for leg_idx in range(games_len):
-                leg_url = f'https://api.autodarts.com/as/v0/matches/{mid}/stats?leg={leg_idx}'
-                try:
-                    lr = requests.get(leg_url, headers={'Authorization': 'Bearer ' + token}, timeout=15)
-                    if lr.ok:
-                        lrj = lr.json()
-                        if lrj.get('games') and len(lrj.get('games')) > 0:
-                            result['games'][leg_idx] = lrj['games'][0]
-                except Exception:
-                    pass
-        except Exception:
-            pass
+            if completely_known or is_last or not items:
+                break
+        else:
+            errors.append(
+                f'Die Suche erreichte das Sicherheitslimit von {page_limit} Seiten, bevor eine vollständig bekannte Seite gefunden wurde.'
+            )
 
-        # Convert result to score entries via die gemeinsame Import-Logik
-        # (auch verwendet von admin_import_match): erkennt und filtert BOT-Gegner.
-        try:
-            import_match_result_to_scores(result, games_len=games_len)
+        # Die API bleibt der verlässliche Hauptweg. Nur wenn sie erfolgreich
+        # erreichbar war, aber keine Elemente lieferte, wird die sichtbare
+        # Verlaufsliste als letzter inkrementeller Fallback geprüft.
+        if not api_returned_items and not collected_ids:
+            browser_ids, browser_errors, page_htmls = _autodarts_browser_ids(cfg, page_limit)
+            pages_scanned += len(page_htmls)
+            errors.extend(browser_errors)
+            for match_id in browser_ids:
+                if match_id not in collected_ids:
+                    collected_ids.append(match_id)
+                if match_id in imported_set or match_id in state.get('pending_matches', {}):
+                    continue
+                imported, error, _processed = _autodarts_import_one_match(
+                    token, match_id, {}, imported_matches, state
+                )
+                if imported:
+                    imported_set.add(match_id)
+                    new_imported.append(match_id)
+                elif error:
+                    errors.append(error)
 
-            # mark match id as imported
-            imported_matches.append(mid)
-            new_imported.append(mid)
-
-        except Exception as e:
-            errors.append(f'Process {mid} failed: {e}')
-
-    # persist imported matches
     save_imported_matches(imported_matches)
+    save_autodarts_sync_state(state)
+    pending_count = sum(
+        1 for item in state.get('pending_matches', {}).values() if item.get('status') == 'pending'
+    )
+    failed_count = sum(
+        1 for item in state.get('pending_matches', {}).values() if item.get('status') == 'failed'
+    )
+    run_ok = pages_scanned > 0
+    return {
+        'ok': run_ok,
+        'error': None if run_ok else 'Die Autodarts-Matchliste konnte nicht geladen werden.',
+        'mode': mode,
+        'initial_import_completed': bool(state.get('initial_import_completed')),
+        'pages_scanned': pages_scanned,
+        'imported_matches': new_imported,
+        'refreshed_matches': refreshed_matches,
+        'errors': errors,
+        'pending_count': pending_count,
+        'failed_count': failed_count,
+        'collected_match_ids': collected_ids,
+        'page_htmls': page_htmls,
+    }
 
-    return {"ok": True, "imported_matches": new_imported, "errors": errors, "collected_match_ids": match_ids, "page_htmls": page_htmls}
+
+def start_autodarts_import(mode='auto', max_pages=None):
+    """Startet einen vollständigen oder inkrementellen Hintergrundabgleich."""
+    if not AUTODARTS_RUN_LOCK.acquire(blocking=False):
+        return False
+
+    def worker(import_mode, pages):
+        try:
+            current_state = load_autodarts_sync_state()
+            effective_mode = import_mode
+            if effective_mode == 'auto':
+                effective_mode = (
+                    'incremental' if current_state.get('initial_import_completed') else 'backfill'
+                )
+            label = 'Vollständiger Erstabgleich' if effective_mode == 'backfill' else 'Suche nach neuen Matches'
+            save_autodarts_status('running', f'{label} läuft …', mode=effective_mode)
+            try:
+                res = autodarts_collect_and_import(mode=import_mode, max_pages=pages)
+            except Exception as e:
+                res = {"ok": False, "error": str(e)}
+
+            finished_at = utc_now()
+            cfg = load_json(CONFIG_FILE)
+            cfg['autodarts_last_run'] = format_local_datetime(finished_at)
+            save_json(CONFIG_FILE, cfg)
+            save_json(AUTODARTS_LAST_RESULT_FILE, res)
+
+            sync_state = load_autodarts_sync_state()
+            sync_state['last_check_at'] = datetime_to_iso(finished_at)
+            if res.get('ok'):
+                sync_state['last_success_at'] = datetime_to_iso(finished_at)
+            try:
+                interval = max(1, int(cfg.get('autodarts_interval_minutes', 60)))
+            except (TypeError, ValueError):
+                interval = 60
+            sync_state['interval_minutes'] = interval
+            sync_state['next_check_at'] = (
+                datetime_to_iso(finished_at + timedelta(minutes=interval))
+                if cfg.get('autodarts_enabled') else None
+            )
+            save_autodarts_sync_state(sync_state)
+
+            if res.get('ok'):
+                errors = res.get('errors') or []
+                mode_label = 'Erstabgleich' if res.get('mode') == 'backfill' else 'Neue-Matches-Suche'
+                details = (
+                    f"{mode_label} beendet. Seiten: {res.get('pages_scanned', 0)}, "
+                    f"importiert: {len(res.get('imported_matches') or [])}, "
+                    f"aktualisiert: {len(res.get('refreshed_matches') or [])}, "
+                    f"ausstehend: {res.get('pending_count', 0)}, fehlgeschlagen: {res.get('failed_count', 0)}."
+                )
+                if errors:
+                    save_autodarts_status('success', f'{details} {len(errors)} Hinweis(e).', errors=errors)
+                else:
+                    save_autodarts_status('success', details)
+            else:
+                save_autodarts_status('error', res.get('error') or 'Unbekannter Fehler.', errors=res.get('errors') or [])
+        except Exception as e:
+            app.logger.exception('Autodarts-Hintergrundimport fehlgeschlagen')
+            save_autodarts_status('error', str(e))
+        finally:
+            AUTODARTS_RUN_LOCK.release()
+
+    t = threading.Thread(target=worker, args=(mode, max_pages))
+    t.daemon = True
+    t.start()
+    return True
+
+
+def autodarts_scheduler_tick(config=None, now=None):
+    """Führt genau eine testbare Scheduler-Entscheidung aus."""
+    config = config or load_json(CONFIG_FILE)
+    enabled = bool(config.get('autodarts_enabled'))
+    try:
+        interval = max(1, int(config.get('autodarts_interval_minutes', 60)))
+    except (TypeError, ValueError):
+        interval = 60
+
+    now = now or utc_now()
+    state = load_autodarts_sync_state()
+    if not enabled:
+        if state.get('next_check_at') is not None or state.get('interval_minutes') != interval:
+            state['next_check_at'] = None
+            state['interval_minutes'] = interval
+            save_autodarts_sync_state(state)
+        return False
+
+    next_check = parse_datetime(state.get('next_check_at'))
+    if state.get('interval_minutes') != interval or next_check is None:
+        # Aktivierung, geändertes Intervall oder eine neue Installation:
+        # sofort abgleichen statt erst ein vollständiges Intervall zu warten.
+        next_check = now
+        state['interval_minutes'] = interval
+        state['next_check_at'] = datetime_to_iso(next_check)
+        save_autodarts_sync_state(state)
+    if now < next_check:
+        return False
+
+    # Provisorischer Wiederanlaufpunkt. Der Worker ersetzt ihn nach Abschluss
+    # durch „Ende + Intervall“. Nach einem Prozessabsturz erfolgt spätestens
+    # nach fünf Minuten ein neuer Versuch.
+    retry_minutes = min(5, interval)
+    state['next_check_at'] = datetime_to_iso(now + timedelta(minutes=retry_minutes))
+    state['interval_minutes'] = interval
+    save_autodarts_sync_state(state)
+    return bool(start_autodarts_import(mode='auto'))
+
+
+def autodarts_scheduler():
+    """Persistenter Scheduler: überfällige Läufe starten auch nach Neustarts sofort."""
+    while True:
+        autodarts_scheduler_tick()
+        time.sleep(5)
+
+
+def start_autodarts_scheduler():
+    """Stellt sicher, dass der Scheduler nur einmal pro Serverprozess läuft."""
+    global AUTODARTS_SCHEDULER_STARTED
+    with AUTODARTS_SCHEDULER_LOCK:
+        if AUTODARTS_SCHEDULER_STARTED:
+            return
+        AUTODARTS_SCHEDULER_STARTED = True
+        thread = threading.Thread(target=autodarts_scheduler, daemon=True)
+        thread.start()
 
 
 @app.route('/admin/run_autodarts', methods=['POST'])
 def admin_run_autodarts():
-    # Run in background thread to avoid long blocking request
-    max_pages = int(request.form.get('autodarts_pages') or 2)
+    # Beide Buttons nutzen denselben Worker; nur der Suchmodus unterscheidet sich.
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.best == 'application/json'
-
-    def worker(pages):
-        save_autodarts_status('running', 'Autodarts-Abruf läuft…')
-        try:
-            res = autodarts_collect_and_import(max_pages=pages)
-        except Exception as e:
-            res = {"ok": False, "error": str(e)}
-        # update last run in config
-        cfg = load_json(CONFIG_FILE)
-        cfg['autodarts_last_run'] = datetime.now().strftime('%d.%m.%Y %H:%M')
-        save_json(CONFIG_FILE, cfg)
-        # optionally log results to file
-        with open(os.path.join(DATA_DIR, 'autodarts_last_result.json'), 'w', encoding='utf-8') as f:
-            json.dump(res, f, indent=2, ensure_ascii=False)
-
-        if res.get('ok'):
-            errors = res.get('errors') or []
-            if errors:
-                save_autodarts_status('success', f"Lauf beendet mit {len(errors)} Hinweis(en). Importiert: {len(res.get('imported_matches') or [])}.", errors=errors)
-            else:
-                save_autodarts_status('success', f"Erfolgreich. Importiert: {len(res.get('imported_matches') or [])} Match(es).")
-        else:
-            save_autodarts_status('error', res.get('error') or 'Unbekannter Fehler.', errors=res.get('errors') or [])
-
-    import threading
-    t = threading.Thread(target=worker, args=(max_pages,))
-    t.daemon = True
-    t.start()
+    mode = request.form.get('mode') or 'incremental'
+    if mode not in {'backfill', 'incremental'}:
+        if is_ajax:
+            return jsonify({'ok': False, 'error': 'Unbekannter Importmodus.'}), 400
+        return redirect(url_for('admin'))
+    started = start_autodarts_import(mode=mode)
 
     if is_ajax:
-        return jsonify({"ok": True, "started": True})
+        return jsonify({"ok": started, "started": started, "error": None if started else "Autodarts-Abruf läuft bereits."}), 202 if started else 409
     return redirect(url_for('admin'))
 
 
@@ -2006,13 +3098,17 @@ def admin_autodarts_status():
     status = load_autodarts_status()
     last_result = {}
     try:
-        lr_path = os.path.join(DATA_DIR, 'autodarts_last_result.json')
+        lr_path = AUTODARTS_LAST_RESULT_FILE
         if os.path.exists(lr_path):
             with open(lr_path, 'r', encoding='utf-8') as f:
                 last_result = json.load(f)
     except Exception:
         last_result = {}
-    return jsonify({"status": status, "last_result": last_result})
+    return jsonify({
+        "status": status,
+        "last_result": last_result,
+        "sync_state": load_autodarts_sync_state(),
+    })
 
 
 @app.route('/admin/autodarts_manual_login', methods=['POST'])
@@ -2119,96 +3215,54 @@ def admin_import_match():
     email = cfg.get('autodarts_email')
     password = cfg.get('autodarts_password')
     if not email or not password:
-        # cannot proceed without credentials
+        save_autodarts_status('error', 'Autodarts-Credentials nicht konfiguriert.')
         return redirect(url_for('admin'))
 
     try:
         token, login_error = autodarts_api_login(email, password)
         if not token:
+            save_autodarts_status('error', login_error or 'Autodarts-API-Login fehlgeschlagen.')
             return redirect(url_for('admin'))
 
-        # try stats endpoint first
-        headers = {'Authorization': 'Bearer ' + token}
-        r = requests.get(f'https://api.autodarts.com/as/v0/matches/{mid}/stats', headers=headers, timeout=15)
-        if r.ok:
-            result = r.json()
+        imported_matches = load_imported_matches()
+        if not isinstance(imported_matches, list):
+            imported_matches = []
+        state = load_autodarts_sync_state()
+        imported, error, _processed = _autodarts_import_one_match(
+            token, mid, {}, imported_matches, state
+        )
+        save_autodarts_sync_state(state)
+        if imported:
+            save_autodarts_status('success', f'Einzelmatch {mid} wurde importiert.')
+        elif mid in imported_matches:
+            save_autodarts_status('success', f'Einzelmatch {mid} war bereits importiert.')
         else:
-            r2 = requests.get(f'https://api.autodarts.com/as/v0/matches/{mid}', headers=headers, timeout=15)
-            if not r2.ok:
-                return redirect(url_for('admin'))
-            result = r2.json()
-
-        # try per-leg augmentation
-        games_len = len(result.get('games', []) or [])
-        for leg_idx in range(games_len):
-            try:
-                lr = requests.get(f'https://api.autodarts.com/as/v0/matches/{mid}/stats?leg={leg_idx}', headers=headers, timeout=15)
-                if lr.ok:
-                    lrj = lr.json()
-                    if lrj.get('games') and len(lrj.get('games')) > 0:
-                        result['games'][leg_idx] = lrj['games'][0]
-            except Exception:
-                pass
-
-        # convert & save using shared logic (auch für BOT-Erkennung/-Filterung)
-        import_match_result_to_scores(result, games_len=games_len)
-
-        # mark imported
-        ims = load_json(IMPORTED_MATCHES_FILE)
-        if mid not in ims:
-            ims.append(mid)
-            save_imported_matches(ims)
-
-    except Exception:
-        pass
+            save_autodarts_status('error', error or f'Einzelmatch {mid} konnte nicht importiert werden.')
+    except Exception as exc:
+        app.logger.exception('Autodarts-Einzelimport fehlgeschlagen')
+        save_autodarts_status('error', f'Einzelimport fehlgeschlagen: {exc}')
 
     return redirect(url_for('admin'))
 
 
 @app.route('/admin/install_screensaver', methods=['POST'])
 def admin_install_screensaver():
-    """Installiert den Bildschirmschoner aus /Addons/Raspberry-Screensaver im
-    lokalen Binärverzeichnis des aktuellen Nutzers (Skript + Autostart-Eintrag)."""
-    script_src = os.path.join(SCREENSAVER_ADDON_DIR, 'dart_screensaver.sh')
-    desktop_src = os.path.join(SCREENSAVER_ADDON_DIR, 'dart-screensaver.desktop')
-
+    """Backward-compatible alias for the managed screensaver installation."""
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.best == 'application/json'
-
-    if not os.path.isfile(script_src) or not os.path.isfile(desktop_src):
-        msg = 'Screensaver-Dateien wurden in /Addons/Raspberry-Screensaver nicht gefunden.'
-        if is_ajax:
-            return jsonify({"ok": False, "error": msg}), 404
-        return redirect(url_for('admin'))
-
     try:
-        home_dir = os.path.expanduser('~')
-        bin_dir = os.path.join(home_dir, '.local', 'bin')
-        script_dst = os.path.join(bin_dir, 'dart-screensaver')
-        autostart_dir = os.path.join(home_dir, '.config', 'autostart')
-        desktop_dst = os.path.join(autostart_dir, 'dart-screensaver.desktop')
-
-        os.makedirs(bin_dir, exist_ok=True)
-        os.makedirs(autostart_dir, exist_ok=True)
+        manifest = discover_addons(ADDONS_DIR).get('screensaver')
+        if not manifest:
+            msg = 'Screensaver-Addon wurde nicht gefunden.'
+            if is_ajax:
+                return jsonify({"ok": False, "error": msg}), 404
+            return redirect(url_for('admin'))
         write_screensaver_config(load_json(CONFIG_FILE))
-
-        shutil.copyfile(script_src, script_dst)
-        file_stat = os.stat(script_dst)
-        os.chmod(script_dst, file_stat.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
-
-        with open(desktop_src, 'r', encoding='utf-8') as f:
-            desktop_content = f.read()
-        desktop_content = re.sub(
-            r'^Exec=.*$', f'Exec={script_dst}', desktop_content, flags=re.MULTILINE
-        )
-        desktop_content = re.sub(r'^Restart=.*\n?', '', desktop_content, flags=re.MULTILINE)
-        with open(desktop_dst, 'w', encoding='utf-8') as f:
-            f.write(desktop_content)
-
-        msg = f'Screensaver installiert: {script_dst} (Autostart: {desktop_dst}).'
+        manage_addon(manifest, 'install', os.path.expanduser('~'))
+        msg = 'Screensaver installiert, aktiviert und gestartet.'
         if is_ajax:
             return jsonify({"ok": True, "message": msg})
         return redirect(url_for('admin'))
-    except Exception as e:
+    except (OSError, AddonError):
         app.logger.exception('Screensaver-Installation fehlgeschlagen')
         msg = 'Installation fehlgeschlagen. Details siehe Server-Log.'
         if is_ajax:
@@ -2218,45 +3272,18 @@ def admin_install_screensaver():
 
 @app.route('/admin/install_cec', methods=['POST'])
 def admin_install_cec():
-    """Installiert und aktiviert den CEC-Manager als systemd-User-Service."""
-    script_src = os.path.join(CEC_ADDON_DIR, 'hdmi-audio-cec.sh')
-    service_src = os.path.join(CEC_ADDON_DIR, 'hdmi-audio-cec.service')
-
-    if not os.path.isfile(script_src) or not os.path.isfile(service_src):
-        return jsonify({"ok": False, "error": "CEC-Addon-Dateien wurden nicht gefunden."}), 404
-
+    """Backward-compatible alias for the manifest-driven CEC installation."""
     try:
-        home_dir = os.path.expanduser('~')
-        bin_dir = os.path.join(home_dir, '.local', 'bin')
-        service_dir = os.path.join(home_dir, '.config', 'systemd', 'user')
-        script_dst = os.path.join(bin_dir, 'hdmi-audio-cec.sh')
-        service_dst = os.path.join(service_dir, 'hdmi-audio-cec.service')
-
-        os.makedirs(bin_dir, exist_ok=True)
-        os.makedirs(service_dir, exist_ok=True)
-        shutil.copyfile(script_src, script_dst)
-        shutil.copyfile(service_src, service_dst)
-        os.chmod(script_dst, os.stat(script_dst).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        manifest = discover_addons(ADDONS_DIR).get('cec')
+        if not manifest:
+            return jsonify({"ok": False, "error": "CEC-Addon wurde nicht gefunden."}), 404
         write_cec_config(load_json(CONFIG_FILE))
-
-        result = subprocess.run(
-            ['systemctl', '--user', 'daemon-reload'],
-            capture_output=True, text=True, timeout=15, check=False,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(result.stderr.strip() or 'systemctl --user ist nicht verfügbar.')
-        result = subprocess.run(
-            ['systemctl', '--user', 'enable', '--now', 'hdmi-audio-cec.service'],
-            capture_output=True, text=True, timeout=30, check=False,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(result.stderr.strip() or 'CEC-Service konnte nicht aktiviert werden.')
-
+        manage_addon(manifest, 'install', os.path.expanduser('~'))
         return jsonify({
             "ok": True,
             "message": "CEC-Manager installiert und aktiviert. Die Konfiguration wird beim Speichern übernommen.",
         })
-    except (OSError, subprocess.SubprocessError, RuntimeError) as e:
+    except (OSError, AddonError):
         app.logger.exception('CEC-Installation fehlgeschlagen')
         return jsonify({
             "ok": False,
@@ -2264,5 +3291,53 @@ def admin_install_cec():
         }), 500
 
 
+@app.route('/admin/addons/status', methods=['GET'])
+def admin_addons_status():
+    """Return actual installed/enabled/active states for shipped add-ons."""
+    try:
+        return jsonify({"ok": True, "addons": all_addon_statuses(ADDONS_DIR, os.path.expanduser('~'))})
+    except AddonError as exc:
+        return jsonify({"ok": False, "error": str(exc), "addons": {}}), 500
+
+
+@app.route('/admin/addons/<addon_id>/<action>', methods=['POST'])
+def admin_manage_addon(addon_id, action):
+    """Manage one bundled add-on through an exact, validated action allow-list."""
+    if action not in ALLOWED_ACTIONS:
+        return jsonify({"ok": False, "error": "Nicht erlaubte Add-on-Aktion."}), 400
+    try:
+        manifests = discover_addons(ADDONS_DIR)
+        manifest = manifests.get(addon_id)
+        if not manifest:
+            return jsonify({"ok": False, "error": "Unbekanntes Add-on."}), 404
+        config = load_json(CONFIG_FILE)
+        if addon_id == 'cec':
+            write_cec_config(config)
+        elif addon_id == 'kiosk':
+            write_kiosk_config(config)
+        elif addon_id == 'screensaver':
+            write_screensaver_config(config)
+        if action in {'install', 'update', 'start', 'restart'} and addon_id in {'kiosk', 'screensaver'}:
+            other_id = 'screensaver' if addon_id == 'kiosk' else 'kiosk'
+            other = manifests.get(other_id)
+            if other:
+                other_status = addon_status(other, os.path.expanduser('~'))
+                if other_status.get('active'):
+                    manage_addon(other, 'stop', os.path.expanduser('~'))
+        manage_addon(manifest, action, os.path.expanduser('~'))
+        status = addon_status(manifest, os.path.expanduser('~'))
+        return jsonify({
+            "ok": True,
+            "message": f"{manifest['name']}: {action} erfolgreich.",
+            "status": status,
+        })
+    except AddonError as exc:
+        app.logger.error('Add-on-Aktion %s/%s fehlgeschlagen: %s', addon_id, action, exc)
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    debug = os.environ.get('DART_SCOREBOARD_DEBUG') == '1'
+    if not debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        start_autodarts_scheduler()
+    app.run(debug=debug, host='0.0.0.0', port=5000)

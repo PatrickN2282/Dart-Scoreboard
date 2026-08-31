@@ -20,8 +20,11 @@
         .card[data-view="static"] {
             overflow: hidden !important;
         }
+        {% if config.kiosk_hide_cursor %}
+        body#scoreboard { cursor: none; }
+        {% endif %}
 
-        #bucket-stage, #winrate-stage, #h2h-stage, #player-stage {
+        #bucket-stage, #leaderboard-stage, #winrate-stage, #h2h-stage, #player-stage {
             display: none;
             position: fixed;
             inset: var(--nav-height, 50px) 0 0 0;
@@ -116,6 +119,22 @@
         [data-section="winrate"] .card h2 { 
             color: #44FF88; 
             text-shadow: 0 0 15px rgba(68, 255, 136, 0.6);
+        }
+        [data-section="classic26"] .card h2 {
+            color: #ffcf40;
+            text-shadow: 0 0 15px rgba(255, 207, 64, 0.6);
+        }
+        [data-section="favorite-checkout"] .card h2 {
+            color: #ff6b9d;
+            text-shadow: 0 0 15px rgba(255, 107, 157, 0.55);
+        }
+        [data-section="most-hit"] .card h2 {
+            color: #72e6ff;
+            text-shadow: 0 0 15px rgba(114, 230, 255, 0.55);
+        }
+        [data-section="darts-thrown"] .card h2 {
+            color: #b58cff;
+            text-shadow: 0 0 15px rgba(181, 140, 255, 0.55);
         }
         [data-section="h2h"] .card h2 { 
             color: #FF44DD; 
@@ -335,6 +354,11 @@
             padding: 20px;
         }
 
+        .player-detail-layout > div {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
         .player-detail-img {
             width: 320px;
             height: 320px;
@@ -354,8 +378,29 @@
 
         .player-detail-stats {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 18px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .player-detail-stats .h2h-stat-box {
+            min-width: 0;
+            padding: 13px 10px;
+        }
+
+        .player-detail-stats .h2h-stat-value {
+            font-size: clamp(1.35rem, 1.8vw, 2rem);
+            overflow-wrap: anywhere;
+        }
+
+        .player-detail-stats .h2h-stat-label {
+            font-size: clamp(0.65rem, 0.85vw, 0.9rem);
+            line-height: 1.15;
+        }
+
+        .player-detail-stat-date {
+            margin-top: 6px;
+            color: rgba(255,255,255,0.72);
+            font-size: 0.82em;
         }
         
         /* Responsive Anpassungen */
@@ -389,6 +434,100 @@
             .h2h-player-name {
                 font-size: 1.8em;
             }
+        }
+
+        /* H2H nutzt dieselbe verfügbare Kartenhöhe wie die 10er-Ranglisten.
+           Alle sechs Werte pro Spieler werden kompakt eingepasst; innerhalb
+           der Karte darf deshalb kein eigener Scrollbereich entstehen. */
+        body.rotating #h2h-stage .section-block {
+            height: calc(100vh - var(--nav-height) - 40px);
+            max-height: calc(100vh - var(--nav-height) - 40px);
+        }
+        body.rotating #h2h-stage .card {
+            height: 100%;
+            max-height: 100%;
+            overflow: hidden;
+        }
+        body.rotating #h2h-content {
+            display: flex;
+            flex: 1 1 auto;
+            width: 100%;
+            min-height: 0;
+        }
+        body.rotating #h2h-stage .h2h-layout {
+            flex: 1 1 auto;
+            min-height: 0;
+            padding: 4px 10px 10px;
+            gap: clamp(8px, 1vw, 18px);
+        }
+        body.rotating #h2h-stage .h2h-player-side {
+            height: 100%;
+            padding: clamp(10px, 1.3vw, 22px);
+            border-radius: 18px;
+        }
+        body.rotating #h2h-stage .h2h-player-img {
+            width: clamp(130px, 14vw, 240px);
+            height: clamp(130px, 14vw, 240px);
+            margin-bottom: clamp(8px, 1.2vh, 16px);
+        }
+        body.rotating #h2h-stage .h2h-player-name {
+            font-size: clamp(1.3rem, 2vw, 2.2rem);
+            margin-bottom: 6px;
+        }
+        body.rotating #h2h-stage .h2h-player-sub {
+            font-size: clamp(0.85rem, 1.1vw, 1.15rem);
+        }
+        body.rotating #h2h-stage .h2h-stats-side {
+            gap: clamp(5px, 0.8vh, 9px);
+            min-height: 0;
+        }
+        body.rotating #h2h-stage .h2h-stat-box {
+            padding: clamp(5px, 0.8vh, 9px) 8px;
+            border-width: 1px;
+            border-radius: 10px;
+        }
+        body.rotating #h2h-stage .h2h-stat-value {
+            font-size: clamp(1.05rem, 1.5vw, 1.7rem);
+            margin-bottom: 2px;
+            line-height: 1.05;
+        }
+        body.rotating #h2h-stage .h2h-stat-label {
+            font-size: clamp(0.62rem, 0.8vw, 0.82rem);
+            line-height: 1.1;
+            letter-spacing: 0.5px;
+        }
+        body.rotating #h2h-stage .h2h-vs-badge {
+            width: clamp(78px, 8vw, 120px);
+            height: clamp(78px, 8vw, 120px);
+            font-size: clamp(1.8rem, 3vw, 3rem);
+        }
+
+        body.rotating #player-stage .section-block {
+            height: calc(100vh - var(--nav-height) - 40px);
+            max-height: calc(100vh - var(--nav-height) - 40px);
+        }
+        body.rotating #player-stage .card {
+            height: 100%;
+            max-height: 100%;
+            overflow: hidden;
+        }
+        body.rotating #player-detail-content {
+            display: flex;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+        body.rotating #player-stage .player-detail-layout {
+            min-height: 0;
+            padding: 4px 16px 10px;
+            gap: clamp(24px, 4vw, 60px);
+        }
+        body.rotating #player-stage .player-detail-img {
+            width: clamp(230px, 25vw, 320px);
+            height: clamp(230px, 25vw, 320px);
+        }
+        body.rotating #player-stage .player-detail-name {
+            font-size: clamp(2rem, 3vw, 3rem);
+            margin-bottom: 12px;
         }
     </style>
 </head>
@@ -580,7 +719,7 @@
     </div><!-- /.container -->
 
     <!-- 4-Karten-Ansicht #2: T20 / Checkout / First3 / Average -->
-    <div class="container" id="grid2-stage" style="margin-top:18px;">
+    <div class="container" id="grid2-stage">
 
         <div class="top">
 
@@ -732,6 +871,110 @@
     </div><!-- /.container -->
 
 
+    <!-- 4-Karten-Ansicht #3: Classic 26 / Lieblings-Checkout / Most Hit / Darts -->
+    <div class="container" id="grid3-stage">
+        <div class="top">
+            <section class="section-block" data-section="classic26">
+                <div class="card" data-view="static">
+                    <h2>⚡ Zack... 26</h2>
+                    {% if most_classic_26 %}
+                    <div class="card-content">
+                        <div class="card-left static-only">
+                            <img src="{{ url_for('static', filename='uploads/' ~ (most_classic_26[0].image or 'dummy.png')) }}"
+                                 alt="Top Spieler" class="player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                        </div>
+                        <div class="card-right"><table>
+                            <tr><th>Platz</th><th>Name</th><th>26er</th></tr>
+                            {% for s in most_classic_26[:config.rotation_limit] %}
+                            <tr class="podium-row {{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
+                                <td>{{ s.name }}</td><td>{{ s.classic_26 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table></div>
+                    </div>
+                    {% else %}<p>Noch keine Classic-26-Aufnahmen importiert.</p>{% endif %}
+                </div>
+            </section>
+
+            <section class="section-block" data-section="favorite-checkout">
+                <div class="card" data-view="static">
+                    <h2>❤️ Lieblings Checkout</h2>
+                    {% if favorite_checkouts %}
+                    <div class="card-content">
+                        <div class="card-left static-only">
+                            <img src="{{ url_for('static', filename='uploads/' ~ (favorite_checkouts[0].image or 'dummy.png')) }}"
+                                 alt="Top Spieler" class="player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                        </div>
+                        <div class="card-right"><table>
+                            <tr><th>Platz</th><th>Name</th><th>Finish</th><th>Mal</th></tr>
+                            {% for s in favorite_checkouts[:config.rotation_limit] %}
+                            <tr class="podium-row {{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
+                                <td>{{ s.name }}</td><td>{{ s.favorite_checkout }}</td><td>{{ s.favorite_checkout_count }}×</td>
+                            </tr>
+                            {% endfor %}
+                        </table></div>
+                    </div>
+                    {% else %}<p>Noch keine Checkout-Verteilung importiert.</p>{% endif %}
+                </div>
+            </section>
+        </div>
+
+        <div class="bottom">
+            <section class="section-block" data-section="most-hit">
+                <div class="card" data-view="static">
+                    <h2>📍 Most Hit</h2>
+                    {% if most_hit_segments %}
+                    <div class="card-content">
+                        <div class="card-left static-only">
+                            <img src="{{ url_for('static', filename='uploads/' ~ (most_hit_segments[0].image or 'dummy.png')) }}"
+                                 alt="Top Spieler" class="player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                        </div>
+                        <div class="card-right"><table>
+                            <tr><th>Platz</th><th>Name</th><th>Feld</th><th>Treffer</th></tr>
+                            {% for s in most_hit_segments[:config.rotation_limit] %}
+                            <tr class="podium-row {{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
+                                <td>{{ s.name }}</td><td>{{ s.most_hit_segment }}</td><td>{{ s.most_hit_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table></div>
+                    </div>
+                    {% else %}<p>Keine Segmentdaten vorhanden.</p>{% endif %}
+                </div>
+            </section>
+
+            <section class="section-block" data-section="darts-thrown">
+                <div class="card" data-view="static">
+                    <h2>🎯 Darts thrown</h2>
+                    {% if most_darts_thrown %}
+                    <div class="card-content">
+                        <div class="card-left static-only">
+                            <img src="{{ url_for('static', filename='uploads/' ~ (most_darts_thrown[0].image or 'dummy.png')) }}"
+                                 alt="Top Spieler" class="player-img"
+                                 onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                        </div>
+                        <div class="card-right"><table>
+                            <tr><th>Platz</th><th>Name</th><th>Darts</th></tr>
+                            {% for s in most_darts_thrown[:config.rotation_limit] %}
+                            <tr class="podium-row {{ s.podium_class }}" data-row-index="{{ loop.index }}">
+                                <td>{% if s.rank==1 %}🥇{% elif s.rank==2 %}🥈{% elif s.rank==3 %}🥉{% else %}{{ s.rank }}{% endif %}</td>
+                                <td>{{ s.name }}</td><td>{{ '{:,}'.format(s.darts_thrown).replace(',', '.') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table></div>
+                    </div>
+                    {% else %}<p>Keine Wurfdaten vorhanden.</p>{% endif %}
+                </div>
+            </section>
+        </div>
+    </div><!-- /#grid3-stage -->
+
+
     <!-- Bucket-Karten -->
     <div id="bucket-stage">
         <!-- 60+ -->
@@ -843,6 +1086,29 @@
         </section>
     </div><!-- /#bucket-stage -->
 
+    <!-- Wiederverwendete Vollbildkarte für die konfigurierbaren Top-Ranglisten -->
+    <div id="leaderboard-stage">
+        <section class="section-block" data-section="leaderboard">
+            <div class="card" data-view="rotation">
+                <h2 id="leaderboard-title">🏅 Rangliste</h2>
+                <div class="card-content">
+                    <div class="card-left">
+                        <img id="leaderboard-image"
+                             src="{{ url_for('static', filename='uploads/dummy.png') }}"
+                             alt="Top Spieler" class="player-img"
+                             onerror="this.onerror=null;this.src='{{ url_for('static',filename='uploads/dummy.png') }}';">
+                    </div>
+                    <div class="card-right">
+                        <table>
+                            <thead><tr><th>Platz</th><th>Name</th><th id="leaderboard-value-label">Wert</th></tr></thead>
+                            <tbody id="leaderboard-rows"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div><!-- /#leaderboard-stage -->
+
     <!-- Win Rate Stage -->
     <div id="winrate-stage">
         <section class="section-block" data-section="winrate">
@@ -858,7 +1124,7 @@
                     <div class="card-right">
                         <table>
                             <tr><th>Platz</th><th>Name</th><th>Gewonnen</th><th>Legs gespielt</th><th>Rate</th></tr>
-                            {% for s in win_rate_stats[:config.rotation_limit] %}
+                            {% for s in win_rate_stats[:config.leaderboard_limit] %}
                             <tr class="podium-row {{ s.podium_class }}">
                                 <td>
                                     {% if s.rank == 1 %}🥇
@@ -937,6 +1203,8 @@
         const CFG = {
             GRID1_DURATION: {{ config.rotation_duration_grid1 }} * 1000,
             GRID2_DURATION: {{ config.rotation_duration_grid2 }} * 1000,
+            GRID3_DURATION: {{ config.rotation_duration_grid3 }} * 1000,
+            RANKING_DURATION: {{ config.rotation_duration_rankings }} * 1000,
             WINRATE_DURATION: {{ config.rotation_duration_winrate }} * 1000,
             PLAYER_DURATION: {{ config.rotation_duration_player }} * 1000,
             H2H_DURATION: {{ config.rotation_duration_h2h }} * 1000,
@@ -951,26 +1219,65 @@
 
         const grid1Stage = document.getElementById('grid1-stage');
         const grid2Stage = document.getElementById('grid2-stage');
+        const grid3Stage = document.getElementById('grid3-stage');
         const grid1Sections = grid1Stage.querySelectorAll('.section-block');
         const grid2Sections = grid2Stage.querySelectorAll('.section-block');
+        const grid3Sections = grid3Stage.querySelectorAll('.section-block');
 
+        const leaderboardStage = document.getElementById('leaderboard-stage');
+        const leaderboardTitle = document.getElementById('leaderboard-title');
+        const leaderboardImage = document.getElementById('leaderboard-image');
+        const leaderboardValueLabel = document.getElementById('leaderboard-value-label');
+        const leaderboardRows = document.getElementById('leaderboard-rows');
         const winrateStage = document.getElementById('winrate-stage');
         const playerStage = document.getElementById('player-stage');
         const h2hStage = document.getElementById('h2h-stage');
         const h2hContent = document.getElementById('h2h-content');
         const playerDetailContent = document.getElementById('player-detail-content');
 
-        const fullscreenStages = [winrateStage, playerStage, h2hStage];
+        const gridStages = [grid1Stage, grid2Stage, grid3Stage];
+        const gridSections = [grid1Sections, grid2Sections, grid3Sections];
+        const fullscreenStages = [leaderboardStage, winrateStage, playerStage, h2hStage];
+        const ADDITIONAL_RANKINGS = {{ additional_rankings | tojson }};
 
-        // Rotation: genau 5 Ansichten, die nacheinander durchwechseln:
-        // 2x 4-Karten-Grid, Rangliste (Gewinnrate), Spieler-Detailstatistik, Head-to-Head
+        // Grid 1 bleibt der lange Auftakt. Danach wechseln sich H2H, Grids und
+        // Einzelranglisten bewusst ab, statt Statistikblöcke am Stück zu zeigen.
         const SLOTS = [
             { type: 'grid1', duration: CFG.GRID1_DURATION },
-            { type: 'grid2', duration: CFG.GRID2_DURATION },
-            { type: 'winrate', duration: CFG.WINRATE_DURATION },
-            { type: 'player', duration: CFG.PLAYER_DURATION },
             { type: 'h2h', duration: CFG.H2H_DURATION },
         ];
+
+        const featuredRankings = ADDITIONAL_RANKINGS.slice(0, 3);
+        const remainingRankings = ADDITIONAL_RANKINGS.slice(3);
+
+        if (featuredRankings[0]) {
+            SLOTS.push({ type: 'ranking', rankingIndex: 0, duration: CFG.RANKING_DURATION });
+            SLOTS.push({ type: 'h2h', duration: CFG.H2H_DURATION });
+        }
+        SLOTS.push({ type: 'grid2', duration: CFG.GRID2_DURATION });
+        SLOTS.push({ type: 'h2h', duration: CFG.H2H_DURATION });
+        if (featuredRankings[1]) {
+            SLOTS.push({ type: 'ranking', rankingIndex: 1, duration: CFG.RANKING_DURATION });
+            SLOTS.push({ type: 'h2h', duration: CFG.H2H_DURATION });
+        }
+        SLOTS.push({ type: 'grid3', duration: CFG.GRID3_DURATION });
+        SLOTS.push({ type: 'h2h', duration: CFG.H2H_DURATION });
+        if (featuredRankings[2]) {
+            SLOTS.push({ type: 'ranking', rankingIndex: 2, duration: CFG.RANKING_DURATION });
+            SLOTS.push({ type: 'h2h', duration: CFG.H2H_DURATION });
+        }
+
+        SLOTS.push({ type: 'winrate', duration: CFG.WINRATE_DURATION });
+        SLOTS.push({ type: 'player', duration: CFG.PLAYER_DURATION });
+        remainingRankings.forEach((ranking, offset) => {
+            SLOTS.push({
+                type: 'ranking', rankingIndex: offset + 3, duration: CFG.RANKING_DURATION,
+            });
+            SLOTS.push({ type: 'h2h', duration: CFG.H2H_DURATION });
+            if ((offset + 1) % 4 === 0) {
+                SLOTS.push({ type: 'player', duration: CFG.PLAYER_DURATION });
+            }
+        });
 
         let slotIndex = 0;
         let loopTimer = null;
@@ -1164,6 +1471,23 @@
                                     <div class="h2h-stat-value">${p.darts_thrown || 0}</div>
                                     <div class="h2h-stat-label">🎯 Darts geworfen</div>
                                 </div>
+                                <div class="h2h-stat-box">
+                                    <div class="h2h-stat-value">${p.classic_26 || 0}</div>
+                                    <div class="h2h-stat-label">⚡ Zack... 26</div>
+                                </div>
+                                <div class="h2h-stat-box">
+                                    <div class="h2h-stat-value">${p.favorite_checkout !== null && p.favorite_checkout !== undefined ? escapeHtml(p.favorite_checkout) + ' (' + (p.favorite_checkout_count || 0) + '×)' : '–'}</div>
+                                    <div class="h2h-stat-label">❤️ Lieblings Checkout</div>
+                                </div>
+                                <div class="h2h-stat-box">
+                                    <div class="h2h-stat-value">${p.most_hit_segment ? escapeHtml(p.most_hit_segment) + ' (' + (p.most_hit_count || 0) + '×)' : '–'}</div>
+                                    <div class="h2h-stat-label">📍 Most Hit</div>
+                                </div>
+                                <div class="h2h-stat-box">
+                                    <div class="h2h-stat-value">${p.bull_finishes || 0}</div>
+                                    <div class="h2h-stat-label">🎯 Bull-Finishes</div>
+                                    <div class="player-detail-stat-date">${p.last_bull_finish_date ? 'Zuletzt: ' + escapeHtml(p.last_bull_finish_date) : 'Noch kein Bull-Finish'}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1176,10 +1500,9 @@
 
         // Alle Ansichten zurücksetzen, bevor die nächste angezeigt wird
         function hideAllStages() {
-            grid1Stage.style.display = 'none';
-            grid2Stage.style.display = 'none';
+            gridStages.forEach(stage => { stage.style.display = 'none'; });
 
-            [...grid1Sections, ...grid2Sections].forEach(s => {
+            gridSections.flatMap(sections => [...sections]).forEach(s => {
                 s.style.transition = '';
                 s.style.opacity = '0';
                 s.style.display = 'none';
@@ -1195,6 +1518,32 @@
                     section.style.display = 'none';
                 }
             });
+        }
+
+        function rankLabel(rank) {
+            if (rank === 1) return '🥇';
+            if (rank === 2) return '🥈';
+            if (rank === 3) return '🥉';
+            return escapeHtml(rank);
+        }
+
+        function renderLeaderboard(rankingIndex) {
+            const ranking = ADDITIONAL_RANKINGS[rankingIndex];
+            if (!ranking) return;
+
+            leaderboardTitle.textContent = ranking.title;
+            leaderboardValueLabel.textContent = ranking.value_label;
+            const firstRow = ranking.rows && ranking.rows[0];
+            leaderboardImage.src = firstRow && firstRow.image_url
+                ? firstRow.image_url
+                : {{ url_for('static', filename='uploads/dummy.png') | tojson }};
+            leaderboardRows.innerHTML = (ranking.rows || []).map(row => `
+                <tr class="podium-row ${escapeHtml(row.podium_class || '')}">
+                    <td>${rankLabel(row.rank)}</td>
+                    <td>${escapeHtml(row.name)}</td>
+                    <td>${escapeHtml(row.value)}</td>
+                </tr>
+            `).join('');
         }
 
         // Eine der beiden 4-Karten-Grid-Ansichten anzeigen
@@ -1253,6 +1602,13 @@
                     break;
                 case 'grid2':
                     showGridStage(grid2Stage, grid2Sections);
+                    break;
+                case 'grid3':
+                    showGridStage(grid3Stage, grid3Sections);
+                    break;
+                case 'ranking':
+                    renderLeaderboard(slot.rankingIndex);
+                    showFullscreenStage(leaderboardStage);
                     break;
                 case 'winrate':
                     showFullscreenStage(winrateStage);

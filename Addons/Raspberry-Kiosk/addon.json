@@ -1,0 +1,27 @@
+{
+  "id": "kiosk",
+  "name": "Chromium-Kiosk",
+  "version": "1.0.0",
+  "description": "Startet das Scoreboard nach dem Desktop-Start dauerhaft in Chromium.",
+  "kind": "systemd-user",
+  "service": "dart-kiosk.service",
+  "config": ".config/dart-scoreboard/kiosk.conf",
+  "requires_any_command": ["chromium", "chromium-browser"],
+  "files": [
+    {
+      "source": "dart-kiosk.sh",
+      "destination": ".local/bin/dart-kiosk",
+      "mode": "0755"
+    },
+    {
+      "source": "dart-kiosk.service",
+      "destination": ".config/systemd/user/dart-kiosk.service",
+      "mode": "0644"
+    },
+    {
+      "source": "dart-kiosk.desktop",
+      "destination": ".config/autostart/dart-kiosk.desktop",
+      "mode": "0644"
+    }
+  ]
+}

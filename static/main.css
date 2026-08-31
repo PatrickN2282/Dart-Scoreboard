@@ -443,6 +443,21 @@ body.rotating             table tr:nth-child(4) td {
     font-weight: 500;
 }
 
+/* Die Hervorhebung folgt dem tatsächlichen Rang statt der DOM-Position.
+   Das ist insbesondere für Ranglisten mit getrenntem thead/tbody wichtig. */
+.card table .podium-row.gold td {
+    font-size: calc(var(--config-static-td-size) * 1.22) !important;
+    font-weight: 800 !important;
+}
+.card table .podium-row.silver td {
+    font-size: calc(var(--config-static-td-size) * 1.12) !important;
+    font-weight: 600 !important;
+}
+.card table .podium-row.bronze td {
+    font-size: calc(var(--config-static-td-size) * 1.05) !important;
+    font-weight: 500 !important;
+}
+
 /* ── Datums-Zelle: relativ zur td-Basisgröße, aber nie kleiner als 0.6rem ── */
 td.td-date-small {
     font-size: max(calc(var(--config-static-td-size) * 0.42), 0.6rem) !important;
@@ -559,4 +574,3 @@ table tr:nth-child(8)  { animation-delay: 0.47s; }
 table tr:nth-child(9)  { animation-delay: 0.54s; }
 table tr:nth-child(10) { animation-delay: 0.61s; }
 table tr:nth-child(11) { animation-delay: 0.68s; }
-

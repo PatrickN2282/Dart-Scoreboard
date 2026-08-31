@@ -1,6 +1,6 @@
 # Dart Screensaver – Raspberry Pi
 
-Startet nach einer definierten Inaktivitätszeit automatisch Chromium im Vollbild und zeigt eine konfigurierbare URL. Wird die Maus bewegt, schließt sich Chromium wieder.
+Startet nach einer definierten Inaktivitätszeit automatisch Chromium im Vollbild und zeigt das lokale Scoreboard. Wird die Maus bewegt, schließt sich ausschließlich das separate Screensaver-Chromium-Profil; eine laufende Autodarts-Spielumgebung bleibt geöffnet.
 
 ---
 
@@ -29,7 +29,9 @@ Startet nach einer definierten Inaktivitätszeit automatisch Chromium im Vollbil
 bash install.sh
 ```
 
-Das Installationsskript erzeugt `~/.config/autostart/dart-screensaver.desktop` und trägt den tatsächlich installierten Skriptpfad ein. Für eine systemweite Installation verwende `sudo bash install.sh --system`.
+Das Installationsskript erzeugt `~/.config/autostart/dart-screensaver.desktop`, installiert `dart-screensaver.service` als systemd-User-Service und aktiviert ihn. Für eine systemweite Dateikopie verwende `bash install.sh --system`; der Prozess läuft weiterhin als User-Service.
+
+Bevorzugt wird die Installation und Verwaltung im Adminbereich. Dort werden auch der tatsächliche enabled/active-Status sowie Start, Stop, Restart, Update und Deinstallation angeboten.
 
 ### 2. Manuell starten (ohne Reboot)
 
@@ -42,8 +44,8 @@ Das Installationsskript erzeugt `~/.config/autostart/dart-screensaver.desktop` u
 ## Konfiguration
 
 Die Wartezeit wird im Adminbereich unter **Addons → Bildschirmschoner** eingestellt.
-Sie wird in `~/.config/dart-scoreboard/screensaver.conf` gespeichert und beim nächsten
-Start des Screensavers übernommen. Die übrigen Werte können vor der Installation im
+Sie wird in `~/.config/dart-scoreboard/screensaver.conf` gespeichert; ein bereits
+installierter Screensaver wird beim Speichern automatisch neu gestartet. Die übrigen Werte können vor der Installation im
 Skript angepasst werden:
 
 | Variable | Standard | Beschreibung |
@@ -56,10 +58,10 @@ Skript angepasst werden:
 
 ## Änderungen übernehmen
 
-Nach jeder Änderung am Script muss `swayidle` neu gestartet werden:
+Nach jeder Änderung am Script muss der verwaltete Dienst neu gestartet werden:
 
 ```bash
-pkill swayidle && ~/.local/bin/dart-screensaver &
+systemctl --user restart dart-screensaver.service
 ```
 
 Oder per Reboot:

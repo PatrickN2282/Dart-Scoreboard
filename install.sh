@@ -7,6 +7,7 @@ APP_DIR="/opt/Dart-Scoreboard"
 VENV_DIR="$APP_DIR/.venv"
 SERVICE_DIR="$HOME/.config/systemd/user"
 SERVICE_FILE="$SERVICE_DIR/dart-scoreboard.service"
+CONFIG_DIR="$HOME/.config/dart-scoreboard"
 INSTALL_SYSTEM_PACKAGES=true
 
 if [[ "${1:-}" == "--skip-system-packages" ]]; then
@@ -31,7 +32,9 @@ if [[ "$SOURCE_DIR" != "$APP_DIR" ]]; then
     tar \
         --exclude='./.git' \
         --exclude='./.venv' \
+        --exclude='./venv' \
         --exclude='./__pycache__' \
+        --exclude='./tests/__pycache__' \
         --exclude='./data' \
         --exclude='./static/uploads' \
         -C "$SOURCE_DIR" -cf - . | sudo tar -C "$APP_DIR" -xf -
@@ -51,7 +54,7 @@ if "$INSTALL_SYSTEM_PACKAGES"; then
     fi
     echo "Installiere Raspberry-Pi-Abhängigkeiten …"
     sudo apt-get update
-    sudo apt-get install -y python3-venv python3-pip cec-utils swayidle
+    sudo apt-get install -y python3-venv python3-pip cec-utils swayidle wireplumber curl
     if apt-cache show chromium >/dev/null 2>&1; then
         sudo apt-get install -y chromium
     else
@@ -64,24 +67,37 @@ python3 -m venv "$VENV_DIR"
 "$VENV_DIR/bin/pip" install --upgrade pip
 "$VENV_DIR/bin/pip" install -r "$APP_DIR/requirements.txt"
 
-mkdir -p "$APP_DIR/data" "$APP_DIR/static/uploads" "$SERVICE_DIR"
+mkdir -p "$APP_DIR/data" "$APP_DIR/static/uploads" "$SERVICE_DIR" "$CONFIG_DIR"
 for file in players scores bot_scores imported_matches; do
     [[ -f "$APP_DIR/data/$file.json" ]] || printf '[]\n' > "$APP_DIR/data/$file.json"
 done
 [[ -f "$APP_DIR/data/config.json" ]] || printf '{}\n' > "$APP_DIR/data/config.json"
+[[ -f "$APP_DIR/data/autodarts_sync_state.json" ]] || printf '{}\n' > "$APP_DIR/data/autodarts_sync_state.json"
+chmod 700 "$CONFIG_DIR"
+find "$APP_DIR/data" -maxdepth 1 -type f -name '*.json' -exec chmod 600 {} +
 
 cat > "$SERVICE_FILE" <<EOF
 [Unit]
 Description=Dart Scoreboard
-After=network-online.target
-Wants=network-online.target
 
 [Service]
 Type=simple
 WorkingDirectory=$APP_DIR
+Environment=PYTHONUNBUFFERED=1
 ExecStart=$VENV_DIR/bin/python $APP_DIR/app.py
-Restart=on-failure
+Restart=always
 RestartSec=5
+TimeoutStopSec=20
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=dart-scoreboard
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=$APP_DIR/data $APP_DIR/static/uploads $CONFIG_DIR
+LockPersonality=true
+RestrictSUIDSGID=true
 
 [Install]
 WantedBy=default.target

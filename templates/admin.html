@@ -31,8 +31,8 @@
             <button class="tab-link" data-tab="tab-config">
                 <span class="tab-icon">⚙️</span> Design & Limits
             </button>
-            <button class="tab-link" data-tab="tab-import">
-                <span class="tab-icon">📥</span> Import
+            <button class="tab-link" data-tab="tab-autodarts">
+                <span class="tab-icon">🔗</span> Autodarts
             </button>
             <button class="tab-link" data-tab="tab-addons">
                 <span class="tab-icon">🧩</span> Addons
@@ -141,62 +141,6 @@
                     </form>
                 </div>
 
-                <div class="panel">
-                    <h2 class="panel-title">🔗 Autodarts Import – Zugangsdaten</h2>
-                    <p style="font-size:0.88em; color:var(--clr-text-muted); margin: 0 0 12px;">
-                        Trage hier die Autodarts-Zugangsdaten ein, damit das System Spiele abrufen kann.
-                        Die Zugangsdaten werden lokal in `data/config.json` gespeichert.
-                    </p>
-                    <form method="POST" action="{{ url_for('admin') }}">
-                        <input type="hidden" name="action" value="save_config">
-                        <div class="form-grid">
-                            <div class="input-group">
-                                <label for="autodarts_email">Autodarts E-Mail</label>
-                                <input type="email" name="autodarts_email" id="autodarts_email"
-                                       value="{{ config.autodarts_email or '' }}">
-                            </div>
-                            <div class="input-group">
-                                <label for="autodarts_password">Autodarts Passwort</label>
-                                <input type="password" name="autodarts_password" id="autodarts_password"
-                                       value="{{ config.autodarts_password or '' }}">
-                            </div>
-                            <div class="input-group">
-                                <label for="autodarts_interval_minutes">Intervall (Minuten)</label>
-                                <input type="number" name="autodarts_interval_minutes" id="autodarts_interval_minutes"
-                                       min="1" value="{{ config.autodarts_interval_minutes or 60 }}">
-                            </div>
-                            <div class="input-group">
-                                <label for="autodarts_user_data_dir">Chromium Profile-Ordner</label>
-                                <input type="text" name="autodarts_user_data_dir" id="autodarts_user_data_dir"
-                                       placeholder="/home/pi/.config/chromium" value="{{ config.autodarts_user_data_dir or '' }}">
-                                <span class="info-text">Optional: Pfad zum Chromium-Profil, damit die eingeloggte Session benutzt wird.</span>
-                            </div>
-                            <div class="input-group">
-                                <label for="autodarts_enabled">Aktiv</label>
-                                <input type="checkbox" name="autodarts_enabled" id="autodarts_enabled"
-                                       {% if config.autodarts_enabled %} checked {% endif %}>
-                            </div>
-                        </div>
-                        <div class="form-actions" style="margin-top:12px;">
-                            <button type="submit" class="btn btn-primary">💾 Speichern</button>
-                        </div>
-                    </form>
-
-                    <form id="autodarts-run-form" style="margin-top:12px;">
-                        <label for="autodarts_pages">Max. Seiten</label>
-                        <input type="number" id="autodarts_pages" name="autodarts_pages" value="2" min="1" style="width:84px; margin-left:8px;">
-                        <button type="submit" id="autodarts-run-btn" class="btn btn-ghost" style="margin-left:8px;">▶ Jetzt ausführen</button>
-                        <button type="button" id="autodarts-manual-login-btn" class="btn btn-ghost" style="margin-left:8px;"
-                                title="Öffnet einen sichtbaren Browser zur manuellen Anmeldung (nur auf Geräten mit Bildschirm, z.B. beim lokalen Debuggen). Erfordert einen gespeicherten Chromium Profile-Ordner.">
-                            🔑 Manuell anmelden
-                        </button>
-                        <span style="margin-left:12px; color:var(--clr-text-muted);">Letzter Lauf: {{ config.autodarts_last_run or 'nie' }}</span>
-                        <div id="autodarts-status" style="margin-top:10px; font-size:0.88em;" data-state="{{ autodarts_status.state or 'idle' }}">
-                            {{ autodarts_status.message or 'Noch kein Lauf gestartet.' }}
-                        </div>
-                    </form>
-                </div>
-
                 <!-- Letzten Eintrag rückgängig -->
                 <div class="panel panel-danger">
                     <h2 class="panel-title">↩️ Letzten Eintrag rückgängig</h2>
@@ -224,58 +168,75 @@
 
                 <div class="panel">
                     <h2 class="panel-title">📊 Alle Score-Einträge</h2>
+                    <p style="font-size:0.88em; color:var(--clr-text-muted); margin:0 0 16px;">
+                        Einträge sind nach ihrem Spiel- bzw. Erfassungsdatum gruppiert. Gruppen lassen sich einzeln auf- und zuklappen.
+                    </p>
+                    {% for group in score_groups %}
+                    <details class="score-date-group" {% if loop.first %}open{% endif %}>
+                        <summary>
+                            <span>📅 {{ group.date }}</span>
+                            <span class="score-date-count">{{ group.count }} Eintrag{% if group.count != 1 %}e{% endif %}</span>
+                        </summary>
+                        <div class="table-scroll">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th></th><th>Zeit</th><th>Hash</th><th>Spieler</th>
+                                        <th style="text-align:center">🏆 Legs</th><th style="text-align:center">🎯 Finish</th>
+                                        <th style="text-align:center">💥 180er</th><th style="text-align:center">💨 301</th>
+                                        <th style="text-align:center">60+</th><th style="text-align:center">100+</th>
+                                        <th style="text-align:center">140+</th><th style="text-align:center">170+</th>
+                                        <th style="text-align:center">180</th><th style="text-align:center">🎮 Spiele</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for score in group.scores %}
+                                    <tr>
+                                        <td style="width:40px;">
+                                            <form method="POST" action="{{ url_for('admin') }}" style="margin:0;">
+                                                <input type="hidden" name="action" value="delete_score">
+                                                <input type="hidden" name="score_index_to_delete" value="{{ score.index }}">
+                                                <button type="submit" class="btn btn-danger btn-icon"
+                                                    onclick="return confirm('Score von {{ score.name }} ({{ score.date }}) löschen?')">🗑️</button>
+                                            </form>
+                                        </td>
+                                        <td class="td-date">{{ score.date.split(' ', 1)[1] if ' ' in score.date else score.date }}</td>
+                                        <td class="td-hash">{% if score.score_hash %}<span title="{{ score.score_hash }}">{{ score.score_hash[:8] }}</span>{% else %}&nbsp;{% endif %}</td>
+                                        <td class="td-name">{{ score.name }}</td>
+                                        <td class="td-num {% if score.legs > 0 %}has-value{% endif %}">{{ score.legs if score.legs > 0 else '–' }}</td>
+                                        <td class="td-num {% if score.finish > 0 %}has-value{% endif %}">{{ score.finish if score.finish > 0 else '–' }}</td>
+                                        <td class="td-num {% if score.max180 > 0 %}has-value{% endif %}">{{ score.max180 if score.max180 > 0 else '–' }}</td>
+                                        <td class="td-num {% if score.darts301 > 0 %}has-value{% endif %}">{{ score.darts301 if score.darts301 > 0 else '–' }}</td>
+                                        <td class="td-num {% if score.s60 > 0 %}has-value{% endif %}">{{ score.s60 if score.s60 > 0 else '–' }}</td>
+                                        <td class="td-num {% if score.s100 > 0 %}has-value{% endif %}">{{ score.s100 if score.s100 > 0 else '–' }}</td>
+                                        <td class="td-num {% if score.s140 > 0 %}has-value{% endif %}">{{ score.s140 if score.s140 > 0 else '–' }}</td>
+                                        <td class="td-num {% if score.s170 > 0 %}has-value{% endif %}">{{ score.s170 if score.s170 > 0 else '–' }}</td>
+                                        <td class="td-num {% if score.s180 > 0 %}has-value{% endif %}">{{ score.s180 if score.s180 > 0 else '–' }}</td>
+                                        <td class="td-num {% if score.games_played > 0 %}has-value{% endif %}">{{ score.games_played if score.games_played > 0 else '–' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                    {% else %}
+                    <div class="table-empty">Noch keine Score-Einträge vorhanden.</div>
+                    {% endfor %}
+                </div>
 
+                <div class="panel">
+                    <h2 class="panel-title">🤖 Statistik gegen BOTs</h2>
+                    <p style="font-size:0.88em; color:var(--clr-text-muted); margin:0 0 16px; line-height:1.6;">
+                        BOT-Ergebnisse bleiben von der regulären Spielerstatistik getrennt und werden pro Spieler und Bot-Level zusammengefasst.
+                    </p>
                     <div class="table-scroll">
                         <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th></th>
-                                    <th>Datum</th>
-                                    <th>Hash</th>
-                                    <th>Spieler</th>
-                                    <th style="text-align:center">🏆 Legs</th>
-                                    <th style="text-align:center">🎯 Finish</th>
-                                    <th style="text-align:center">💥 180er</th>
-                                    <th style="text-align:center">💨 301</th>
-                                    <th style="text-align:center">60+</th>
-                                    <th style="text-align:center">100+</th>
-                                    <th style="text-align:center">140+</th>
-                                    <th style="text-align:center">170+</th>
-                                    <th style="text-align:center">180</th>
-                                    <th style="text-align:center">🎮 Spiele</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>Spieler</th><th>Bot-Level</th><th style="text-align:center">🏆 Legs</th><th style="text-align:center">🎮 Spiele</th><th style="text-align:center">Average</th></tr></thead>
                             <tbody>
-                                {% for score in scores %}
-                                <tr>
-                                    <td style="width:40px;">
-                                        <form method="POST" action="{{ url_for('admin') }}" style="margin:0;">
-                                            <input type="hidden" name="action" value="delete_score">
-                                            <input type="hidden" name="score_index_to_delete" value="{{ score.index }}">
-                                            <button type="submit" class="btn btn-danger btn-icon"
-                                                onclick="return confirm('Score von {{ score.name }} ({{ score.date }}) löschen?')">
-                                                🗑️
-                                            </button>
-                                        </form>
-                                    </td>
-                                    <td class="td-date">{{ score.date }}</td>
-                                    <td class="td-hash">{% if score.score_hash %}<span title="{{ score.score_hash }}">{{ score.score_hash[:8] }}</span>{% else %}&nbsp;{% endif %}</td>
-                                    <td class="td-name">{{ score.name }}</td>
-                                    <td class="td-num {% if score.legs > 0 %}has-value{% endif %}">{{ score.legs if score.legs > 0 else '–' }}</td>
-                                    <td class="td-num {% if score.finish > 0 %}has-value{% endif %}">{{ score.finish if score.finish > 0 else '–' }}</td>
-                                    <td class="td-num {% if score.max180 > 0 %}has-value{% endif %}">{{ score.max180 if score.max180 > 0 else '–' }}</td>
-                                    <td class="td-num {% if score.darts301 > 0 %}has-value{% endif %}">{{ score.darts301 if score.darts301 > 0 else '–' }}</td>
-                                    <td class="td-num {% if score.s60 > 0 %}has-value{% endif %}">{{ score.s60 if score.s60 > 0 else '–' }}</td>
-                                    <td class="td-num {% if score.s100 > 0 %}has-value{% endif %}">{{ score.s100 if score.s100 > 0 else '–' }}</td>
-                                    <td class="td-num {% if score.s140 > 0 %}has-value{% endif %}">{{ score.s140 if score.s140 > 0 else '–' }}</td>
-                                    <td class="td-num {% if score.s170 > 0 %}has-value{% endif %}">{{ score.s170 if score.s170 > 0 else '–' }}</td>
-                                    <td class="td-num {% if score.s180 > 0 %}has-value{% endif %}">{{ score.s180 if score.s180 > 0 else '–' }}</td>
-                                    <td class="td-num {% if score.games_played > 0 %}has-value{% endif %}">{{ score.games_played if score.games_played > 0 else '–' }}</td>
-                                </tr>
+                                {% for row in bot_stats %}
+                                <tr><td>{{ row.name }}</td><td>{{ row.bot_level if row.bot_level is not none else '?' }}</td><td style="text-align:center">{{ row.legs }}</td><td style="text-align:center">{{ row.games_played }}</td><td style="text-align:center">{{ row.average if row.average is not none else '–' }}</td></tr>
                                 {% else %}
-                                <tr>
-                                    <td colspan="13" class="table-empty">Noch keine Score-Einträge vorhanden.</td>
-                                </tr>
+                                <tr><td colspan="5" class="table-empty">Noch keine Matches gegen BOTs importiert.</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -494,6 +455,12 @@
                                        value="{{ config.rotation_limit }}" min="1" max="50" required>
                                 <span class="info-text">Max. geladene Zeilen im Rotationsmodus.</span>
                             </div>
+                            <div class="input-group">
+                                <label for="leaderboard_limit">Top-Ranglisten</label>
+                                <input type="number" name="leaderboard_limit" id="leaderboard_limit"
+                                       value="{{ config.leaderboard_limit }}" min="1" max="50" required>
+                                <span class="info-text">Plätze pro Vollbild-Rangliste; empfohlen sind 10.</span>
+                            </div>
                         </div>
 
                         <!-- Schriftgrößen -->
@@ -536,9 +503,9 @@
                     <h2 class="panel-title">⏱️ Wartezeiten der Ansichten</h2>
                     <p style="font-size:0.88em; color:var(--clr-text-muted); margin: 0 0 16px; line-height:1.6;">
                         Legt fest, wie lange (in Sekunden) jede Ansicht der Rotation angezeigt wird, bevor
-                        zur nächsten gewechselt wird. Die Rotation zeigt der Reihe nach: die beiden
-                        4-Karten-Ansichten, die Rangliste, eine zufällige Spieler-Detailstatistik und ein
-                        zufälliges Head-to-Head-Duell.
+                        zur nächsten gewechselt wird. Die Rotation zeigt der Reihe nach: drei
+                        4-Karten-Ansichten, die Top-Ranglisten, die Gewinnrate, eine zufällige
+                        Spieler-Detailstatistik und ein zufälliges Head-to-Head-Duell.
                     </p>
                     <form method="POST" action="{{ url_for('admin') }}">
                         <input type="hidden" name="action" value="save_config">
@@ -553,6 +520,16 @@
                                 <label for="rotation_duration_grid2">4-Karten-Ansicht #2 (T20/Checkout/First3/Avg)</label>
                                 <input type="number" name="rotation_duration_grid2" id="rotation_duration_grid2"
                                        value="{{ config.rotation_duration_grid2 }}" min="1" max="3600" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="rotation_duration_grid3">4-Karten-Ansicht #3 (Zack 26/Checkout/Most Hit/Darts)</label>
+                                <input type="number" name="rotation_duration_grid3" id="rotation_duration_grid3"
+                                       value="{{ config.rotation_duration_grid3 }}" min="1" max="3600" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="rotation_duration_rankings">Weitere Top-Ranglisten (je Karte)</label>
+                                <input type="number" name="rotation_duration_rankings" id="rotation_duration_rankings"
+                                       value="{{ config.rotation_duration_rankings }}" min="1" max="3600" required>
                             </div>
                             <div class="input-group">
                                 <label for="rotation_duration_winrate">Rangliste (Gewinnrate)</label>
@@ -586,104 +563,225 @@
 
 
             <!-- ═══════════════════════════════════════
-                 TAB 5: STATISTIK-IMPORT (VOLLSTÄNDIGE VERSION)
+                 TAB 5: AUTODARTS
             ═══════════════════════════════════════ -->
-            <div id="tab-import" class="tab-content">
+            <div id="tab-autodarts" class="tab-content">
 
                 <div class="panel">
-                    <h2 class="panel-title">📥 Statistik importieren (v3)</h2>
-                    <p style="font-size:0.88em; color:var(--clr-text-muted); margin: 0 0 16px; line-height:1.6;">
-                        Kopiere die Statistik-Tabelle aus der Autodarts-App. 
-                        <strong>NEU:</strong> 60+ Werte werden jetzt auch importiert. 
-                        Gespielte Spiele werden automatisch aus der Summe aller Legs berechnet.
+                    <h2 class="panel-title">🔐 Zugangsdaten & automatischer Import</h2>
+                    <p style="font-size:0.88em; color:var(--clr-text-muted); margin:0 0 16px; line-height:1.6;">
+                        Bei der ersten Inbetriebnahme wird die vollständige Historie chronologisch abgeglichen.
+                        Danach sucht der automatische Import ausschließlich neueste Matches zuerst. Ein nach einem
+                        Neustart überfälliger Abruf wird automatisch nachgeholt.
                     </p>
+                    <form method="POST" action="{{ url_for('admin') }}">
+                        <input type="hidden" name="action" value="save_config">
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="autodarts_email">Autodarts E-Mail</label>
+                                <input type="email" name="autodarts_email" id="autodarts_email" value="{{ config.autodarts_email or '' }}">
+                            </div>
+                            <div class="input-group">
+                                <label for="autodarts_password">Autodarts Passwort</label>
+                                <input type="password" name="autodarts_password" id="autodarts_password" value="{{ config.autodarts_password or '' }}">
+                            </div>
+                            <div class="input-group">
+                                <label for="autodarts_interval_minutes">Automatisch alle (Minuten)</label>
+                                <input type="number" name="autodarts_interval_minutes" id="autodarts_interval_minutes"
+                                       min="1" value="{{ config.autodarts_interval_minutes or 60 }}">
+                                <span class="info-text">Bei Aktivierung oder Intervalländerung wird sofort geprüft; danach gilt der eingestellte Abstand.</span>
+                            </div>
+                            <div class="input-group">
+                                <label for="autodarts_enabled">Automatischen Import aktivieren</label>
+                                <input type="checkbox" name="autodarts_enabled" id="autodarts_enabled"
+                                       {% if config.autodarts_enabled %}checked{% endif %}>
+                            </div>
+                        </div>
+                        <details class="admin-inline-details">
+                            <summary>Erweiterte Browser-Anmeldung</summary>
+                            <div class="form-grid" style="margin-top:14px;">
+                                <div class="input-group">
+                                    <label for="autodarts_user_data_dir">Chromium-Profilordner</label>
+                                    <input type="text" name="autodarts_user_data_dir" id="autodarts_user_data_dir"
+                                           placeholder="/home/autodarts/.config/chromium" value="{{ config.autodarts_user_data_dir or '' }}">
+                                    <span class="info-text">Nur für den Playwright-Fallback bzw. die manuelle Browser-Anmeldung nötig.</span>
+                                </div>
+                            </div>
+                            <button type="button" id="autodarts-manual-login-btn" class="btn btn-ghost" style="margin-top:10px;">
+                                🔑 Manuell im Browser anmelden
+                            </button>
+                        </details>
+                        <div class="form-actions" style="margin-top:16px;">
+                            <button type="submit" class="btn btn-primary">💾 Autodarts-Einstellungen speichern</button>
+                        </div>
+                    </form>
+                </div>
 
-                    <!-- Eingabe -->
-                    <div class="input-group" style="margin-bottom:14px;">
-                        <label for="import-raw">Statistik-Text</label>
-                        <textarea id="import-raw" rows="8"
-                            style="width:100%; font-size:0.78em; font-family:monospace;
-                                   background:var(--clr-bg); border:1px solid var(--clr-border);
-                                   border-radius:6px; padding:10px 12px; color:var(--clr-text);
-                                   resize:vertical; outline:none;"
-                            placeholder="Stats&#10;YKN_90&#10;PS23&#10;Legs won 2 1&#10;Best Checkout points 120 85&#10;60+ 15 8&#10;100+ 5 3&#10;140+ 2 1&#10;170+ 0 0&#10;180 1 0"></textarea>
+                <div class="panel">
+                    <h2 class="panel-title">📚 Vollständiger Erstabgleich</h2>
+                    <p class="autodarts-panel-copy">
+                        Liest alle vorhandenen Matches älteste zuerst ein. Der Fortschritt wird nach jeder Seite
+                        gespeichert und nach einem Neustart automatisch fortgesetzt.
+                    </p>
+                    <div class="autodarts-sync-facts">
+                        <span><strong>Status:</strong> {% if autodarts_sync_state.initial_import_completed %}abgeschlossen{% else %}offen / fortsetzbar{% endif %}</span>
+                        <span><strong>Nächste Seite:</strong> {% if autodarts_sync_state.initial_import_completed %}–{% else %}{{ (autodarts_sync_state.backfill_next_page or 0) + 1 }}{% endif %}</span>
+                        <span><strong>Ausstehend:</strong> {{ autodarts_sync_state.pending_count }}</span>
+                        <span><strong>Fehlgeschlagen:</strong> {{ autodarts_sync_state.failed_count }}</span>
                     </div>
+                    {% if autodarts_sync_state.pending_matches %}
+                    <details class="admin-inline-details">
+                        <summary>Ausstehende und fehlgeschlagene Matches</summary>
+                        <ul class="autodarts-error-list">
+                            {% for match_id, problem in autodarts_sync_state.pending_matches.items() %}
+                            <li>
+                                {{ problem.status or 'pending' }} · {{ match_id }} ·
+                                Versuch {{ problem.attempts or 1 }} · {{ problem.last_error or 'ohne Fehlermeldung' }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </details>
+                    {% endif %}
+                    <form class="autodarts-run-form" data-mode="backfill">
+                        <input type="hidden" name="mode" value="backfill">
+                        <button type="submit" class="btn btn-ghost autodarts-run-btn">
+                            {% if autodarts_sync_state.initial_import_completed %}↻ Vollständigen Abgleich erneut starten{% elif autodarts_sync_state.backfill_next_page %}▶ Erstabgleich fortsetzen{% else %}▶ Erstabgleich starten{% endif %}
+                        </button>
+                    </form>
+                </div>
 
-                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;">
-                        <button class="btn btn-primary" onclick="importParse()">▶ Parsen</button>
-                        <button class="btn btn-ghost" onclick="importPasteClipboard()">📋 Aus Zwischenablage</button>
-                        <button class="btn btn-ghost" onclick="importClear()">✕ Leeren</button>
-                    </div>
-                    <div id="import-status" style="font-size:0.8em; min-height:18px; margin-bottom:8px;"></div>
-                    <!-- Manueller Match-Import -->
-                    <div style="margin-bottom:12px;">
-                        <form method="POST" action="{{ url_for('admin_import_match') }}" style="display:flex; gap:8px; align-items:center;">
-                            <input type="text" name="match_id" placeholder="Match-URL oder Match-ID hier einfügen" style="flex:1; padding:8px; border:1px solid var(--clr-border); border-radius:6px;">
-                            <button type="submit" class="btn btn-primary">🔁 Match importieren</button>
-                        </form>
-                        <div style="font-size:0.82em; color:var(--clr-text-muted); margin-top:6px;">Tipp: Wenn du ein Match in der Autodarts‑App siehst, kopiere die URL und füge sie hier ein.</div>
-                    </div>
-                    <!-- Import-Status (letzter Lauf) -->
-                    <div style="margin-top:12px; font-size:0.9em; color:var(--clr-text-muted);">
-                        <strong>Letzter Importlauf:</strong>
-                        <div style="margin-top:6px;">
-                            {% if autodarts_last_result and autodarts_last_result.collected_match_ids is defined %}
-                                Gesammelte Matches: {{ autodarts_last_result.collected_match_ids | length }}
-                                &nbsp;•&nbsp; Importiert: {{ autodarts_last_result.imported_matches | length }}
-                                {% if autodarts_last_result.errors and autodarts_last_result.errors | length > 0 %}
-                                    <div style="color:#e05252; margin-top:6px;">Fehler: {{ autodarts_last_result.errors | join(', ') }}</div>
-                                {% endif %}
-                            {% else %}
-                                Noch kein Importlauf oder keine Ergebnisse vorhanden.
-                            {% endif %}
+                <div class="panel">
+                    <h2 class="panel-title">🔄 Neue Matches abrufen</h2>
+                    <p class="autodarts-panel-copy">
+                        Prüft die neuesten Matches zuerst und beendet die Suche, sobald eine vollständig bekannte
+                        Verlaufsseite erreicht ist. Eine Seitenanzahl muss nicht mehr eingestellt werden.
+                    </p>
+                    <form class="autodarts-run-form" data-mode="incremental">
+                        <input type="hidden" name="mode" value="incremental">
+                        <button type="submit" class="btn btn-primary autodarts-run-btn">▶ Jetzt nach neuen Matches suchen</button>
+                    </form>
+                    <div class="autodarts-current-status">
+                        <div class="autodarts-schedule-grid">
+                            <span><strong>Letzte Prüfung:</strong> {{ autodarts_sync_state.last_check_display }}</span>
+                            <span><strong>Letzter Erfolg:</strong> {{ autodarts_sync_state.last_success_display }}</span>
+                            <span><strong>Nächste Prüfung:</strong> {{ autodarts_sync_state.next_check_display }}</span>
+                        </div>
+                        <div id="autodarts-status" data-state="{{ autodarts_status.state or 'idle' }}">
+                            {{ autodarts_status.message or 'Noch kein Lauf gestartet.' }}
                         </div>
                     </div>
                 </div>
 
-                <!-- Vorschau + Mapping -->
-                <div class="panel" id="import-preview-panel" style="display:none;">
-                    <h2 class="panel-title">🔍 Vorschau & Spieler-Mapping</h2>
-                    <p style="font-size:0.82em; color:var(--clr-text-muted); margin:0 0 14px; line-height:1.5;">
-                        Die Spieler wurden automatisch erkannt. Gespielte Spiele: <strong id="total-games-display">0</strong> 
-                        (Summe aller Legs). Ordne die Spieler zu oder erstelle neue Einträge.
-                    </p>
-
-                    <div class="table-scroll">
-                        <table class="data-table" id="import-table">
-                            <thead>
-                                <tr>
-                                    <th style="width:32px;">✔</th>
-                                    <th>Autodarts-Name</th>
-                                    <th>→ Scoreboard-Spieler</th>
-                                    <th style="text-align:center">🏆 Legs</th>
-                                    <th style="text-align:center">🎯 Best CO</th>
-                                    <th style="text-align:center">60+</th>
-                                    <th style="text-align:center">100+</th>
-                                    <th style="text-align:center">140+</th>
-                                    <th style="text-align:center">170+</th>
-                                    <th style="text-align:center">180</th>
-                                </tr>
-                            </thead>
-                            <tbody id="import-tbody"></tbody>
-                        </table>
-                    </div>
-
-                    <div class="form-actions" style="margin-top:20px; gap:12px;">
-                        <button class="btn btn-primary" id="import-transfer-btn"
-                                onclick="importTransfer()">
-                            ⬆ In Scoreboard übertragen
-                        </button>
-                        <span id="import-result"
-                              style="font-size:0.82em; color:var(--clr-text-muted);"></span>
-                    </div>
+                <div class="panel">
+                    <h2 class="panel-title">🔗 Einzelnes Match importieren</h2>
+                    <form method="POST" action="{{ url_for('admin_import_match') }}" class="autodarts-match-form">
+                        <input type="text" name="match_id" placeholder="Autodarts-Match-URL oder Match-ID" required>
+                        <button type="submit" class="btn btn-primary">Match importieren</button>
+                    </form>
+                    <span class="info-text">Verwende die URL eines Matches aus der Autodarts-App.</span>
                 </div>
 
-            </div><!-- /tab-import -->
+                <div class="panel">
+                    <h2 class="panel-title">📋 Importprotokoll</h2>
+                    {% if autodarts_last_result and autodarts_last_result.collected_match_ids is defined %}
+                    <div class="autodarts-log-summary">
+                        <span><strong>{{ 'Erstabgleich' if autodarts_last_result.get('mode') == 'backfill' else 'Neue Matches' }}</strong> Modus</span>
+                        <span><strong>{{ autodarts_last_result.get('pages_scanned', 0) }}</strong> Seiten geprüft</span>
+                        <span><strong>{{ (autodarts_last_result.get('collected_match_ids') or []) | length }}</strong> Match-IDs gefunden</span>
+                        <span><strong>{{ (autodarts_last_result.get('imported_matches') or []) | length }}</strong> neu importiert</span>
+                        <span><strong>{{ (autodarts_last_result.get('refreshed_matches') or []) | length }}</strong> vorhandene aktualisiert</span>
+                        <span><strong>{{ autodarts_last_result.get('pending_count', 0) }}</strong> ausstehend</span>
+                        <span><strong>{{ autodarts_last_result.get('failed_count', 0) }}</strong> fehlgeschlagen</span>
+                        <span><strong>{{ (autodarts_last_result.get('errors') or []) | length }}</strong> Hinweise/Fehler</span>
+                    </div>
+                    {% if autodarts_last_result.get('errors') %}
+                    <details class="admin-inline-details" open>
+                        <summary>Hinweise und Fehler</summary>
+                        <ul class="autodarts-error-list">
+                            {% for error in autodarts_last_result.get('errors') %}<li>{{ error }}</li>{% endfor %}
+                        </ul>
+                    </details>
+                    {% endif %}
+                    <details class="admin-inline-details">
+                        <summary>Gefundene und importierte Match-IDs</summary>
+                        <p class="import-id-list"><strong>Gefunden:</strong> {{ (autodarts_last_result.get('collected_match_ids') or []) | join(', ') or 'keine' }}</p>
+                        <p class="import-id-list"><strong>Neu importiert:</strong> {{ (autodarts_last_result.get('imported_matches') or []) | join(', ') or 'keine' }}</p>
+                    </details>
+                    {% else %}
+                    <p class="table-empty">Noch kein Importprotokoll vorhanden.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Legacy-Textimport bleibt aus Kompatibilitätsgründen vollständig
+                     im DOM, ist aber nicht mehr Bestandteil der sichtbaren Admin-UI. -->
+                <section id="legacy-statistics-import" hidden aria-hidden="true">
+                    <h2>Statistik importieren (v3)</h2>
+                    <textarea id="import-raw" rows="8"></textarea>
+                    <button type="button" onclick="importParse()">Parsen</button>
+                    <button type="button" onclick="importPasteClipboard()">Aus Zwischenablage</button>
+                    <button type="button" onclick="importClear()">Leeren</button>
+                    <div id="import-status"></div>
+                    <div id="import-preview-panel">
+                        <strong id="total-games-display">0</strong>
+                        <table id="import-table"><tbody id="import-tbody"></tbody></table>
+                        <button type="button" id="import-transfer-btn" onclick="importTransfer()">Übertragen</button>
+                        <span id="import-result"></span>
+                    </div>
+                </section>
+
+            </div><!-- /tab-autodarts -->
 
             <!-- ═══════════════════════════════════════
                  TAB 6: ADDONS
             ═══════════════════════════════════════ -->
             <div id="tab-addons" class="tab-content">
+
+                <div class="panel" data-addon-card="kiosk">
+                    <h2 class="panel-title">🖥️ Dauer-Kiosk (alternative Betriebsart)</h2>
+                    <p style="font-size:0.88em; color:var(--clr-text-muted); margin:0 0 16px; line-height:1.6;">
+                        Zeigt das Scoreboard nach dem Boot dauerhaft in Chromium an. Diese Betriebsart ist für eine
+                        reine Anzeige gedacht. Im regulären Autodarts-Spielbetrieb stattdessen den Bildschirmschoner
+                        weiter unten verwenden; beide Chromium-Modi sollten nicht gleichzeitig aktiviert sein.
+                    </p>
+                    <form method="POST" action="{{ url_for('admin') }}">
+                        <input type="hidden" name="action" value="save_config">
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="kiosk_url">Scoreboard-URL</label>
+                                <input type="url" name="kiosk_url" id="kiosk_url"
+                                       value="{{ config.kiosk_url or 'http://127.0.0.1:5000/' }}" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="kiosk_display_mode">Grafiksystem</label>
+                                <select name="kiosk_display_mode" id="kiosk_display_mode">
+                                    <option value="auto" {% if config.kiosk_display_mode == 'auto' %}selected{% endif %}>Automatisch</option>
+                                    <option value="wayland" {% if config.kiosk_display_mode == 'wayland' %}selected{% endif %}>Wayland</option>
+                                    <option value="x11" {% if config.kiosk_display_mode == 'x11' %}selected{% endif %}>X11</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="kiosk_hide_cursor">Mauszeiger ausblenden</label>
+                                <input type="checkbox" name="kiosk_hide_cursor" id="kiosk_hide_cursor"
+                                       {% if config.kiosk_hide_cursor %}checked{% endif %}>
+                            </div>
+                        </div>
+                        <div class="form-actions" style="margin-top:16px;">
+                            <button type="submit" class="btn btn-primary">💾 Kiosk-Konfiguration speichern</button>
+                        </div>
+                    </form>
+                    <hr class="form-divider" style="margin:18px 0;">
+                    {% set kiosk_status = addon_statuses.get('kiosk', {}) %}
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <strong>Status:</strong>
+                        <span class="addon-state" data-addon-state="kiosk">{{ kiosk_status.get('state', 'unbekannt') }}</span>
+                        <button type="button" class="btn btn-primary addon-action" data-addon="kiosk" data-action="install">Installieren/Aktualisieren</button>
+                        <button type="button" class="btn btn-ghost addon-action" data-addon="kiosk" data-action="start">Starten</button>
+                        <button type="button" class="btn btn-ghost addon-action" data-addon="kiosk" data-action="stop">Stoppen</button>
+                        <button type="button" class="btn btn-ghost addon-action" data-addon="kiosk" data-action="restart">Neu starten</button>
+                        <button type="button" class="btn btn-ghost addon-action" data-addon="kiosk" data-action="uninstall">Deinstallieren</button>
+                        <span class="addon-message" data-addon-message="kiosk" style="font-size:0.88em;"></span>
+                    </div>
+                </div>
 
                 <div class="panel">
                     <h2 class="panel-title">📺 CEC-Manager</h2>
@@ -715,24 +813,42 @@
                                 <input type="time" name="cec_wake_time" id="cec_wake_time"
                                        value="{{ config.cec_wake_time or '08:00' }}" required>
                             </div>
+                            <div class="input-group">
+                                <label for="cec_adapter">CEC-Adapter (optional)</label>
+                                <input type="text" name="cec_adapter" id="cec_adapter"
+                                       placeholder="/dev/cec0" value="{{ config.cec_adapter or '' }}">
+                                <span class="info-text">Leer lassen für automatische Erkennung durch libCEC.</span>
+                            </div>
+                            <div class="input-group">
+                                <label for="cec_check_interval">Prüfintervall (Sekunden)</label>
+                                <input type="number" name="cec_check_interval" id="cec_check_interval"
+                                       min="10" max="3600" value="{{ config.cec_check_interval or 50 }}" required>
+                            </div>
                         </div>
                         <div class="form-actions" style="margin-top:16px;">
                             <button type="submit" class="btn btn-primary">💾 CEC-Konfiguration speichern</button>
                         </div>
                     </form>
                     <hr class="form-divider" style="margin:18px 0;">
-                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                        <button type="button" id="install-cec-btn" class="btn btn-primary">📺 CEC-Manager installieren</button>
-                        <span id="install-cec-status" style="font-size:0.88em;"></span>
+                    {% set cec_status = addon_statuses.get('cec', {}) %}
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <strong>Status:</strong>
+                        <span class="addon-state" data-addon-state="cec">{{ cec_status.get('state', 'unbekannt') }}</span>
+                        <button type="button" class="btn btn-primary addon-action" data-addon="cec" data-action="install">Installieren/Aktualisieren</button>
+                        <button type="button" class="btn btn-ghost addon-action" data-addon="cec" data-action="start">Starten</button>
+                        <button type="button" class="btn btn-ghost addon-action" data-addon="cec" data-action="stop">Stoppen</button>
+                        <button type="button" class="btn btn-ghost addon-action" data-addon="cec" data-action="restart">Neu starten</button>
+                        <button type="button" class="btn btn-ghost addon-action" data-addon="cec" data-action="uninstall">Deinstallieren</button>
+                        <span class="addon-message" data-addon-message="cec" style="font-size:0.88em;"></span>
                     </div>
                 </div>
 
                 <div class="panel">
-                    <h2 class="panel-title">🖥️ Bildschirmschoner</h2>
+                    <h2 class="panel-title">🎯 Scoreboard-Bildschirmschoner (Spielbetrieb)</h2>
                     <p style="font-size:0.88em; color:var(--clr-text-muted); margin: 0 0 16px; line-height:1.6;">
-                        Installiert den Bildschirmschoner aus <code>/Addons/Raspberry-Screensaver</code> im
-                        Home-Verzeichnis dieses Rechners (Skript + Autostart-Eintrag), damit das Scoreboard
-                        nach Inaktivität automatisch im Kiosk-Modus angezeigt wird.
+                        Startet das lokale Scoreboard nach Inaktivität im Kiosk-Modus. Sobald wieder Mausaktivität
+                        erkannt wird, schließt der Dienst ausschließlich sein eigenes Scoreboard-Chromium-Profil;
+                        die Autodarts-Spielumgebung und andere Browserfenster bleiben geöffnet.
                     </p>
                     <form method="POST" action="{{ url_for('admin') }}">
                         <input type="hidden" name="action" value="save_config">
@@ -741,7 +857,7 @@
                                 <label for="screensaver_idle_time">Start nach Inaktivität (Sekunden)</label>
                                 <input type="number" name="screensaver_idle_time" id="screensaver_idle_time"
                                        value="{{ config.screensaver_idle_time or 300 }}" min="1" max="86400" required>
-                                <span class="info-text">Die neue Zeit gilt beim nächsten Start des Screensavers.</span>
+                                <span class="info-text">Der laufende Screensaver wird nach dem Speichern neu gestartet.</span>
                             </div>
                         </div>
                         <div class="form-actions" style="margin-top:16px;">
@@ -749,45 +865,16 @@
                         </div>
                     </form>
                     <hr class="form-divider" style="margin:18px 0;">
-                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                        <button type="button" id="install-screensaver-btn" class="btn btn-primary">
-                            🖥️ Screensaver installieren
-                        </button>
-                        <span id="install-screensaver-status" style="font-size:0.88em;"></span>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <h2 class="panel-title">🤖 Statistik gegen BOTs</h2>
-                    <p style="font-size:0.88em; color:var(--clr-text-muted); margin: 0 0 16px; line-height:1.6;">
-                        Ergebnisse gegen BOT-Gegner fließen nicht in die reguläre Spieler-Statistik ein.
-                        Stattdessen werden sie hier getrennt pro Bot-Level aufgeführt.
-                    </p>
-                    <div class="table-scroll">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Spieler</th>
-                                    <th>Bot-Level</th>
-                                    <th style="text-align:center">🏆 Legs</th>
-                                    <th style="text-align:center">🎮 Spiele</th>
-                                    <th style="text-align:center">Average</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for row in bot_stats %}
-                                <tr>
-                                    <td>{{ row.name }}</td>
-                                    <td>{{ row.bot_level if row.bot_level is not none else '?' }}</td>
-                                    <td style="text-align:center">{{ row.legs }}</td>
-                                    <td style="text-align:center">{{ row.games_played }}</td>
-                                    <td style="text-align:center">{{ row.average if row.average is not none else '–' }}</td>
-                                </tr>
-                                {% else %}
-                                <tr><td colspan="5" style="text-align:center; color:var(--clr-text-muted);">Noch keine Matches gegen BOTs importiert.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    {% set screensaver_status = addon_statuses.get('screensaver', {}) %}
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <strong>Status:</strong>
+                        <span class="addon-state" data-addon-state="screensaver">{{ screensaver_status.get('state', 'unbekannt') }}</span>
+                        <button type="button" class="btn btn-primary addon-action" data-addon="screensaver" data-action="install">Installieren/Aktualisieren</button>
+                        <button type="button" class="btn btn-ghost addon-action" data-addon="screensaver" data-action="start">Starten</button>
+                        <button type="button" class="btn btn-ghost addon-action" data-addon="screensaver" data-action="stop">Stoppen</button>
+                        <button type="button" class="btn btn-ghost addon-action" data-addon="screensaver" data-action="restart">Neu starten</button>
+                        <button type="button" class="btn btn-ghost addon-action" data-addon="screensaver" data-action="uninstall">Deinstallieren</button>
+                        <span class="addon-message" data-addon-message="screensaver" style="font-size:0.88em;"></span>
                     </div>
                 </div>
 
@@ -1194,13 +1281,15 @@
 
         // -- Autodarts: AJAX-Trigger + Live-Statusanzeige (statt "nichts passiert") --
         (function () {
-            const form = document.getElementById('autodarts-run-form');
-            const runBtn = document.getElementById('autodarts-run-btn');
+            const forms = Array.from(document.querySelectorAll('.autodarts-run-form'));
+            const runButtons = Array.from(document.querySelectorAll('.autodarts-run-btn'));
             const manualBtn = document.getElementById('autodarts-manual-login-btn');
             const statusEl = document.getElementById('autodarts-status');
-            if (!form || !statusEl) return;
+            if (!forms.length || !statusEl) return;
 
             let pollTimer = null;
+            let manualRunStarted = false;
+            let previousState = statusEl.dataset.state || 'idle';
 
             function renderStatus(state, message) {
                 statusEl.dataset.state = state || 'idle';
@@ -1217,10 +1306,9 @@
                 statusEl.style.color = colors[state] || 'inherit';
             }
 
-            function stopPolling() {
-                if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-                runBtn.disabled = false;
-                manualBtn.disabled = false;
+            function setBusy(busy) {
+                runButtons.forEach(button => { button.disabled = busy; });
+                if (manualBtn) manualBtn.disabled = busy;
             }
 
             function startPolling() {
@@ -1231,43 +1319,54 @@
                         const data = await res.json();
                         const state = (data.status && data.status.state) || 'idle';
                         renderStatus(state, data.status && data.status.message);
-                        if (!['running', 'manual_login_pending'].includes(state)) {
-                            stopPolling();
+                        const busy = ['running', 'manual_login_pending'].includes(state);
+                        setBusy(busy);
+                        if (manualRunStarted && ['running', 'manual_login_pending'].includes(previousState) && !busy) {
+                            manualRunStarted = false;
+                            setTimeout(() => location.reload(), 700);
                         }
+                        previousState = state;
                     } catch (e) {
                         renderStatus('error', 'Status konnte nicht abgerufen werden: ' + e.message);
-                        stopPolling();
+                        setBusy(false);
                     }
-                }, 2000);
+                }, 3000);
             }
 
-            form.addEventListener('submit', async (ev) => {
-                ev.preventDefault();
-                runBtn.disabled = true;
-                renderStatus('running', 'Autodarts-Abruf wird gestartet...');
-                try {
-                    const res = await fetch("{{ url_for('admin_run_autodarts') }}", {
-                        method: 'POST',
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                        body: new URLSearchParams(new FormData(form)),
-                    });
-                    const data = await res.json();
-                    if (data.ok) {
-                        renderStatus('running', 'Autodarts-Abruf laeuft...');
-                        startPolling();
-                    } else {
-                        renderStatus('error', data.error || 'Start fehlgeschlagen.');
-                        runBtn.disabled = false;
+            forms.forEach(form => {
+                form.addEventListener('submit', async (ev) => {
+                    ev.preventDefault();
+                    setBusy(true);
+                    manualRunStarted = true;
+                    previousState = 'running';
+                    renderStatus('running', form.dataset.mode === 'backfill'
+                        ? 'Vollständiger Erstabgleich wird gestartet …'
+                        : 'Suche nach neuen Matches wird gestartet …');
+                    try {
+                        const res = await fetch("{{ url_for('admin_run_autodarts') }}", {
+                            method: 'POST',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                            body: new URLSearchParams(new FormData(form)),
+                        });
+                        const data = await res.json();
+                        if (!data.ok) {
+                            manualRunStarted = false;
+                            renderStatus('error', data.error || 'Start fehlgeschlagen.');
+                            setBusy(false);
+                        }
+                    } catch (e) {
+                        manualRunStarted = false;
+                        renderStatus('error', 'Netzwerkfehler: ' + e.message);
+                        setBusy(false);
                     }
-                } catch (e) {
-                    renderStatus('error', 'Netzwerkfehler: ' + e.message);
-                    runBtn.disabled = false;
-                }
+                });
             });
 
             if (manualBtn) {
                 manualBtn.addEventListener('click', async () => {
                     manualBtn.disabled = true;
+                    manualRunStarted = true;
+                    previousState = 'manual_login_pending';
                     renderStatus('manual_login_pending', 'Oeffne Browser-Fenster fuer die manuelle Anmeldung...');
                     try {
                         const res = await fetch("{{ url_for('admin_autodarts_manual_login') }}", {
@@ -1278,87 +1377,82 @@
                         if (data.ok) {
                             startPolling();
                         } else {
+                            manualRunStarted = false;
                             renderStatus('manual_login_error', data.error || 'Manuelle Anmeldung konnte nicht gestartet werden.');
                             manualBtn.disabled = false;
                         }
                     } catch (e) {
+                        manualRunStarted = false;
                         renderStatus('manual_login_error', 'Netzwerkfehler: ' + e.message);
                         manualBtn.disabled = false;
                     }
                 });
             }
 
-            // Falls beim Laden der Seite bereits ein Lauf aktiv ist, weiter pollen
+            // Immer pollen: dadurch werden auch später vom Scheduler gestartete
+            // automatische Läufe auf einer bereits geöffneten Seite sichtbar.
             const initialState = statusEl.dataset.state;
             if (['running', 'manual_login_pending'].includes(initialState)) {
-                runBtn.disabled = true;
-                if (manualBtn) manualBtn.disabled = true;
-                startPolling();
+                setBusy(true);
             }
+            startPolling();
         })();
 
-        // -- Addons: Bildschirmschoner installieren --
+        // -- systemd-Addons: feste, serverseitig validierte Aktionen + Ist-Status --
         (function () {
-            const btn = document.getElementById('install-screensaver-btn');
-            const statusEl = document.getElementById('install-screensaver-status');
-            if (!btn || !statusEl) return;
+            const buttons = Array.from(document.querySelectorAll('.addon-action'));
+            if (!buttons.length) return;
 
-            btn.addEventListener('click', async () => {
-                btn.disabled = true;
-                statusEl.textContent = '⏳ Wird installiert …';
-                statusEl.style.color = 'var(--clr-text-muted)';
+            async function refreshStatuses() {
                 try {
-                    const res = await fetch("{{ url_for('admin_install_screensaver') }}", {
+                    const res = await fetch("{{ url_for('admin_addons_status') }}", {cache: 'no-store'});
+                    const data = await res.json();
+                    if (!data.ok) return;
+                    Object.entries(data.addons || {}).forEach(([id, status]) => {
+                        const el = document.querySelector(`[data-addon-state="${id}"]`);
+                        if (el) el.textContent = status.state || 'unbekannt';
+                    });
+                } catch (_error) {
+                    // Der sichtbare letzte Status bleibt bei kurzzeitigem Netzfehler erhalten.
+                }
+            }
+
+            buttons.forEach(btn => btn.addEventListener('click', async () => {
+                const addon = btn.dataset.addon;
+                const action = btn.dataset.action;
+                const message = document.querySelector(`[data-addon-message="${addon}"]`);
+                const peers = buttons.filter(candidate => candidate.dataset.addon === addon);
+                peers.forEach(candidate => { candidate.disabled = true; });
+                if (message) {
+                    message.textContent = `⏳ ${action} …`;
+                    message.style.color = 'var(--clr-text-muted)';
+                }
+                try {
+                    const endpoint = "{{ url_for('admin_manage_addon', addon_id='ADDON_ID', action='ACTION') }}"
+                        .replace('ADDON_ID', encodeURIComponent(addon))
+                        .replace('ACTION', encodeURIComponent(action));
+                    const res = await fetch(endpoint, {
                         method: 'POST',
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        headers: {'X-Requested-With': 'XMLHttpRequest'},
                     });
                     const data = await res.json();
-                    if (data.ok) {
-                        statusEl.textContent = '✓ ' + data.message;
-                        statusEl.style.color = 'var(--clr-accent)';
-                    } else {
-                        statusEl.textContent = '✗ ' + (data.error || 'Installation fehlgeschlagen.');
-                        statusEl.style.color = '#e05252';
+                    if (message) {
+                        message.textContent = (data.ok ? '✓ ' : '✗ ') + (data.message || data.error || 'Aktion fehlgeschlagen.');
+                        message.style.color = data.ok ? 'var(--clr-accent)' : '#e05252';
                     }
-                } catch (e) {
-                    statusEl.textContent = '✗ Netzwerkfehler: ' + e.message;
-                    statusEl.style.color = '#e05252';
-                } finally {
-                    btn.disabled = false;
-                }
-            });
-        })();
-
-        // -- Addons: CEC-Manager installieren --
-        (function () {
-            const btn = document.getElementById('install-cec-btn');
-            const statusEl = document.getElementById('install-cec-status');
-            if (!btn || !statusEl) return;
-
-            btn.addEventListener('click', async () => {
-                btn.disabled = true;
-                statusEl.textContent = '⏳ Wird installiert …';
-                statusEl.style.color = 'var(--clr-text-muted)';
-                try {
-                    const res = await fetch("{{ url_for('admin_install_cec') }}", {
-                        method: 'POST',
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    });
-                    const data = await res.json();
-                    if (data.ok) {
-                        statusEl.textContent = '✓ ' + data.message;
-                        statusEl.style.color = 'var(--clr-accent)';
-                    } else {
-                        statusEl.textContent = '✗ ' + (data.error || 'Installation fehlgeschlagen.');
-                        statusEl.style.color = '#e05252';
+                } catch (error) {
+                    if (message) {
+                        message.textContent = '✗ Netzwerkfehler: ' + error.message;
+                        message.style.color = '#e05252';
                     }
-                } catch (e) {
-                    statusEl.textContent = '✗ Netzwerkfehler: ' + e.message;
-                    statusEl.style.color = '#e05252';
                 } finally {
-                    btn.disabled = false;
+                    peers.forEach(candidate => { candidate.disabled = false; });
+                    await refreshStatuses();
                 }
-            });
+            }));
+
+            refreshStatuses();
+            window.setInterval(refreshStatuses, 15000);
         })();
     </script>
 </body>

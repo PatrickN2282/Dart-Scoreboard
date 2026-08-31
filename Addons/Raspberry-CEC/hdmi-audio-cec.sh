@@ -8,11 +8,9 @@
 #   3. CEC-Gerätename setzen und HDMI-Audio wiederherstellen
 # ============================================================
 
-readonly LOGFILE="${HOME}/.local/log/hdmi-audio-cec.log"
-readonly LOCKFILE="/tmp/hdmi-audio-cec-${UID}.lock"
+readonly LOCKFILE="${XDG_RUNTIME_DIR:-/run/user/${UID}}/hdmi-audio-cec.lock"
 readonly CEC_CONFIG_FILE="${XDG_CONFIG_HOME:-${HOME}/.config}/dart-scoreboard/cec.conf"
 readonly VOLUME=0.80          # 80% Lautstärke
-readonly KEEPALIVE_SEC=50     # Keep-Alive alle 50s (TV-Timeout meist 60s)
 readonly MAX_BOOT_WAIT=180    # Max. Wartezeit auf TV beim Boot (Sekunden)
 
 # --- Locking (verhindert Doppelstart) ---
@@ -21,11 +19,8 @@ flock -n 200 || { echo "Bereits aktiv, beende." >&2; exit 1; }
 trap 'flock -u 200; rm -f "$LOCKFILE"' EXIT
 
 # --- Logging ---
-mkdir -p "$(dirname "$LOGFILE")"
 log() {
-    local msg="$(date '+%Y-%m-%d %H:%M:%S'): $1"
-    echo "$msg" >> "$LOGFILE"
-    echo "$msg" >&2
+    printf '%s: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >&2
 }
 
 load_runtime_config() {
@@ -33,11 +28,21 @@ load_runtime_config() {
     CEC_NAME="Dart Scoreboard"
     CEC_STANDBY_TIME="22:00"
     CEC_WAKE_TIME="08:00"
+    CEC_ADAPTER=""
+    CEC_CHECK_INTERVAL=50
 
     if [ -r "$CEC_CONFIG_FILE" ]; then
         # Die Datei wird ausschließlich vom lokalen Adminbereich mit sicheren Werten geschrieben.
         # shellcheck disable=SC1090
         . "$CEC_CONFIG_FILE"
+    fi
+    [[ "$CEC_ENABLED" =~ ^[01]$ ]] || CEC_ENABLED=0
+    [[ "$CEC_STANDBY_TIME" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]] || CEC_STANDBY_TIME="22:00"
+    [[ "$CEC_WAKE_TIME" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]] || CEC_WAKE_TIME="08:00"
+    [[ -z "$CEC_ADAPTER" || "$CEC_ADAPTER" =~ ^/dev/cec[0-9]+$ ]] || CEC_ADAPTER=""
+    CEC_NAME="${CEC_NAME:0:14}"
+    if ! [[ "$CEC_CHECK_INTERVAL" =~ ^[0-9]+$ ]] || [ "$CEC_CHECK_INTERVAL" -lt 10 ] || [ "$CEC_CHECK_INTERVAL" -gt 3600 ]; then
+        CEC_CHECK_INTERVAL=50
     fi
 }
 
@@ -67,40 +72,31 @@ cec_send() {
     local timeout="${1:-5}"
     shift
     # Jede Zeile ist ein Kommando
-    printf '%s\n' "$@" | timeout "$timeout" cec-client -s -d 1 2>/dev/null
+    local args=(-s -d 1 -o "$CEC_NAME")
+    [ -z "$CEC_ADAPTER" ] || args+=("$CEC_ADAPTER")
+    printf '%s\n' "$@" | timeout "$timeout" cec-client "${args[@]}" 2>/dev/null
 }
 
-# Konvertiere ASCII-String zu CEC-Hex-Payload
-# CEC OSD-Name: max 14 Zeichen, Format: XX:XX:...
-str_to_cec_hex() {
-    local str="$1"
-    local hex=""
-    local i
-    for (( i=0; i<${#str} && i<14; i++ )); do
-        local char="${str:$i:1}"
-        local code
-        code=$(printf '%02x' "'$char")
-        hex="${hex}${hex:+:}${code}"
-    done
-    echo "$hex"
-}
-
-# CEC-Gerätename setzen (OSD Name, OpCode 0x47)
+# Der OSD-Name wird von libCEC beim Öffnen des Adapters angekündigt. Dadurch
+# wird keine fest codierte (und möglicherweise falsche) logische Adresse benutzt.
 cec_set_name() {
     if ! cec_available; then
         log "CEC: cec-client nicht installiert, überspringe"
         return 1
     fi
 
-    local name_hex
-    name_hex=$(str_to_cec_hex "$CEC_NAME")
-    log "CEC: Setze Name '$CEC_NAME' (hex: $name_hex)"
+    log "CEC: Melde OSD-Name '$CEC_NAME' an"
+    if cec_send 8 "scan" >/dev/null; then
+        log "CEC: Adapter erreichbar, Name angekündigt"
+        return 0
+    fi
+    log "CEC: Adapter nicht erreichbar; Name konnte nicht angekündigt werden"
+    return 1
+}
 
-    # 0x47 = Set OSD Name, "1" = Broadcast von Adresse 1 (Recording Device)
-    # Format: <src><dst>:<opcode>:<payload>
-    # "1F:47:..." = von Gerät 1, an alle (Broadcast F)
-    cec_send 5 "tx 1F:47:${name_hex}" "scan" >/dev/null || true
-    log "CEC: Name gesetzt"
+cec_tv_is_on() {
+    cec_available || return 1
+    cec_send 5 "pow 0" | grep -qiE 'power status: (on|in transition standby to on)'
 }
 
 # TV aus Standby wecken
@@ -312,7 +308,6 @@ desired_mode() {
 activate_tv() {
     log "CEC: Aktives Zeitfenster (${CEC_WAKE_TIME}–${CEC_STANDBY_TIME}), aktiviere TV"
     cec_wake_tv || true
-    cec_set_name || true
     wait_for_pipewire || return 1
     wait_for_hdmi_sink || true
     setup_audio_with_retry || true
@@ -329,8 +324,9 @@ main() {
     log "Konfiguration: Name '$CEC_NAME', Standby ${CEC_STANDBY_TIME}, Wecken ${CEC_WAKE_TIME}"
     log "=============================="
 
-    log "Starte Zeitplan- und Keep-Alive-Loop (alle ${KEEPALIVE_SEC}s)"
+    log "Starte Zeitplan- und Keep-Alive-Loop (Intervall aus Laufzeitkonfiguration)"
     local last_mode=""
+    local last_name=""
     local audio_check_counter=0
     local audio_check_interval=6  # Alle 6 × KEEPALIVE_SEC = ~5 Min Audio prüfen
 
@@ -355,7 +351,12 @@ main() {
             last_mode="$mode"
             audio_check_counter=0
         elif [ "$mode" = "active" ]; then
-            cec_keepalive
+            if cec_tv_is_on; then
+                cec_keepalive
+            else
+                log "CEC: TV meldet nicht 'on' oder antwortet nicht; sende Wake-Kommando."
+                cec_wake_tv || true
+            fi
             audio_check_counter=$((audio_check_counter + 1))
             if [ "$audio_check_counter" -ge "$audio_check_interval" ]; then
                 audio_check_counter=0
@@ -367,7 +368,12 @@ main() {
             fi
         fi
 
-        sleep "$KEEPALIVE_SEC"
+        if [ "$mode" = "active" ] && [ "$CEC_NAME" != "$last_name" ]; then
+            cec_set_name || true
+            last_name="$CEC_NAME"
+        fi
+
+        sleep "$CEC_CHECK_INTERVAL"
     done
 }
 

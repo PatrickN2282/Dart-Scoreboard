@@ -1,0 +1,19 @@
+{
+    "state": "success",
+    "message": "Erstabgleich beendet. Seiten: 5, importiert: 0, aktualisiert: 199, ausstehend: 0, fehlgeschlagen: 6. 12 Hinweis(e).",
+    "updated_at": "31.08.2026 13:56:36",
+    "errors": [
+        "Stats für Match 019cdda7-a61d-723e-bc43-3fa3b3e1d967 konnten nicht geladen werden (Status 400).",
+        "Stats für Match 019ce1bf-8c9e-7280-a01e-7dbaa511a2ae konnten nicht geladen werden (Status 400).",
+        "Stats für Match 019d1a78-ec1d-7404-aff5-f3fc4558f0dd konnten nicht geladen werden (Status 400).",
+        "Stats für Match 019d29dc-3fd7-75ff-9688-8167bccff3e2 konnten nicht geladen werden (Status 400).",
+        "Stats für Match 019d9b0a-9d34-7a71-add9-b016978f8640 konnten nicht geladen werden (Status 400).",
+        "Stats für Match 019f895d-7350-7d95-977b-c76a7870d977 konnten nicht geladen werden (Status 400).",
+        "Stats für Match 019cdda7-a61d-723e-bc43-3fa3b3e1d967 konnten nicht geladen werden (Status 400).",
+        "Stats für Match 019ce1bf-8c9e-7280-a01e-7dbaa511a2ae konnten nicht geladen werden (Status 400).",
+        "Stats für Match 019d1a78-ec1d-7404-aff5-f3fc4558f0dd konnten nicht geladen werden (Status 400).",
+        "Stats für Match 019d29dc-3fd7-75ff-9688-8167bccff3e2 konnten nicht geladen werden (Status 400).",
+        "Stats für Match 019d9b0a-9d34-7a71-add9-b016978f8640 konnten nicht geladen werden (Status 400).",
+        "Stats für Match 019f895d-7350-7d95-977b-c76a7870d977 konnten nicht geladen werden (Status 400)."
+    ]
+}
